@@ -1,10 +1,21 @@
+server:
+  port: 8080
+
 spring:
+  application:
+    name: audiotour
+
   datasource:
-    url: jdbc:mysql://localhost:3306/audiotour_db?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/audiotour_db?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: root
     password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
     open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
