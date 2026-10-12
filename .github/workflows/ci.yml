@@ -1,0 +1,52 @@
+name: Backend 3-Tier CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    name: Build, Test & Package (Java 21)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: audiotour_db
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Grant execute permission for mvnw
+      run: chmod +x mvnw
+
+    - name: Run Maven Tests and Verify
+      env:
+        SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/audiotour_db?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC
+        SPRING_DATASOURCE_USERNAME: root
+        SPRING_DATASOURCE_PASSWORD: root
+      run: ./mvnw clean verify
+
+    - name: Package Executable JAR
+      run: ./mvnw package -DskipTests
+
+    - name: Upload Build Artifact (JAR)
+      uses: actions/upload-artifact@v4
+      with:
+        name: audiotour-backend-jar
+        path: target/*.jar
