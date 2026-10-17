@@ -121,3 +121,8 @@ Dự án tích hợp sẵn file cấu hình CI/CD tại `.github/workflows/ci.ym
 ## 👥 7. Phân công Nhiệm vụ & Thành viên
 - **Thực hiện:** Nhóm sinh viên ngành CNTT - Trường Đại học Sài Gòn (SGU).
 - **Phạm vi đồ án:** Hoàn thiện Backend 3 lớp, thiết kế CSDL, nghiệp vụ nén ZIP Offline, OpenAPI Docs và thiết lập CI/CD.
+
+## Docker
+docker build -t audiotour-backend .`n
+## Env
+Set DB_USERNAME, DB_PASSWORD, JWT secret for production.
