@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Agent workspace (local only — do not commit) ###
+TASK_CHECKLIST.md
+docs/agents/
+AGENTS.md
