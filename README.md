@@ -28,8 +28,8 @@ graph TD
     ServiceLayer -->|I/O Zip Packaging| FileStorage[(Local Audio Storage: uploads/audio)]
 ```
 
-- **Tầng 1 - Controller (Presentation Tier):** `LocationController`, `AudioPackageController`, `AnalyticsController`, `TourController`.
-- **Tầng 2 - Service (Business Logic Tier):** `LocationService`, `AudioPackageService`, `AnalyticsService`, `TourService`.
+- **Tầng 1 - Controller (Presentation Tier):** `LocationController`, `AudioPackageController`, `AnalyticsController`, `TourController`, `LanguageController`, `AuthController`.
+- **Tầng 2 - Service (Business Logic Tier):** `LocationService`, `AudioPackageService`, `AnalyticsService`, `TourService`, `LanguageService`, `AuthService`.
 - **Tầng 3 - Repository & Data (Data Access Tier):** `LocationRepository`, `LanguageRepository`, `NarrationRepository`, `PlaybackLogRepository`, `TourRepository`.
 
 ---
@@ -40,9 +40,11 @@ graph TD
 - **Framework:** Spring Boot 4.1.1
 - **Database:** MySQL 8.0+ (InnoDB, UTF-8mb4)
 - **ORM:** Spring Data JPA / Hibernate
+- **Bảo mật:** Spring Security + JWT (jjwt 0.12.6, HS256)
+- **Migration:** Flyway (`ddl-auto: validate`)
 - **Tiện ích:** Project Lombok (Constructor Injection với `@RequiredArgsConstructor`)
 - **Tài liệu API:** Springdoc OpenAPI 3 / Swagger UI
-- **Kiểm thử tự động:** JUnit 5, Mockito (18/18 Tests Passed)
+- **Kiểm thử tự động:** JUnit 5, Mockito (74/74 Tests Passed)
 - **CI/CD:** GitHub Actions tự động kiểm thử và đóng gói khi có Commit/PR
 
 ---
@@ -84,6 +86,13 @@ graph TD
    .\mvnw.cmd clean test
    ```
 
+5. **Chạy bằng Docker Compose (app + MySQL):**
+   ```bash
+   cp .env.example .env      # tuỳ chỉnh mật khẩu / secret nếu cần
+   docker compose up --build
+   ```
+   App chạy tại `http://localhost:8080`, Swagger UI tại `http://localhost:8080/swagger-ui.html`.
+
 ---
 
 ## 📖 5. Danh mục RESTful API & Swagger UI
@@ -93,9 +102,13 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 
 ### Danh sách API chính bàn giao cho Team Mobile:
 
+> 🔐 **Xác thực:** mọi endpoint `/api/**` và `/api/v1/**` (trừ `POST /api/auth/login`, `POST /api/v1/auth/login`, Swagger UI và `/actuator/health`) đều yêu cầu header `Authorization: Bearer <token>`. Token lấy từ API đăng nhập bên dưới. Thiếu token hoặc token sai trả về **401**.
+
 | Nhóm | Method | Đường dẫn API | Mô tả chức năng |
 | :--- | :---: | :--- | :--- |
-| **POI & Vị trí** | `GET` | `/api/locations` | Lấy danh sách các địa điểm gốc (kèm các phòng ban con) |
+| **Xác thực** | `POST` | `/api/auth/login`, `/api/v1/auth/login` | Đăng nhập, trả về `{ "token": "...", "tokenType": "Bearer" }` (401 nếu sai thông tin) |
+| **POI & Vị trí** | `GET` | `/api/locations` | Lấy danh sách các địa điểm gốc (mảng phẳng, kèm các phòng ban con) |
+| | `GET` | `/api/v1/locations` | Bản phân trang của `/api/locations` (`page`, `size`, `sort`) |
 | | `GET` | `/api/locations/pois` | Đồng bộ toàn bộ điểm POI (tọa độ, bán kính geofence, ưu tiên) về SQLite |
 | | `GET` | `/api/locations/{id}` | Lấy chi tiết thông tin 1 địa điểm |
 | | `GET` | `/api/locations/{id}/sub-locations` | Lấy các khu vực con bên trong 1 địa điểm (VD: các phòng trong Dinh Độc Lập) |
@@ -104,7 +117,15 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 | **Phân tích** | `POST` | `/api/analytics/logs` | Mobile App gửi log sau khi phát xong audio (tránh lặp & lưu vết) |
 | | `GET` | `/api/analytics/dashboard` | Cung cấp dữ liệu thống kê tổng quan (Top POI, Heatmap, tỷ lệ QR vs GPS) |
 | **Tuyến Tour** | `GET` | `/api/tours` | Lấy danh sách các tuyến tour tham quan |
+| | `GET` | `/api/v1/tours` | Bản phân trang của `/api/tours` (`page`, `size`, `sort`) |
 | | `GET` | `/api/tours/{id}` | Lấy chi tiết lộ trình 1 tour |
+| **Ngôn ngữ** | `GET` | `/api/languages`, `/api/v1/languages` | Danh sách ngôn ngữ (`/api/v1` có phân trang) |
+| | `GET` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Lấy chi tiết 1 ngôn ngữ |
+| | `POST` | `/api/languages`, `/api/v1/languages` | Thêm ngôn ngữ mới (201 Created; 409 Conflict nếu trùng `code`) |
+| | `PUT` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Cập nhật ngôn ngữ theo ID |
+| | `DELETE` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Xoá ngôn ngữ (204 No Content) |
+
+> 📄 **Phân trang chỉ có trên `/api/v1`:** các endpoint `/api/...` giữ nguyên định dạng mảng JSON như trước để client cũ không bị ảnh hưởng. Chỉ `/api/v1/...` trả về `{ content, totalElements, totalPages, size, number, ... }`.
 
 ---
 
@@ -113,7 +134,7 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 Dự án tích hợp sẵn file cấu hình CI/CD tại `.github/workflows/ci.yml`. Mỗi khi thành viên tạo Commit hoặc Pull Request:
 1. Tự động kích hoạt máy chủ ảo Ubuntu Runner và dịch vụ MySQL Container.
 2. Thiết lập môi trường Java 21.
-3. Thực thi tự động 18 bài kiểm thử (Unit test & Controller integration test).
+3. Thực thi tự động 59 bài kiểm thử (Unit test, Controller test & Integration test với MySQL container).
 4. Đóng gói sản phẩm thành file thực thi `.jar` và lưu vào GitHub Artifacts.
 
 ---
@@ -122,7 +143,49 @@ Dự án tích hợp sẵn file cấu hình CI/CD tại `.github/workflows/ci.ym
 - **Thực hiện:** Nhóm sinh viên ngành CNTT - Trường Đại học Sài Gòn (SGU).
 - **Phạm vi đồ án:** Hoàn thiện Backend 3 lớp, thiết kế CSDL, nghiệp vụ nén ZIP Offline, OpenAPI Docs và thiết lập CI/CD.
 
-## Docker
-docker build -t audiotour-backend .`n
-## Env
-Set DB_USERNAME, DB_PASSWORD, JWT secret for production.
+## 🐳 8. Docker & Biến môi trường
+
+### Build & chạy bằng Docker
+```bash
+docker build -t audiotour-backend .
+docker run -p 8080:8080 \
+  -e SPRING_PROFILES_ACTIVE=prod \
+  -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/audiotour_db?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC" \
+  -e DB_USERNAME=root -e DB_PASSWORD="$DB_PASSWORD" \
+  -e JWT_SECRET="$(openssl rand -base64 48)" \
+  -e APP_ADMIN_USERNAME=admin -e APP_ADMIN_PASSWORD="$APP_ADMIN_PASSWORD" \
+  audiotour-backend
+```
+`SPRING_PROFILES_ACTIVE=prod` là bắt buộc; thiếu nó thì container chạy bằng secret dev.
+
+### Docker Compose (app + MySQL)
+```bash
+cp .env.example .env   # điền DB_ROOT_PASSWORD, DB_PASSWORD, JWT_SECRET, APP_ADMIN_* (xem comment trong file)
+docker compose up --build
+```
+`docker-compose.yml` đã set `SPRING_PROFILES_ACTIVE=prod`, nên compose **từ chối khởi động** nếu thiếu secret/tài khoản.
+
+### Chạy production (bắt buộc)
+Profile `prod` (`src/main/resources/application-prod.yml`) **không có giá trị mặc định** cho DB/JWT/admin. Vì vậy:
+
+```bash
+export SPRING_PROFILES_ACTIVE=prod
+export DB_USERNAME=... DB_PASSWORD=...
+export JWT_SECRET=...            # tối thiểu 32 byte
+export APP_ADMIN_USERNAME=... APP_ADMIN_PASSWORD=...
+java -jar target/audiotour-0.0.1-SNAPSHOT.jar
+```
+
+> ⚠️ Chạy `java -jar` **không** có `SPRING_PROFILES_ACTIVE=prod` (hoặc không có các biến trên) chỉ là **local-dev boot**: app dùng secret dev và `admin123` trong `application.yml`. Không dùng cách này để deploy.
+
+### Biến môi trường
+| Biến | Mặc định (dev) | Ghi chú |
+| :--- | :--- | :--- |
+| `SPRING_PROFILES_ACTIVE` | (không) | `prod` = bắt buộc có đủ biến bên dưới |
+| `DB_USERNAME` / `DB_PASSWORD` | `root` / `123456` | Profile prod không có default |
+| `DB_ROOT_PASSWORD` / `DB_NAME` | `root` / `audiotour_db` | Dùng cho `docker-compose.yml` |
+| `JWT_SECRET` | secret dev | Profile prod: bắt buộc, tối thiểu 32 byte (HS256) |
+| `JWT_EXPIRATION_MS` | `86400000` | Thời hạn token (24 giờ) |
+| `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` | `admin` / `admin123` | Profile prod: bắt buộc; username ≥ 3 ký tự |
+
+Danh sách đầy đủ xem tại `.env.example`. Quy trình rollback xem tại `docs/ROLLBACK.md`.

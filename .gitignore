@@ -32,6 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 
+### Môi trường local (không commit secret) ###
+.env
+
 ### Agent workspace (local only — do not commit) ###
 TASK_CHECKLIST.md
 docs/agents/
