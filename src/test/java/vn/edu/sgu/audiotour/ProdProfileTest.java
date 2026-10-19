@@ -10,15 +10,17 @@ import vn.edu.sgu.audiotour.service.AuthService;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * Chứng minh profile `prod` thật sự được kích hoạt và đọc đúng các biến mà application-prod.yml yêu cầu.
- * Các "biến môi trường" ở đây được truyền qua property để test chạy được mà không cần export shell.
+ * Chứng minh profile `prod` thật sự được kích hoạt và dùng đúng tài khoản admin đã cấu hình.
+ * Đặt thẳng app.admin.* vì placeholder ${APP_ADMIN_USERNAME} trong application-prod.yml được
+ * resolve lúc load config, nên property inlined không thắng được biến môi trường có sẵn (vd. CI).
+ * DB lấy từ SPRING_DATASOURCE_* của môi trường, hoặc mặc định DB_USERNAME/DB_PASSWORD dưới đây.
  */
 @SpringBootTest(properties = {
         "DB_USERNAME=root",
         "DB_PASSWORD=123456",
-        "JWT_SECRET=prod-profile-test-secret-0123456789abcdef",
-        "APP_ADMIN_USERNAME=prodadmin",
-        "APP_ADMIN_PASSWORD=prodpass"
+        "jwt.secret=prod-profile-test-secret-0123456789abcdef",
+        "app.admin.username=prodadmin",
+        "app.admin.password=prodpass"
 })
 @ActiveProfiles("prod")
 class ProdProfileTest {
