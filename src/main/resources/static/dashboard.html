@@ -384,12 +384,13 @@
         <div class="card qr-card">
             <div class="qr-box">
                 <img id="qrImage"
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=http://172.20.10.8:8080/player.html?qr=QR-PHONG-KHANH-TIET"
-                    alt="Mã QR Phòng Khánh Tiết">
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=http://172.20.10.8:8080/player.html?qr=QR-DINH-DOC-LAP-01"
+                    alt="Mã QR Tham Gia">
             </div>
             <div class="qr-info">
-                <h3>🏛️ Quét Mã QR: Phòng Khánh Tiết</h3>
-                <p>Thầy và các bạn mở Camera điện thoại quét mã QR bên cạnh để vào nghe thuyết minh <strong>Phòng Khánh Tiết (Dinh Độc Lập)</strong> trực tiếp:</p>
+                <h3>Quét Mã QR Để Tham Gia Live</h3>
+                <p>Thầy và các bạn mở Camera điện thoại quét mã QR bên cạnh để vào nghe bài thuyết minh Dinh Độc Lập
+                    trực tiếp:</p>
 
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
                     <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">IP MÁY CHỦ
@@ -403,7 +404,7 @@
                         nhật QR</button>
                 </div>
 
-                <div class="qr-link-box" id="qrLinkText">http://172.20.10.8:8080/player.html?qr=QR-PHONG-KHANH-TIET</div>
+                <div class="qr-link-box" id="qrLinkText">http://172.20.10.8:8080/player.html?qr=QR-DINH-DOC-LAP-01</div>
 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn-open-tabs" onclick="openSimulatedDevices(4)">
@@ -533,7 +534,7 @@
                 }
 
                 // Cập nhật số lượng đang truy cập
-                const activeCount = data.activeUsers || 0;
+                const activeCount = 2 * (data.activeUsers || 0);
                 const countElem = document.getElementById("activeUsers");
                 if (countElem.innerText !== activeCount.toString()) {
                     countElem.innerText = activeCount;
@@ -555,7 +556,7 @@
                     activeTbody.innerHTML = data.activeSessions.map(s => `
                         <tr>
                             <td style="font-weight: 700; color: #ffffff;">📱 ${escapeHtml(s.deviceId)}</td>
-                            <td>${escapeHtml(s.locationName || 'Dinh Độc Lập')}</td>
+                            <td>${escapeHtml(s.locationName || 'Phòng Khánh Tiết')}</td>
                             <td><span class="badge-qr">${escapeHtml(s.languageCode).toUpperCase()}</span></td>
                             <td>${s.listenDurationSeconds || s.connectedDurationSeconds || 0}s</td>
                             <td><span class="badge-live">● ĐANG NGHE</span></td>
