@@ -534,7 +534,7 @@
                 }
 
                 // Cập nhật số lượng đang truy cập
-                const activeCount = 2 * (data.activeUsers || 0);
+                const activeCount = data.activeUsers || 0;
                 const countElem = document.getElementById("activeUsers");
                 if (countElem.innerText !== activeCount.toString()) {
                     countElem.innerText = activeCount;
