@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Dashboard - Giám Sát Thời Gian Thực - SGU</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-color: #060913;
@@ -30,7 +32,7 @@
 
         body {
             background-color: var(--bg-color);
-            background-image: 
+            background-image:
                 radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
                 radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
                 radial-gradient(at 50% 100%, rgba(129, 140, 248, 0.1) 0px, transparent 50%);
@@ -86,9 +88,20 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
         }
 
         /* Top Banner: QR Code & Live Active Users */
@@ -338,6 +351,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="header">
@@ -361,23 +375,48 @@
             </div>
             <div class="counter-number" id="activeUsers">0</div>
             <p class="counter-sub">
-                ⚡ Số lượng tự động <strong>tăng lên</strong> khi có thiết bị quét QR, và tự động <strong>giảm xuống</strong> khi thiết bị đóng tab hoặc rời khỏi phiên nghe.
+                ⚡ Số lượng tự động <strong>tăng lên</strong> khi có thiết bị quét QR, và tự động <strong>giảm
+                    xuống</strong> khi thiết bị đóng tab hoặc rời khỏi phiên nghe.
             </p>
         </div>
 
         <!-- Card 2: Mã QR trực tiếp để quét -->
         <div class="card qr-card">
             <div class="qr-box">
-                <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=http://172.20.10.8:8080/player.html?qr=QR-DINH-DOC-LAP-01" alt="Mã QR Tham Gia">
+                <img id="qrImage"
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=http://172.20.10.8:8080/player.html?qr=QR-DINH-DOC-LAP-01"
+                    alt="Mã QR Tham Gia">
             </div>
             <div class="qr-info">
                 <h3>Quét Mã QR Để Tham Gia Live</h3>
-                <p>Thầy và các bạn mở Camera điện thoại (hoặc Zalo) quét mã QR bên cạnh để vào nghe bài thuyết minh Dinh Độc Lập trực tiếp:</p>
+                <p>Thầy và các bạn mở Camera điện thoại quét mã QR bên cạnh để vào nghe bài thuyết minh Dinh Độc Lập
+                    trực tiếp:</p>
+
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">IP MÁY CHỦ
+                        (LAN):</span>
+                    <input id="serverIpInput" type="text" value="172.20.10.8"
+                        style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #38bdf8; font-weight: 700; padding: 5px 10px; border-radius: 6px; width: 135px; font-size: 0.85rem;"
+                        oninput="updateQrCode()">
+                    <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 700;">: 8080</span>
+                    <button onclick="updateQrCode()"
+                        style="background: #38bdf8; border: none; color: #090d16; font-weight: 700; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Cập
+                        nhật QR</button>
+                </div>
+
                 <div class="qr-link-box" id="qrLinkText">http://172.20.10.8:8080/player.html?qr=QR-DINH-DOC-LAP-01</div>
-                <button class="btn-open-tabs" onclick="openSimulatedDevices(4)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                    Mở nhanh 4 Tab thiết bị giả lập để test
-                </button>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-open-tabs" onclick="openSimulatedDevices(4)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                            <line x1="8" y1="21" x2="16" y2="21" />
+                            <line x1="12" y1="17" x2="12" y2="21" />
+                        </svg>
+                        Mở nhanh 4 Tab thiết bị giả lập để test
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -420,7 +459,9 @@
                     </tr>
                 </thead>
                 <tbody id="activeDevicesTable">
-                    <tr><td colspan="5" class="empty-row">Chưa có thiết bị nào quét mã QR...</td></tr>
+                    <tr>
+                        <td colspan="5" class="empty-row">Chưa có thiết bị nào quét mã QR...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -445,24 +486,37 @@
                     </tr>
                 </thead>
                 <tbody id="recentLogsTable">
-                    <tr><td colspan="5" class="empty-row">Đang tải lịch sử...</td></tr>
+                    <tr>
+                        <td colspan="5" class="empty-row">Đang tải lịch sử...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // Xác định địa chỉ Host mạng hiện tại
-        const currentHost = window.location.host; // ví dụ: 172.20.10.8:8080 hoặc localhost:8080
-        const playerUrl = `http://${currentHost}/player.html?qr=QR-DINH-DOC-LAP-01`;
-        
-        document.getElementById("qrLinkText").innerText = playerUrl;
-        document.getElementById("qrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(playerUrl)}`;
+        // Xác định địa chỉ IP máy chủ để điện thoại quét (mặc định LAN IP 172.20.10.8)
+        let defaultLanIp = "172.20.10.8";
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.hostname !== '') {
+            defaultLanIp = window.location.hostname;
+        }
+        document.getElementById("serverIpInput").value = defaultLanIp;
+
+        function updateQrCode() {
+            let hostIp = document.getElementById("serverIpInput").value.trim();
+            if (!hostIp || hostIp === 'localhost' || hostIp === '127.0.0.1') {
+                hostIp = defaultLanIp;
+            }
+            const playerUrl = `http://${hostIp}:8080/player.html?qr=QR-PHONG-KHANH-TIET`;
+            document.getElementById("qrLinkText").innerText = playerUrl;
+            document.getElementById("qrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(playerUrl)}`;
+        }
+        updateQrCode();
 
         // Hàm mở nhanh 4 tab giả lập nếu muốn test ngay trên máy
         function openSimulatedDevices(count) {
             for (let i = 1; i <= count; i++) {
-                window.open(`/player.html?qr=QR-DINH-DOC-LAP-01&mockId=ThietBi-${i}`, `_blank`);
+                window.open(`/player.html?qr=QR-PHONG-KHANH-TIET&mockId=ThietBi-${i}`, `_blank`);
             }
         }
 
@@ -472,6 +526,12 @@
                 const res = await fetch("/api/analytics/dashboard");
                 if (!res.ok) return;
                 const data = await res.json();
+
+                if (data.serverIp && defaultLanIp !== data.serverIp && (document.getElementById("serverIpInput").value === '172.20.10.8' || document.getElementById("serverIpInput").value === 'localhost')) {
+                    defaultLanIp = data.serverIp;
+                    document.getElementById("serverIpInput").value = data.serverIp;
+                    updateQrCode();
+                }
 
                 // Cập nhật số lượng đang truy cập
                 const activeCount = data.activeUsers || 0;
@@ -537,4 +597,5 @@
         setInterval(fetchDashboard, 1500);
     </script>
 </body>
+
 </html>
