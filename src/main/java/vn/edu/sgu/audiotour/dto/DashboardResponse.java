@@ -40,6 +40,9 @@ public class DashboardResponse {
     @Schema(description = "Danh sách lịch sử các lượt nghe vừa hoàn thành gần đây")
     private List<RecentLogDTO> recentLogs;
 
+    @Schema(description = "Địa chỉ IP LAN của máy chủ phục vụ thiết bị di động quét mã QR", example = "172.20.10.8")
+    private String serverIp;
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

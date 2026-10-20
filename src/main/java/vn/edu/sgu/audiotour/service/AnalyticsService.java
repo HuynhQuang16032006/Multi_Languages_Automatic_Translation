@@ -17,6 +17,9 @@ import vn.edu.sgu.audiotour.entity.TriggerType;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
 import vn.edu.sgu.audiotour.repository.PlaybackLogRepository;
 
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.NetworkInterface;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -239,6 +242,29 @@ public class AnalyticsService {
                 .activeUsers(activeSessions.size())
                 .activeSessions(activeList)
                 .recentLogs(recentList)
+                .serverIp(detectServerIp())
                 .build();
+    }
+
+    private String detectServerIp() {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                if (iface.isLoopback() || !iface.isUp() || iface.isVirtual()) continue;
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
+                        String ip = addr.getHostAddress();
+                        if (!ip.startsWith("192.168.56.")) {
+                            return ip;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return "172.20.10.8";
     }
 }
