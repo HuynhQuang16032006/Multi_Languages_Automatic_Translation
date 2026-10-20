@@ -7,9 +7,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import vn.edu.sgu.audiotour.dto.DashboardResponse;
+import vn.edu.sgu.audiotour.dto.DeviceHeartbeatRequest;
 import vn.edu.sgu.audiotour.dto.PlaybackLogRequest;
 import vn.edu.sgu.audiotour.entity.PlaybackLog;
 import vn.edu.sgu.audiotour.service.AnalyticsService;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/analytics")
@@ -19,6 +22,12 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
+    @PostMapping("/heartbeat")
+    @Operation(summary = "Gửi nhịp tim (Heartbeat) giám sát thiết bị truy cập thời gian thực", description = "Mobile App gửi định kỳ mỗi 3s (action=JOIN/PING/LEAVE). Khi thiết bị out hoặc ngắt kết nối quá 8s, số lượng online tự động giảm và lưu lịch sử")
+    public ResponseEntity<Map<String, Object>> recordHeartbeat(@RequestBody DeviceHeartbeatRequest request) {
+        return ResponseEntity.ok(analyticsService.processHeartbeat(request));
+    }
+
     @PostMapping("/logs")
     @Operation(summary = "Ghi log khi du khách nghe xong bài thuyết minh", description = "Mobile App gửi log sau khi phát audio (qua quét mã QR hoặc GPS geofencing) để ghi nhận lượt nghe và vị trí ẩn danh")
     public ResponseEntity<PlaybackLog> recordPlaybackLog(@Valid @RequestBody PlaybackLogRequest request) {
@@ -26,7 +35,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/dashboard")
-    @Operation(summary = "Lấy dữ liệu thống kê tổng quan (Dashboard CMS)", description = "Cung cấp tổng số lượt nghe, thời gian nghe trung bình, Top địa điểm nghe nhiều nhất, tỷ lệ QR vs GPS và các điểm tọa độ Heatmap")
+    @Operation(summary = "Lấy dữ liệu thống kê tổng quan (Dashboard CMS)", description = "Cung cấp tổng số lượt nghe, số lượng online thời gian thực, Top địa điểm nghe nhiều nhất, tỷ lệ QR vs GPS và các điểm tọa độ Heatmap")
     public ResponseEntity<DashboardResponse> getDashboardData() {
         return ResponseEntity.ok(analyticsService.getDashboardData());
     }

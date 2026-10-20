@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Dashboard - Giám Sát Thời Gian Thực - SGU</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #060913;
+            --card-bg: rgba(18, 25, 43, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #38bdf8;
+            --secondary: #818cf8;
+            --accent: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.35);
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(129, 140, 248, 0.1) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 25px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #38bdf8, #818cf8, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .live-tag {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            padding: 8px 18px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Top Banner: QR Code & Live Active Users */
+        .top-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1.8fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 900px) {
+            .top-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Live Counter Card */
+        .counter-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(56, 189, 248, 0.05));
+        }
+
+        .counter-label {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #34d399;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .counter-number {
+            font-size: 5.5rem;
+            font-weight: 900;
+            line-height: 1;
+            color: #ffffff;
+            text-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
+            margin-bottom: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .counter-sub {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            max-width: 380px;
+        }
+
+        /* QR Code Scanner Card */
+        .qr-card {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .qr-box {
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+            text-align: center;
+        }
+
+        .qr-box img {
+            width: 155px;
+            height: 155px;
+            display: block;
+        }
+
+        .qr-info h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .qr-info p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+
+        .qr-link-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: var(--primary);
+            word-break: break-all;
+            margin-bottom: 12px;
+        }
+
+        .btn-open-tabs {
+            background: linear-gradient(135deg, #38bdf8, #2563eb);
+            color: #ffffff;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-open-tabs:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Stat counters mini */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 18px 20px;
+        }
+
+        .stat-card .title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .stat-card .val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        /* Tables section */
+        .tables-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 900px) {
+            .tables-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .table-header h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 1px solid var(--card-border);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: #cbd5e1;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge-live {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+
+        .badge-qr {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+
+        .badge-geo {
+            background: rgba(129, 140, 248, 0.2);
+            color: #818cf8;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+
+        .empty-row {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">
+            <h1>Audio Tour Live Dashboard</h1>
+            <p>Giám sát lưu lượng người dùng thời gian thực & Tự động ghi nhận lịch sử - Trường ĐH Sài Gòn (SGU)</p>
+        </div>
+        <div class="live-tag">
+            <div class="pulse-dot"></div>
+            <span>LIVE SOCKET PING (1.5s)</span>
+        </div>
+    </div>
+
+    <!-- Top Grid: Real-time Active Counter & Live QR Code -->
+    <div class="top-grid">
+        <!-- Card 1: Số lượng đang truy cập thời gian thực -->
+        <div class="card counter-card">
+            <div class="counter-label">
+                <span class="pulse-dot"></span>
+                <span>Số Lượng Đang Truy Cập (Online)</span>
+            </div>
+            <div class="counter-number" id="activeUsers">0</div>
+            <p class="counter-sub">
+                ⚡ Số lượng tự động <strong>tăng lên</strong> khi có thiết bị quét QR, và tự động <strong>giảm xuống</strong> khi thiết bị đóng tab hoặc rời khỏi phiên nghe.
+            </p>
+        </div>
+
+        <!-- Card 2: Mã QR trực tiếp để quét -->
+        <div class="card qr-card">
+            <div class="qr-box">
+                <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=http://172.20.10.8:8080/player.html?qr=QR-DINH-DOC-LAP-01" alt="Mã QR Tham Gia">
+            </div>
+            <div class="qr-info">
+                <h3>Quét Mã QR Để Tham Gia Live</h3>
+                <p>Thầy và các bạn mở Camera điện thoại (hoặc Zalo) quét mã QR bên cạnh để vào nghe bài thuyết minh Dinh Độc Lập trực tiếp:</p>
+                <div class="qr-link-box" id="qrLinkText">http://172.20.10.8:8080/player.html?qr=QR-DINH-DOC-LAP-01</div>
+                <button class="btn-open-tabs" onclick="openSimulatedDevices(4)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    Mở nhanh 4 Tab thiết bị giả lập để test
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mini Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="title">Tổng lượt nghe đã hoàn thành</div>
+            <div class="val" id="totalListens">--</div>
+        </div>
+        <div class="stat-card">
+            <div class="title">Thời gian nghe trung bình</div>
+            <div class="val" id="avgDuration">-- s</div>
+        </div>
+        <div class="stat-card">
+            <div class="title">Tỷ lệ QR Code vs Geofence</div>
+            <div class="val" id="triggerRatio">-- / --</div>
+        </div>
+    </div>
+
+    <!-- Tables Grid: Active Devices & Recent Playback History -->
+    <div class="tables-grid">
+        <!-- Bảng 1: Danh sách thiết bị ĐANG ONLINE -->
+        <div class="card">
+            <div class="table-header">
+                <h2>
+                    <span class="pulse-dot"></span>
+                    Thiết Bị Đang Kết Nối (<span id="activeTableCount">0</span>)
+                </h2>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Tự động giảm khi thiết bị out</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tên thiết bị</th>
+                        <th>Địa điểm đang nghe</th>
+                        <th>Ngôn ngữ</th>
+                        <th>Thời lượng</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="activeDevicesTable">
+                    <tr><td colspan="5" class="empty-row">Chưa có thiết bị nào quét mã QR...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Bảng 2: Lịch sử các lượt nghe vừa hoàn thành -->
+        <div class="card">
+            <div class="table-header">
+                <h2>
+                    <span>📜</span>
+                    Lịch Sử Lượt Nghe Vừa Ghi Nhận
+                </h2>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Cơ sở dữ liệu MySQL</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Log ID</th>
+                        <th>Thiết bị</th>
+                        <th>Địa điểm</th>
+                        <th>Thời gian nghe</th>
+                        <th>Cách kích hoạt</th>
+                    </tr>
+                </thead>
+                <tbody id="recentLogsTable">
+                    <tr><td colspan="5" class="empty-row">Đang tải lịch sử...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Xác định địa chỉ Host mạng hiện tại
+        const currentHost = window.location.host; // ví dụ: 172.20.10.8:8080 hoặc localhost:8080
+        const playerUrl = `http://${currentHost}/player.html?qr=QR-DINH-DOC-LAP-01`;
+        
+        document.getElementById("qrLinkText").innerText = playerUrl;
+        document.getElementById("qrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(playerUrl)}`;
+
+        // Hàm mở nhanh 4 tab giả lập nếu muốn test ngay trên máy
+        function openSimulatedDevices(count) {
+            for (let i = 1; i <= count; i++) {
+                window.open(`/player.html?qr=QR-DINH-DOC-LAP-01&mockId=ThietBi-${i}`, `_blank`);
+            }
+        }
+
+        // Tự động kéo dữ liệu Dashboard mỗi 1.5 giây
+        async function fetchDashboard() {
+            try {
+                const res = await fetch("/api/analytics/dashboard");
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // Cập nhật số lượng đang truy cập
+                const activeCount = data.activeUsers || 0;
+                const countElem = document.getElementById("activeUsers");
+                if (countElem.innerText !== activeCount.toString()) {
+                    countElem.innerText = activeCount;
+                    countElem.style.transform = "scale(1.15)";
+                    setTimeout(() => countElem.style.transform = "scale(1)", 200);
+                }
+                document.getElementById("activeTableCount").innerText = activeCount;
+
+                // Cập nhật thống kê phụ
+                document.getElementById("totalListens").innerText = data.totalListens || 0;
+                document.getElementById("avgDuration").innerText = `${data.averageListenDurationSeconds || 0}s`;
+                const qrCount = data.listensByTriggerType?.QR_CODE || 0;
+                const geoCount = data.listensByTriggerType?.GEOFENCE || 0;
+                document.getElementById("triggerRatio").innerText = `${qrCount} QR / ${geoCount} GPS`;
+
+                // Cập nhật bảng thiết bị ĐANG ONLINE
+                const activeTbody = document.getElementById("activeDevicesTable");
+                if (data.activeSessions && data.activeSessions.length > 0) {
+                    activeTbody.innerHTML = data.activeSessions.map(s => `
+                        <tr>
+                            <td style="font-weight: 700; color: #ffffff;">📱 ${escapeHtml(s.deviceId)}</td>
+                            <td>${escapeHtml(s.locationName || 'Dinh Độc Lập')}</td>
+                            <td><span class="badge-qr">${escapeHtml(s.languageCode).toUpperCase()}</span></td>
+                            <td>${s.listenDurationSeconds || s.connectedDurationSeconds || 0}s</td>
+                            <td><span class="badge-live">● ĐANG NGHE</span></td>
+                        </tr>
+                    `).join("");
+                } else {
+                    activeTbody.innerHTML = `<tr><td colspan="5" class="empty-row">Chưa có thiết bị nào quét mã QR... Hãy quét mã bên trên!</td></tr>`;
+                }
+
+                // Cập nhật bảng LỊCH SỬ VỪA HOÀN THÀNH
+                const logTbody = document.getElementById("recentLogsTable");
+                if (data.recentLogs && data.recentLogs.length > 0) {
+                    logTbody.innerHTML = data.recentLogs.map(l => `
+                        <tr>
+                            <td style="color: var(--primary); font-weight: 700;">#${l.id}</td>
+                            <td>${escapeHtml(l.deviceId || 'Ẩn danh')}</td>
+                            <td>${escapeHtml(l.locationName)}</td>
+                            <td><strong>${l.durationSeconds} giây</strong></td>
+                            <td><span class="${l.triggerType === 'QR_CODE' ? 'badge-qr' : 'badge-geo'}">${l.triggerType}</span></td>
+                        </tr>
+                    `).join("");
+                } else {
+                    logTbody.innerHTML = `<tr><td colspan="5" class="empty-row">Chưa có lịch sử phát gần đây.</td></tr>`;
+                }
+
+            } catch (err) {
+                console.error("Lỗi cập nhật dashboard:", err);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // Bắt đầu vòng lặp cập nhật mỗi 1.5 giây
+        fetchDashboard();
+        setInterval(fetchDashboard, 1500);
+    </script>
+</body>
+</html>

@@ -32,7 +32,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/v1/auth/login").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/packages/stream", "/demo.html", "/index.html", "/favicon.ico").permitAll()
+                        .requestMatchers("/api/packages/stream", "/api/packages/offline", "/api/locations/by-qr/**", "/api/analytics/**", "/demo.html", "/index.html", "/dashboard.html", "/player.html", "/favicon.ico").permitAll()
                         // Chỉ health là public; metrics/info và các actuator khác phải có token
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/**", "/api/v1/**", "/actuator/**").authenticated()
