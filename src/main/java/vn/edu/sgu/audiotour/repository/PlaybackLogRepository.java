@@ -22,4 +22,7 @@ public interface PlaybackLogRepository extends JpaRepository<PlaybackLog, Long> 
 
     @Query("SELECT p.latitude, p.longitude, COUNT(p.id) FROM PlaybackLog p WHERE p.latitude IS NOT NULL AND p.longitude IS NOT NULL GROUP BY p.latitude, p.longitude")
     List<Object[]> getHeatmapPoints();
+
+    // Lấy 10 lượt nghe gần đây nhất phục vụ hiển thị lịch sử
+    List<PlaybackLog> findTop10ByOrderByCreatedAtDesc();
 }

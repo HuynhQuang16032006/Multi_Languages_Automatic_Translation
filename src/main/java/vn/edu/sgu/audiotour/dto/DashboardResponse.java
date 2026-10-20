@@ -31,6 +31,15 @@ public class DashboardResponse {
     @Schema(description = "Danh sách các điểm tọa độ phục vụ vẽ bản đồ nhiệt (Heatmap)")
     private List<HeatmapPoint> heatmapPoints;
 
+    @Schema(description = "Số lượng thiết bị đang truy cập / đang nghe theo thời gian thực", example = "4")
+    private Integer activeUsers;
+
+    @Schema(description = "Danh sách chi tiết các thiết bị đang online theo thời gian thực")
+    private List<ActiveUserSessionDTO> activeSessions;
+
+    @Schema(description = "Danh sách lịch sử các lượt nghe vừa hoàn thành gần đây")
+    private List<RecentLogDTO> recentLogs;
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -47,5 +56,33 @@ public class DashboardResponse {
         private Double latitude;
         private Double longitude;
         private Long intensity;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ActiveUserSessionDTO {
+        private String deviceId;
+        private Long locationId;
+        private String locationName;
+        private String languageCode;
+        private Long connectedDurationSeconds;
+        private Integer listenDurationSeconds;
+        private String lastActiveTime;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class RecentLogDTO {
+        private Long id;
+        private String deviceId;
+        private String locationName;
+        private String languageCode;
+        private Integer durationSeconds;
+        private String triggerType;
+        private String completedAt;
     }
 }
