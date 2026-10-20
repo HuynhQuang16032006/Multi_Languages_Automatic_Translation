@@ -19,6 +19,8 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
     List<Location> findByParentLocationIsNull();
 
     // Lấy danh sách các khu vực con của một địa điểm cha
+    // (kèm khu vực con đã fetch để tránh LazyInitializationException khi open-in-view=false)
+    @EntityGraph(attributePaths = {"subLocations"})
     List<Location> findByParentLocationId(Long parentId);
 
     // Lấy chi tiết địa điểm kèm các địa điểm con đã được fetch

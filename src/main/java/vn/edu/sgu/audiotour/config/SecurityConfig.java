@@ -33,8 +33,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/v1/auth/login").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/packages/stream", "/api/packages/offline", "/api/locations/by-qr/**", "/api/analytics/**", "/demo.html", "/index.html", "/dashboard.html", "/player.html", "/favicon.ico").permitAll()
+                        // Trang chủ du khách: "/" serve welcome page (index.html)
+                        .requestMatchers("/").permitAll()
                         // Chỉ health là public; metrics/info và các actuator khác phải có token
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        // API đọc cho du khách ẩn danh: chỉ mở phương thức GET, API ghi vẫn cần token admin
+                        .requestMatchers(HttpMethod.GET, "/api/locations/**", "/api/tours/**", "/api/languages/**", "/api/narrations/**", "/api/v1/locations/**", "/api/v1/tours/**", "/api/v1/languages/**").permitAll()
                         .requestMatchers("/api/**", "/api/v1/**", "/actuator/**").authenticated()
                         .anyRequest().denyAll())
                 // Thiếu/sai token trả 401 thay vì 403 mặc định

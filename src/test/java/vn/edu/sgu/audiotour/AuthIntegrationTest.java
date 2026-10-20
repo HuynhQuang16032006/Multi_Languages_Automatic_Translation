@@ -41,9 +41,9 @@ class AuthIntegrationTest {
     }
 
     @Test
-    void testGetLocationsWithoutTokenReturns401() throws Exception {
+    void testGetLocationsWithoutTokenReturns200() throws Exception {
         mockMvc.perform(get("/api/locations"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -75,7 +75,8 @@ class AuthIntegrationTest {
 
     @Test
     void testInvalidBearerTokenReturns401() throws Exception {
-        mockMvc.perform(get("/api/locations").header("Authorization", "Bearer khong-phai-token"))
+        // Endpoint đọc đã public nên token sai cũng không chặn được; kiểm tra trên endpoint vẫn cần token
+        mockMvc.perform(get("/actuator/metrics").header("Authorization", "Bearer khong-phai-token"))
                 .andExpect(status().isUnauthorized());
     }
 
