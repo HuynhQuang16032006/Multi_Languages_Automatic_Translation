@@ -39,6 +39,7 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
     Page<Location> findAllPaged(Pageable pageable);
 
     // Tìm kiếm địa điểm theo mã QR code
+    @EntityGraph(attributePaths = {"subLocations"})
     Optional<Location> findByQrCode(String qrCode);
 
     // Tìm kiếm địa điểm theo tên có chứa từ khóa
