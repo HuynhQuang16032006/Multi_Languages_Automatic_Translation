@@ -17,7 +17,7 @@ Mục tiêu: hoàn thiện Backend Audio Tour đa ngôn ngữ từ ~75–80% lê
 - [x] Cấu hình filter JWT, bảo vệ tất cả endpoint `/api/**` (ngoại trừ Swagger / actuator nếu cần public).
 - [x] Thêm endpoint login / signup (hoặc ít nhất là tạo token test cho mobile app).
 - Verify: `./mvnw test` xanh; gọi API không token nhận 401/403.
-- Ghi chú: chỉ có `POST /api/auth/login` + `/api/v1/auth/login`, tài khoản admin lấy từ env. Không có signup và không có bảng `users` — việc này chuyển sang mục P5-1.
+- Ghi chú: chỉ có `POST /api/auth/login` + `/api/v1/auth/login`, tài khoản admin lấy từ env. Không có signup và không có bảng `users` — đã chốt là không dùng tài khoản người dùng (xem P5-1).
 
 ### P0-2. Bỏ hardcode credentials trong `application.yml`
 - [x] Thay `username: root`, `password: 123456` bằng `${DB_USERNAME}`, `${DB_PASSWORD}` (hoặc Spring Cloud placeholder).
@@ -140,23 +140,30 @@ Mục tiêu: hoàn thiện Backend Audio Tour đa ngôn ngữ từ ~75–80% lê
 
 ---
 
-## P5 — Tài khoản người dùng (User accounts)
+## P5 — Truy cập ẩn danh & thông tin thiết bị
 
-### P5-1. Đăng ký / đăng nhập / phân quyền theo tài khoản
-Yêu cầu mới (10/2026): người dùng phải có tài khoản riêng để sử dụng hệ thống. Hiện tại hệ thống chỉ có một tài khoản admin lấy từ biến môi trường, mọi người dùng phải dùng chung và không có phân quyền.
+### P5-1. Không yêu cầu đăng ký / đăng nhập với du khách
 
-- [ ] Tạo entity `User` (id, username hoặc email, password hash, role, enabled, created_at) kèm migration Flyway `V2__create_users.sql`; cập nhật `ddl-auto: validate` cho khớp.
-- [ ] Lưu mật khẩu bằng BCrypt (`spring-security-crypto`), không bao giờ lưu plaintext.
-- [ ] Thêm `POST /api/auth/register` (và `/api/v1/auth/register`) với DTO có validation (`@NotBlank`, `@Size(min = 8)`, `@Email` nếu dùng email).
-- [ ] Sửa `AuthService.login()` đọc tài khoản từ bảng `users` thay vì so sánh trực tiếp với `app.admin.username` / `app.admin.password`; dùng `PasswordEncoder` để so sánh.
-- [ ] Thêm role `ADMIN` và `USER`; ghi role vào claim của JWT và nạp vào `Authentication` trong `JwtAuthenticationFilter`.
-- [ ] Phân quyền trong `SecurityConfig`: API quản trị (`POST/PUT/DELETE /api/languages`, `/api/tours`, `/api/locations`) chỉ ADMIN; người dùng thường chỉ đọc và `POST /api/analytics/logs`.
-- [ ] Mã lỗi: username/email trùng → 409, mật khẩu quá ngắn → 400, sai định dạng → 400, đăng nhập sai → 401, đúng token nhưng thiếu quyền → 403.
-- [ ] Tương thích ngược: tài khoản admin từ `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` vẫn đăng nhập được (seed vào bảng `users` khi chạy lần đầu) để không phá môi trường đang deploy.
-- [ ] Seed trong `DataInitializer`: 1 tài khoản admin + 1 tài khoản user mẫu; ghi tài khoản mẫu vào README và `.env.example`.
-- [ ] Cập nhật `README.md` (mục API + hướng dẫn đăng ký) và OpenAPI annotation cho endpoint mới.
-- Verify: `.\mvnw.cmd clean test` xanh; register → login → gọi API bằng token user (đọc OK, ghi OK) và token admin (đủ quyền); gọi API quản trị bằng token user nhận 403; đăng nhập sai nhận 401; register trùng username nhận 409.
-- Ghi chú: chưa làm — mới là yêu cầu, chưa có code. Cần bảng `users` và cơ chế role; hiện `SecurityConfig` chỉ yêu cầu `authenticated()` nên mọi token đều có toàn quyền.
+Quyết định (10/2026): du khách dùng hệ thống ẩn danh, không tạo tài khoản (đúng mục tiêu zero-friction trong `docs/PRD.md`). Chỉ admin lấy từ `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` đăng nhập để quản trị.
+
+- [x] Không tạo bảng `users`, không thêm `POST /api/auth/register`, không phân role `USER`.
+- [x] Giữ login admin hiện tại (`AuthService` so với `app.admin.*`, cấp JWT).
+- [x] Các endpoint app cần dùng đã public trong `SecurityConfig`: `/api/locations/by-qr/**`, `/api/packages/stream`, `/api/packages/offline`, `/api/analytics/**`.
+- [x] API quản trị (`/api/**`, `/api/v1/**` còn lại) vẫn yêu cầu token admin.
+- Verify: gọi `/api/locations/by-qr/{code}` không token trả 200; `POST /api/auth/login` bằng tài khoản admin env trả token; gọi API quản trị không token trả 401.
+- Ghi chú: yêu cầu "mỗi người dùng có tài khoản riêng" (10/2026) đã hủy. Nếu sau này cần tài khoản thì mở lại mục này và làm đầy đủ bảng `users` + register + role.
+
+### P5-2. Chỉ lưu thông tin thiết bị đang sử dụng
+
+Không lưu danh tính người dùng. Định danh duy nhất là `deviceId` ẩn danh, đủ để đếm thiết bị, xem ai đang online và gắn lịch sử nghe.
+
+- [x] `deviceId` do app tự sinh (mobile dùng UUID; `player.html` dùng `<tên thiết bị>-<số ngẫu nhiên>`, lưu `localStorage`), không lưu tên / SĐT / email / IP.
+- [x] Lưu `device_id` (`varchar(64)`) vào `playback_logs` cho mọi lượt nghe, kể cả log tự sinh khi heartbeat LEAVE hoặc timeout.
+- [x] Thiết bị đang dùng: `POST /api/analytics/heartbeat` với `JOIN` / `PING` / `LEAVE`; dashboard đọc danh sách online từ `activeSessions`.
+- [ ] Thêm `@Size(max = 64)` cho `deviceId` trong `PlaybackLogRequest` và `DeviceHeartbeatRequest` (hiện chỉ có `@Schema`, vượt 64 ký tự sẽ lỗi ở DB).
+- [ ] Thống nhất khi thiếu `deviceId`: heartbeat đang fallback `dev-<uuid8>`, còn log lưu `null` — chọn một cách (fallback ở cả hai hoặc cho phép null).
+- Verify: gọi heartbeat `JOIN` → `activeUsers` tăng và dashboard thấy `deviceId`; `LEAVE` → `playback_logs` có `device_id`; trong DB không có bảng/cột chứa dữ liệu cá nhân.
+- Ghi chú: `activeSessions` là `ConcurrentHashMap` trong RAM, mất khi restart và không chia sẻ giữa nhiều instance — chấp nhận cho 1 instance. Chỉ thêm bảng `device_sessions` nếu sau này cần giữ trạng thái online qua restart hoặc scale ngang.
 
 ---
 
@@ -171,11 +178,36 @@ Yêu cầu mới (10/2026): cần màn hình dashboard cho người dùng/quản
 - [ ] Bổ sung số liệu người dùng: số thiết bị duy nhất (`deviceId`), tỷ lệ offline vs online, số lượt tải gói offline.
 - [ ] Ghi log lượt tải offline: `AudioPackageService.createOfflinePackage()` hiện không ghi log — thêm bảng/bước ghi nhận (bảng mới `package_downloads` qua migration `V2__...`, hoặc dùng chung `playback_logs` với `trigger_type` mới).
 - [ ] Chuẩn hóa tọa độ heatmap: query hiện `GROUP BY latitude, longitude` theo đúng giá trị thô → cần làm tròn (ví dụ 4–5 chữ số thập phân) để heatmap không vỡ thành hàng nghìn điểm rời rạc.
-- [ ] Phân quyền: sau P5-1, endpoint dashboard chỉ cho role `ADMIN`; người dùng thường trả 403.
+- [ ] Phân quyền: endpoint dashboard chỉ cho admin (token từ `APP_ADMIN_*`); không có role `USER` vì P5-1 đã chốt không dùng tài khoản người dùng.
 - [ ] Widget tối thiểu cho màn hình dashboard: tổng lượt nghe, thời gian nghe trung bình, tỷ lệ QR vs GPS vs MANUAL, Top 5 POI (biểu đồ cột), heatmap trên bản đồ (Leaflet), biểu đồ xu hướng theo thời gian, lọc theo ngôn ngữ và khoảng thời gian.
 - [ ] Tài liệu: cập nhật README (mục API + ảnh chụp màn hình) và OpenAPI annotation cho tham số mới.
-- Verify: `.\mvnw.cmd clean test` xanh; đối chiếu số liệu API với truy vấn SQL thủ công trên `playback_logs` (tổng lượt nghe, top POI) khớp; mở UI thấy đủ widget; lọc theo ngôn ngữ và theo khoảng thời gian trả dữ liệu khác nhau; token role `USER` gọi dashboard nhận 403.
+- Verify: `.\mvnw.cmd clean test` xanh; đối chiếu số liệu API với truy vấn SQL thủ công trên `playback_logs` (tổng lượt nghe, top POI) khớp; mở UI thấy đủ widget; lọc theo ngôn ngữ và theo khoảng thời gian trả dữ liệu khác nhau; gọi dashboard không token nhận 401.
 - Ghi chú: chưa làm — mới là yêu cầu, chưa có code. Cần chốt stack frontend trước khi bắt đầu; nếu UI thuộc repo CMS riêng thì phần việc ở đây chỉ còn mở rộng API.
+
+---
+
+## P7 — Giao diện du khách & Bản đồ
+
+### P7-1. Trang bản đồ + giao diện người dùng
+
+Đã có `player.html` (mở một POI/lần) và `dashboard.html` (nội bộ). Mục này bổ sung màn hình bản đồ/tổng quan cho du khách.
+
+- [x] Player cơ bản: `player.html` phát audio theo `locationId`, chuyển VI/EN, gửi heartbeat + playback log, hiện tên/ảnh/địa chỉ POI.
+- [x] Thêm trang chủ du khách (`index.html`, entry point `/`): bản đồ + danh sách POI, bấm marker/POI mở bottom sheet chi tiết; mobile-first.
+- [x] Bản đồ Leaflet + tile OpenStreetMap (miễn phí, không cần API key): marker POI từ `latitude`/`longitude`, marker vị trí hiện tại (`navigator.geolocation`), nút "gần tôi" sắp xếp POI theo khoảng cách Haversine.
+- [x] API public cho trang chủ: `GET /api/locations/**`, `/api/tours/**`, `/api/languages/**`, `/api/narrations/**` (kể cả bản `/api/v1/**`) mở `permitAll`; `POST/PUT/DELETE` vẫn khoá admin. Thêm `GET /api/narrations?locationId=&languageCode=` trả text thuyết minh thật từ DB; QR `by-qr/{code}` mở đúng POI, mã sai hiện thông báo thân thiện.
+- [x] Không có GPS / mất mạng: cache danh sách POI vào `localStorage`, mất mạng vẫn xem được danh sách + banner offline, không chặn phát audio; ghi rõ giới hạn tile OSM cần Internet.
+- Verify: mở trang chủ không token trên mobile thấy bản đồ + marker; bấm POI phát audio đúng ngôn ngữ; quét QR mở đúng POI; từ chối quyền vị trí vẫn dùng được danh sách.
+- Ghi chú: đã verify bằng trình duyệt thật — 6 marker, 6 POI, 2 tour, khoảng cách 591 m / 601 m / 612 m / 1,70 km / 1,87 km / 2,05 km (Haversine từ TP.HCM), lọc tour còn đúng 3 POI, offline dùng cache. Quyết định stack ghi ở `docs/adr/0001-guest-ui-static-html-leaflet.md`.
+
+### P7-2. Lỗi phát hiện khi làm P7-1 (đã sửa)
+
+- [x] `GlobalExceptionHandler` không bắt `MissingServletRequestParameterException` / `MethodArgumentTypeMismatchException` → thiếu param hoặc param sai kiểu trả **500** thay vì 400 (ảnh hưởng mọi endpoint có param bắt buộc). Đã thêm handler trả 400 kèm message tiếng Việt.
+- [x] `LocationRepository.findByParentLocationId` thiếu `@EntityGraph({"subLocations"})` → `GET /api/locations/{id}/sub-locations` trả 400 (lỗi có sẵn, trước đây bị che bởi 401; mở public nên lộ ra). Đã sửa + thêm test hồi quy trong `PublicReadAccessTest`.
+- [x] `player.html` không đồng bộ nút ngôn ngữ với `?lang=` trong URL (mở `?lang=en` vẫn sáng nút Tiếng Việt). Đã sửa bằng `syncLanguageButtons()`.
+- [x] `player.html` khi mã QR sai vẫn phát nhầm POI mặc định (id 4) và ghi log phiên nghe sai vào analytics. Đã sửa: hiện thông báo + không gửi heartbeat.
+- [x] `POST` body JSON hỏng lộ message tiếng Anh của Jackson ra ngoài. Đã thêm handler trả message tiếng Việt.
+- Verify: `.\mvnw.cmd clean test` → 94 test, 0 fail, 0 error; kiểm tra lại bằng trình duyệt thật.
 
 ---
 
@@ -204,10 +236,13 @@ Yêu cầu mới (10/2026): cần màn hình dashboard cho người dùng/quản
 | P4-1 | Cập nhật README | [x] | docker/env/prod/API v1 |
 | P4-2 | CONTRIBUTING + PR template | [x] | files added |
 | P4-3 | Branching + protect main | [x] | docs/BRANCHING.md |
-| P5-1 | Tài khoản người dùng (register + role) | [ ] | yêu cầu mới 10/2026, chưa làm |
-| P6-1 | Dashboard + mở rộng API phân tích | [ ] | yêu cầu mới 10/2026, chưa làm |
+| P5-1 | Truy cập ẩn danh, không tài khoản người dùng | [x] | yêu cầu đăng ký 10/2026 đã hủy; chỉ admin env đăng nhập |
+| P5-2 | Chỉ lưu thông tin thiết bị | [x] | `deviceId` ẩn danh trong `playback_logs` + heartbeat; còn thiếu validate `@Size(max = 64)` |
+| P6-1 | Dashboard + mở rộng API phân tích | [ ] | yêu cầu mới 10/2026, chưa làm; stack giao diện du khách đã chốt ở `docs/adr/0001-...` |
+| P7-1 | Trang bản đồ + giao diện du khách | [x] | `index.html`: Leaflet + 6 marker, bottom sheet, "gần tôi" Haversine, tour, cache offline |
+| P7-2 | Lỗi phát hiện khi làm P7-1 | [x] | 500→400 khi thiếu param, lazy `sub-locations`, nút ngôn ngữ, QR sai ghi nhầm POI, message JSON |
 
-**Việc còn lại:** P1-4 deploy staging (cần server/Render/Railway và secret trên GitHub, không thể hoàn thành trong mã nguồn), P5-1 tài khoản người dùng và P6-1 dashboard (hai yêu cầu mới, chưa bắt đầu).
+**Việc còn lại:** P1-4 deploy staging (cần server/Render/Railway và secret trên GitHub, không thể hoàn thành trong mã nguồn), P6-1 dashboard CMS (yêu cầu mới 10/2026, chưa bắt đầu).
 
 **Đã defer (ghi nhận, chưa sửa):** Location/Tour trả 400 khi không tìm thấy còn Language trả 404; phân trang fetch-join chạy in-memory (HHH90003004, đúng kết quả nhưng chậm khi dữ liệu lớn); login chưa giới hạn số lần thử; docker-compose/profile prod chưa chạy thật vì máy không có Docker.
 
