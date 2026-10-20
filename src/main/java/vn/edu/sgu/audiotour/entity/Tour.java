@@ -44,6 +44,7 @@ public class Tour {
             joinColumns = @JoinColumn(name = "tour_id"),
             inverseJoinColumns = @JoinColumn(name = "location_id")
     )
+    @JsonIgnoreProperties({"subLocations"})
     @Schema(description = "Danh sách các POI thuộc tuyến tour")
     private List<Location> locations = new ArrayList<>();
 }

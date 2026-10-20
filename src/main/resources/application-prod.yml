@@ -1,0 +1,15 @@
+# Profile `prod`: KHÔNG có giá trị mặc định.
+# Thiếu biến môi trường thì Spring báo lỗi ngay khi khởi động (fail fast), không chạy bằng secret công khai.
+# Chạy: java -jar app.jar --spring.profiles.active=prod
+spring:
+  datasource:
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+jwt:
+  secret: ${JWT_SECRET}
+
+app:
+  admin:
+    username: ${APP_ADMIN_USERNAME}
+    password: ${APP_ADMIN_PASSWORD}

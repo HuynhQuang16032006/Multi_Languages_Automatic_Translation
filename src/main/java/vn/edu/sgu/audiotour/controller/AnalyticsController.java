@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import vn.edu.sgu.audiotour.dto.DashboardResponse;
 import vn.edu.sgu.audiotour.dto.PlaybackLogRequest;
 import vn.edu.sgu.audiotour.entity.PlaybackLog;
@@ -20,7 +21,7 @@ public class AnalyticsController {
 
     @PostMapping("/logs")
     @Operation(summary = "Ghi log khi du khách nghe xong bài thuyết minh", description = "Mobile App gửi log sau khi phát audio (qua quét mã QR hoặc GPS geofencing) để ghi nhận lượt nghe và vị trí ẩn danh")
-    public ResponseEntity<PlaybackLog> recordPlaybackLog(@RequestBody PlaybackLogRequest request) {
+    public ResponseEntity<PlaybackLog> recordPlaybackLog(@Valid @RequestBody PlaybackLogRequest request) {
         return ResponseEntity.ok(analyticsService.recordPlaybackLog(request));
     }
 

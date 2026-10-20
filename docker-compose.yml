@@ -1,0 +1,43 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: audiotour-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD phải được đặt (xem .env.example)}
+      MYSQL_DATABASE: ${DB_NAME:-audiotour_db}
+    ports:
+      - "3306:3306"
+    volumes:
+      - audiotour-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: audiotour-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # Bắt buộc: nếu không bật profile prod thì app chạy bằng secret dev trong application.yml
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: "jdbc:mysql://db:3306/${DB_NAME:-audiotour_db}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC"
+      # application-prod.yml đọc đúng các biến DB_USERNAME / DB_PASSWORD
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_ROOT_PASSWORD}
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_ROOT_PASSWORD}
+      # Không có giá trị mặc định cho secret/tài khoản: docker compose up sẽ dừng và báo thiếu biến
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET phải được đặt và dài tối thiểu 32 byte (xem .env.example)}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:?APP_ADMIN_USERNAME phải được đặt (xem .env.example)}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:?APP_ADMIN_PASSWORD phải được đặt (xem .env.example)}
+
+volumes:
+  audiotour-db-data:

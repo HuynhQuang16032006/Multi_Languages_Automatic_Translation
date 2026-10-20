@@ -13,4 +13,7 @@ public interface NarrationRepository extends JpaRepository<Narration, Long> {
     // Lấy bài thuyết minh của 1 địa điểm cụ thể bằng 1 mã ngôn ngữ cụ thể
     @EntityGraph(attributePaths = {"location", "language"})
     Optional<Narration> findByLocationIdAndLanguageCode(Long locationId, String languageCode);
+
+    // Kiểm tra ngôn ngữ có đang được dùng trong bản thuyết minh nào không (chặn xóa gây lỗi khóa ngoại)
+    boolean existsByLanguageId(Long languageId);
 }

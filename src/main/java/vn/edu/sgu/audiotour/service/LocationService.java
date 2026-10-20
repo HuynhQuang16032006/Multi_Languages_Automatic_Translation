@@ -1,6 +1,8 @@
 package vn.edu.sgu.audiotour.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.sgu.audiotour.entity.Location;
@@ -18,6 +20,11 @@ public class LocationService {
     // Lấy tất cả các địa điểm gốc (root locations - không có parent)
     public List<Location> getRootLocations() {
         return locationRepository.findByParentLocationIsNull();
+    }
+
+    // Lấy danh sách địa điểm có phân trang, sắp xếp (API v1)
+    public Page<Location> getLocations(Pageable pageable) {
+        return locationRepository.findAllPaged(pageable);
     }
 
     // Lấy chi tiết 1 địa điểm theo ID

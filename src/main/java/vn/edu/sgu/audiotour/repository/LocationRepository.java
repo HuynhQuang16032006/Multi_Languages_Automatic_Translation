@@ -1,7 +1,10 @@
 package vn.edu.sgu.audiotour.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import vn.edu.sgu.audiotour.entity.Location;
 
@@ -27,6 +30,13 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
     @Override
     @EntityGraph(attributePaths = {"subLocations"})
     List<Location> findAll();
+
+    // Lấy địa điểm có phân trang kèm khu vực con.
+    // shortcut: fetch join + phân trang nên Hibernate phân trang trong bộ nhớ và tải hết dữ liệu (HHH90003004); nâng cấp bằng cách phân trang theo id rồi fetch theo id.
+    @Query(value = "select distinct l from Location l",
+            countQuery = "select count(l) from Location l")
+    @EntityGraph(attributePaths = {"subLocations"})
+    Page<Location> findAllPaged(Pageable pageable);
 
     // Tìm kiếm địa điểm theo mã QR code
     Optional<Location> findByQrCode(String qrCode);

@@ -1,6 +1,8 @@
 package vn.edu.sgu.audiotour.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.sgu.audiotour.entity.Tour;
@@ -17,6 +19,11 @@ public class TourService {
 
     public List<Tour> getAllTours() {
         return tourRepository.findAll();
+    }
+
+    // Lấy danh sách tour có phân trang, sắp xếp (API v1)
+    public Page<Tour> getTours(Pageable pageable) {
+        return tourRepository.findAllPaged(pageable);
     }
 
     public Tour getTourById(Long id) {
