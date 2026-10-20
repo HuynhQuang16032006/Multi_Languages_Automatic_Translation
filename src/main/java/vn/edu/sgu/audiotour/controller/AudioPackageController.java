@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +17,27 @@ import vn.edu.sgu.audiotour.service.AudioPackageService;
 @RestController
 @RequestMapping("/api/packages")
 @RequiredArgsConstructor
-@Tag(name = "2. Gói âm thanh Offline (Audio Package Controller)", description = "API đóng gói file ZIP chứa textContent và file âm thanh MP3 thật phục vụ nghe Offline khi không có 4G/Wifi")
+@Tag(name = "2. Gói âm thanh & Phát trực tiếp (Audio Package Controller)", description = "API phát trực tiếp âm thanh thuyết minh (Streaming MP3) và đóng gói ZIP phục vụ nghe Offline")
 public class AudioPackageController {
 
     private final AudioPackageService audioPackageService;
+
+    @GetMapping(value = "/stream", produces = "audio/mpeg")
+    @Operation(
+            summary = "Phát trực tiếp âm thanh thuyết minh (Audio Streaming)",
+            description = "Trả về luồng âm thanh audio/mpeg để trình duyệt hoặc Swagger UI tự động phát file âm thanh trực tiếp qua loa"
+    )
+    public ResponseEntity<Resource> streamAudio(
+            @Parameter(description = "ID của địa điểm (POI)", example = "4") @RequestParam Long locationId,
+            @Parameter(description = "Mã ngôn ngữ (ví dụ: 'vi', 'en')", example = "vi") @RequestParam String languageCode) {
+
+        Resource audioResource = audioPackageService.getAudioResource(locationId, languageCode);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("audio/mpeg"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + audioResource.getFilename() + "\"")
+                .body(audioResource);
+    }
 
     @GetMapping("/offline")
     @Operation(

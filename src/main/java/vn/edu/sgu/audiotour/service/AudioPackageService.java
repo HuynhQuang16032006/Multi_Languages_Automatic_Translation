@@ -1,6 +1,8 @@
 package vn.edu.sgu.audiotour.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import vn.edu.sgu.audiotour.entity.Narration;
 import vn.edu.sgu.audiotour.repository.NarrationRepository;
@@ -19,6 +21,31 @@ import java.util.zip.ZipOutputStream;
 public class AudioPackageService {
 
     private final NarrationRepository narrationRepository;
+
+    /**
+     * Lấy resource file âm thanh MP3 thật để phát trực tiếp (Streaming).
+     *
+     * @param locationId   ID của địa điểm
+     * @param languageCode Mã ngôn ngữ (ví dụ: "vi", "en")
+     * @return Resource của file âm thanh MP3
+     */
+    public Resource getAudioResource(Long locationId, String languageCode) {
+        Narration narration = narrationRepository.findByLocationIdAndLanguageCode(locationId, languageCode)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy bản thuyết minh cho địa điểm ID: " + locationId + " với ngôn ngữ: '" + languageCode + "'"));
+
+        String audioUrl = narration.getAudioUrl();
+        if (audioUrl == null || audioUrl.trim().isEmpty()) {
+            throw new RuntimeException("Bài thuyết minh chưa được cấu hình tên file âm thanh (audioUrl rỗng)!");
+        }
+
+        Path audioPath = Paths.get("uploads", "audio", audioUrl);
+        if (!Files.exists(audioPath) || !Files.isRegularFile(audioPath)) {
+            throw new RuntimeException("File âm thanh không tồn tại tại: " + audioPath.toAbsolutePath());
+        }
+
+        return new FileSystemResource(audioPath);
+    }
 
     /**
      * Tạo file ZIP chứa textContent (content.txt) và file âm thanh MP3 thật từ ổ cứng.
