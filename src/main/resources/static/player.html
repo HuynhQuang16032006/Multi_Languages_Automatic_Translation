@@ -300,9 +300,21 @@
             sendHeartbeat("JOIN");
         }
 
+        const narrations = {
+            "5_vi": "Chào mừng quý khách đến với Phòng Khánh Tiết tại Dinh Độc Lập. Đây là căn phòng có diện tích lớn nhất trong Dinh với sức chứa hơn 500 người, từng là nơi diễn ra các cuộc họp nội các quan trọng, các buổi lễ tiếp đón nguyên thủ quốc gia và các sự kiện ngoại giao lịch sử trước ngày 30 tháng 4 năm 1975.",
+            "5_en": "Welcome to the Chamber of Receptions at the Independence Palace. This is the largest chamber with a capacity of over 500 people, previously used for cabinet meetings and receptions of foreign heads of state.",
+            "4_vi": "Dinh Độc Lập, nay là Di tích Lịch sử Dinh Độc Lập, tọa lạc tại số 135 Nam Kỳ Khởi Nghĩa, Quận 1, TP.HCM. Công trình do kiến trúc sư Ngô Viết Thụ thiết kế, là chứng nhân lịch sử đánh dấu thời khắc hòa bình, thống nhất non sông trưa ngày 30 tháng 4 năm 1975.",
+            "4_en": "Independence Palace, also known as Reunification Convention Hall, is a landmark in Ho Chi Minh City, designed by architect Ngo Viet Thu."
+        };
+
         function loadAudioStream() {
             player.src = `/api/packages/stream?locationId=${currentLocationId}&languageCode=${currentLang}`;
             player.play().catch(e => console.log("Cần bấm Play trên di động"));
+
+            const textKey = `${currentLocationId}_${currentLang}`;
+            if (narrations[textKey]) {
+                document.getElementById("scriptText").innerText = narrations[textKey];
+            }
         }
 
         function setLanguage(lang) {
