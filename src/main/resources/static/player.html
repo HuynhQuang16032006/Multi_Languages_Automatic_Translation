@@ -171,6 +171,20 @@
             margin-bottom: 20px;
         }
 
+        .script-note {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.78rem;
+            color: #fbbf24;
+        }
+
+        .status-note {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #fbbf24;
+            text-align: left;
+        }
+
         .btn-exit {
             width: 100%;
             background: rgba(239, 68, 68, 0.15);
@@ -224,11 +238,13 @@
         <!-- Trình phát âm thanh HTML5 -->
         <div class="audio-container">
             <audio id="audioPlayer" controls autoplay></audio>
+            <div id="audioStatus" class="status-note"></div>
         </div>
 
         <!-- Kịch bản thuyết minh -->
-        <div class="narration-box" id="scriptText">
-            Dinh Độc Lập, nay là Di tích Lịch sử Dinh Độc Lập, tọa lạc tại số 135 Nam Kỳ Khởi Nghĩa, Quận 1, TP.HCM. Công trình do kiến trúc sư Ngô Viết Thụ thiết kế, là chứng nhân lịch sử đánh dấu thời khắc hòa bình, thống nhất non sông trưa ngày 30 tháng 4 năm 1975.
+        <div class="narration-box">
+            <div id="scriptText">Đang tải kịch bản thuyết minh...</div>
+            <small id="scriptNote" class="script-note"></small>
         </div>
 
         <!-- Nút Thoát / Rời đi -->
@@ -266,68 +282,135 @@
 
         let listenSeconds = 0;
         let isLeft = false;
+        let narrationSeq = 0; // tăng mỗi lần tải kịch bản, chặn race khi đổi ngôn ngữ nhanh
+        // Chỉ khi đã xác định được POI mới được ghi nhận phiên nghe (tránh ghi nhầm POI mặc định)
+        let sessionValid = !qrCodeParam;
 
         const player = document.getElementById("audioPlayer");
+        const scriptText = document.getElementById("scriptText");
+        const scriptNote = document.getElementById("scriptNote");
+        const audioStatus = document.getElementById("audioStatus");
+        // Fallback trung tính khi API lỗi - không dùng lại nội dung của POI khác
+        const DEFAULT_SCRIPT_TEXT = "Chưa tải được bản thuyết minh của điểm tham quan này. Bạn vẫn có thể nghe âm thanh khi mạng ổn.";
 
         // Đếm giây thực tế đang phát
         player.addEventListener("timeupdate", () => {
             listenSeconds = Math.round(player.currentTime);
         });
 
+        // Lỗi phát âm thanh (hết file, mạng lỗi...) -> báo trung tính, không đoán nguyên nhân
+        player.addEventListener("error", () => {
+            if (!player.error || player.error.code === MediaError.MEDIA_ERR_ABORTED) return; // đổi nguồn audio
+            audioStatus.textContent = "Không phát được âm thanh cho ngôn ngữ này. Bạn vẫn có thể đọc kịch bản bên dưới.";
+        });
+
         // 3. Tải thông tin địa điểm theo QR hoặc ID
         async function initLocation() {
+            let locationResolved = false;
+            syncLanguageButtons();
             try {
                 let url = `/api/locations/${currentLocationId}`;
                 if (qrCodeParam) {
-                    url = `/api/locations/by-qr/${qrCodeParam}`;
+                    url = `/api/locations/by-qr/${encodeURIComponent(qrCodeParam)}`;
                 }
                 const res = await fetch(url);
                 if (res.ok) {
                     const data = await res.json();
-                    currentLocationId = data.id;
-                    document.getElementById("poiTitle").innerText = data.name;
-                    document.getElementById("poiAddress").innerText = data.address || "";
-                    if (data.imageUrl) document.getElementById("poiImage").src = data.imageUrl;
+                    if (data && data.id) {
+                        currentLocationId = data.id;
+                        document.getElementById("poiTitle").innerText = data.name;
+                        document.getElementById("poiAddress").innerText = data.address || "";
+                        if (data.imageUrl) document.getElementById("poiImage").src = data.imageUrl;
+                        locationResolved = true;
+                        sessionValid = true;
+                    }
                 }
             } catch (e) {
                 console.log("Dùng thông tin mặc định");
             }
 
+            // QR không resolve được địa điểm -> không được lấy nhầm POI mặc định (locationId 4)
+            if (qrCodeParam && !locationResolved) {
+                showQrNotFound();
+                return;
+            }
+
             // Cập nhật audio stream
             loadAudioStream();
+
+            // Lấy kịch bản thuyết minh thật từ API
+            loadNarrationText();
 
             // Gửi tín hiệu JOIN
             sendHeartbeat("JOIN");
         }
 
-        const narrations = {
-            "5_vi": "Chào mừng quý khách đến với Phòng Khánh Tiết tại Dinh Độc Lập. Đây là căn phòng có diện tích lớn nhất trong Dinh với sức chứa hơn 500 người, từng là nơi diễn ra các cuộc họp nội các quan trọng, các buổi lễ tiếp đón nguyên thủ quốc gia và các sự kiện ngoại giao lịch sử trước ngày 30 tháng 4 năm 1975.",
-            "5_en": "Welcome to the Chamber of Receptions at the Independence Palace. This is the largest chamber with a capacity of over 500 people, previously used for cabinet meetings and receptions of foreign heads of state.",
-            "4_vi": "Dinh Độc Lập, nay là Di tích Lịch sử Dinh Độc Lập, tọa lạc tại số 135 Nam Kỳ Khởi Nghĩa, Quận 1, TP.HCM. Công trình do kiến trúc sư Ngô Viết Thụ thiết kế, là chứng nhân lịch sử đánh dấu thời khắc hòa bình, thống nhất non sông trưa ngày 30 tháng 4 năm 1975.",
-            "4_en": "Independence Palace, also known as Reunification Convention Hall, is a landmark in Ho Chi Minh City, designed by architect Ngo Viet Thu."
-        };
+        // Mã QR không hợp lệ -> báo rõ và cho quay lại trang chủ, không phát nhầm POI khác
+        function showQrNotFound() {
+            document.getElementById("poiTitle").innerText = "Không tìm thấy địa điểm";
+            document.getElementById("poiAddress").innerText = "";
+            player.removeAttribute("src");
+            audioStatus.textContent = "";
+            scriptText.textContent = "Không tìm thấy địa điểm theo mã QR này.";
+            scriptNote.innerHTML = '<a href="index.html" style="color:#38bdf8;">← Quay lại trang chủ</a>';
+            // Không có phiên hợp lệ -> không gửi heartbeat cho POI mặc định
+            clearInterval(heartbeatInterval);
+        }
 
         function loadAudioStream() {
+            audioStatus.textContent = "";
             player.src = `/api/packages/stream?locationId=${currentLocationId}&languageCode=${currentLang}`;
             player.play().catch(e => console.log("Cần bấm Play trên di động"));
+        }
 
-            const textKey = `${currentLocationId}_${currentLang}`;
-            if (narrations[textKey]) {
-                document.getElementById("scriptText").innerText = narrations[textKey];
+        // 3. Lấy kịch bản thuyết minh thật theo POI + ngôn ngữ đang chọn
+        async function loadNarrationText() {
+            const seq = ++narrationSeq;
+            try {
+                const res = await fetch(`/api/narrations?locationId=${currentLocationId}&languageCode=${currentLang}`);
+                if (seq !== narrationSeq) return; // đã có request mới hơn -> bỏ kết quả cũ
+                if (res.ok) {
+                    const data = await res.json();
+                    if (seq !== narrationSeq) return; // đã có request mới hơn -> bỏ kết quả cũ
+                    scriptText.textContent = (data && data.textContent)
+                        ? data.textContent
+                        : "Chưa có nội dung thuyết minh cho điểm tham quan này.";
+                    scriptNote.textContent = "";
+                    return;
+                }
+                if (res.status === 404) {
+                    const otherLang = currentLang === "en" ? "Tiếng Việt" : "English";
+                    scriptText.textContent = `Chưa có bản thuyết minh cho ngôn ngữ này tại điểm tham quan này. Hãy thử chuyển sang ${otherLang}.`;
+                    scriptNote.textContent = "";
+                    return;
+                }
+                throw new Error(`HTTP ${res.status}`);
+            } catch (e) {
+                if (seq !== narrationSeq) return; // đã có request mới hơn -> bỏ kết quả cũ
+                scriptText.textContent = DEFAULT_SCRIPT_TEXT;
+                scriptNote.textContent = "Không tải được kịch bản từ máy chủ, đang hiển thị nội dung dự phòng.";
+                console.log("Lỗi tải kịch bản thuyết minh:", e);
             }
         }
 
         function setLanguage(lang) {
             currentLang = lang;
-            document.getElementById("btnVi").classList.toggle("active", lang === "vi");
-            document.getElementById("btnEn").classList.toggle("active", lang === "en");
+            listenSeconds = 0; // reset để heartbeat không gửi thời gian nghe của bản thu âm cũ
+            syncLanguageButtons();
             loadAudioStream();
+            loadNarrationText();
             sendHeartbeat("PING");
+        }
+
+        // Đồng bộ nút ngôn ngữ với currentLang (gọi lúc init vì ?lang= có thể mở bằng 'en')
+        function syncLanguageButtons() {
+            document.getElementById("btnVi").classList.toggle("active", currentLang === "vi");
+            document.getElementById("btnEn").classList.toggle("active", currentLang === "en");
         }
 
         // 4. Cơ chế gửi Heartbeat định kỳ mỗi 3 giây
         async function sendHeartbeat(action = "PING") {
-            if (isLeft) return;
+            if (isLeft || !sessionValid) return;
             const payload = {
                 deviceId: deviceId,
                 locationId: currentLocationId,
@@ -368,15 +451,17 @@
                 listenDurationSeconds: listenSeconds
             });
 
-            if (navigator.sendBeacon) {
-                navigator.sendBeacon("/api/analytics/heartbeat", new Blob([payload], { type: "application/json" }));
-            } else {
-                fetch("/api/analytics/heartbeat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: payload,
-                    keepalive: true
-                });
+            if (sessionValid) {
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon("/api/analytics/heartbeat", new Blob([payload], { type: "application/json" }));
+                } else {
+                    fetch("/api/analytics/heartbeat", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: payload,
+                        keepalive: true
+                    });
+                }
             }
 
             document.body.innerHTML = `
@@ -393,7 +478,7 @@
 
         // 6. Tự động gửi LEAVE khi đóng tab / tắt trình duyệt
         window.addEventListener("beforeunload", () => {
-            if (!isLeft) {
+            if (!isLeft && sessionValid) {
                 const payload = JSON.stringify({
                     deviceId: deviceId,
                     locationId: currentLocationId,

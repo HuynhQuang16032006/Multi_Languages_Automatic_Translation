@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Tour SGU - Trang chủ du khách</title>
+    <meta name="description" content="Bản đồ và danh sách các điểm tham quan TP.HCM kèm thuyết minh tự động đa ngôn ngữ.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        :root {
+            --bg-color: #090d16;
+            --card-bg: rgba(26, 34, 53, 0.85);
+            --primary: #38bdf8;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.18), transparent 60%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        .app-header {
+            margin-bottom: 16px;
+        }
+
+        .app-header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-header p {
+            margin-top: 4px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        /* Nút hành động trong header (Task 6) */
+        .app-header__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .header-btn {
+            min-height: 44px;
+            padding: 0 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .header-btn--primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #04231a;
+        }
+
+        .header-btn--primary:hover {
+            background: #34d399;
+        }
+
+        .header-btn:disabled {
+            opacity: 0.65;
+            cursor: progress;
+        }
+
+        .header-btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .app-main {
+            flex: 1 1 auto;
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        /* Thông báo lỗi API */
+        .error-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.45);
+            color: #fca5a5;
+            padding: 12px 14px;
+            border-radius: 14px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        /* Dòng gợi ý bổ sung trong banner lỗi (Task 9) */
+        .error-banner__hint {
+            margin-top: 4px;
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        /* Thông báo offline: đang dùng dữ liệu lưu cục bộ (Task 9) */
+        .offline-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(245, 158, 11, 0.14);
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            color: #fcd34d;
+            padding: 12px 14px;
+            border-radius: 14px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        /* Bản đồ - style bằng id vì Leaflet tự thêm class vào container */
+        #map {
+            width: 100%;
+            height: 45vh;
+            min-height: 300px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        @media (min-width: 768px) {
+            #map {
+                height: 60vh;
+            }
+        }
+
+        .map-wrap {
+            position: relative;
+        }
+
+        .map-hint {
+            margin-top: 8px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.45;
+        }
+
+        /* Chú thích giới hạn tile bản đồ khi offline (Task 9) */
+        .map-tile-note {
+            margin-top: 8px;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+
+        /* Thông báo vị trí (Task 6) */
+        .geo-notice {
+            margin-top: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: #7dd3fc;
+            font-size: 0.85rem;
+            line-height: 1.45;
+        }
+
+        .geo-notice--muted {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border);
+            color: var(--text-muted);
+        }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            margin: 24px 0 12px;
+        }
+
+        .section-head h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .section-count {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Danh sách POI */
+        .poi-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 8px;
+        }
+
+        .poi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(16px);
+        }
+
+        .poi-card__focus {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: none;
+            border: none;
+            color: inherit;
+            text-align: left;
+            padding: 4px;
+            min-height: 44px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .poi-card__focus:hover .poi-card__name {
+            color: var(--primary);
+        }
+
+        .poi-card__img {
+            width: 56px;
+            height: 56px;
+            flex: 0 0 auto;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .poi-card__body {
+            min-width: 0;
+        }
+
+        .poi-card__name {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .poi-card__address {
+            display: block;
+            margin-top: 2px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        /* Chip khoảng cách (Task 6) */
+        .poi-card__distance {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 2px 9px;
+            border-radius: 999px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        .poi-card__cta {
+            flex: 0 0 auto;
+            background: var(--primary);
+            color: #0b1120;
+            border: none;
+            border-radius: 12px;
+            min-height: 44px;
+            padding: 0 14px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .poi-card__cta:hover {
+            background: #7dd3fc;
+        }
+
+        .poi-card__focus:focus-visible,
+        .poi-card__cta:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .poi-list__status {
+            list-style: none;
+            padding: 18px 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            background: var(--card-bg);
+            border: 1px dashed var(--border);
+            border-radius: 16px;
+        }
+
+        /* Thông báo đang lọc theo tour (Task 7) */
+        .tour-filter {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #6ee7b7;
+            font-size: 0.85rem;
+            line-height: 1.45;
+        }
+
+        .tour-filter__btn {
+            min-height: 36px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .tour-filter__btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .tour-filter__btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        /* Danh sách tuyến tham quan (Task 7) */
+        .tour-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 8px;
+        }
+
+        .tour-card {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            text-align: left;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            color: inherit;
+            font-family: inherit;
+            cursor: pointer;
+            backdrop-filter: blur(16px);
+        }
+
+        .tour-card:hover {
+            border-color: var(--primary);
+        }
+
+        .tour-card[aria-pressed="true"] {
+            border-color: var(--accent);
+            box-shadow: inset 0 0 0 1px var(--accent);
+        }
+
+        .tour-card:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .tour-card__img {
+            width: 72px;
+            height: 72px;
+            flex: 0 0 auto;
+            border-radius: 14px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .tour-card__body {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .tour-card__name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .tour-card__desc {
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
+        .tour-card__meta {
+            color: #6ee7b7;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .tour-list__status {
+            padding: 14px 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            background: var(--card-bg);
+            border: 1px dashed var(--border);
+            border-radius: 16px;
+        }
+
+        .tour-note {
+            margin-bottom: 12px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            line-height: 1.45;
+        }
+
+        /* Bottom sheet chi tiết POI */
+        .poi-sheet {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .poi-sheet__backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(3, 7, 18, 0.65);
+            opacity: 0;
+            transition: opacity 0.22s ease;
+            pointer-events: auto;
+        }
+
+        .poi-sheet__panel {
+            position: relative;
+            width: 100%;
+            max-width: 560px;
+            max-height: 70vh;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-radius: 20px 20px 0 0;
+            padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+            backdrop-filter: blur(20px);
+            transform: translateY(100%);
+            transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: auto;
+        }
+
+        .poi-sheet.is-open .poi-sheet__backdrop {
+            opacity: 1;
+        }
+
+        .poi-sheet.is-open .poi-sheet__panel {
+            transform: translateY(0);
+        }
+
+        .poi-sheet__panel:focus {
+            outline: none;
+        }
+
+        .poi-sheet__grabber {
+            width: 42px;
+            height: 4px;
+            border-radius: 999px;
+            background: var(--border);
+            margin: 0 auto 8px;
+        }
+
+        .poi-sheet__close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .poi-sheet__close:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .poi-sheet__img {
+            display: block;
+            width: 100%;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.06);
+            margin-bottom: 12px;
+        }
+
+        .poi-sheet__name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            padding-right: 48px;
+        }
+
+        .poi-sheet__address {
+            margin-top: 4px;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+
+        .poi-sheet__distance {
+            margin-top: 6px;
+            color: #6ee7b7;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .poi-sheet__langs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .poi-sheet__lang {
+            min-height: 40px;
+            padding: 0 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .poi-sheet__lang[aria-pressed="true"] {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #0b1120;
+        }
+
+        .poi-sheet__note {
+            margin-top: 10px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.45;
+        }
+
+        .poi-sheet__actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .poi-sheet__btn {
+            flex: 1 1 auto;
+            min-height: 48px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .poi-sheet__btn--primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #0b1120;
+        }
+
+        .poi-sheet__btn--primary:hover {
+            background: #7dd3fc;
+        }
+
+        .poi-sheet__btn--ghost {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+        }
+
+        .poi-sheet__btn--ghost:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .poi-sheet__close:focus-visible,
+        .poi-sheet__lang:focus-visible,
+        .poi-sheet__btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        /* Khoá cuộn trang khi bottom sheet đang mở */
+        body.sheet-open {
+            overflow: hidden;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .poi-sheet__backdrop,
+            .poi-sheet__panel {
+                transition: none;
+            }
+        }
+
+        .app-footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding: 24px 0 8px;
+        }
+
+        /* Marker tự vẽ (không dùng icon mặc định của Leaflet) */
+        .poi-marker {
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .poi-marker__dot {
+            display: block;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+        }
+
+        /* Marker thuộc tour đang xem: nổi bật; POI ngoài tour: mờ đi (Task 7) */
+        .poi-marker--tour .poi-marker__dot {
+            background: var(--accent);
+            transform: scale(1.2);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25);
+        }
+
+        .poi-marker--dim .poi-marker__dot {
+            opacity: 0.3;
+        }
+
+        /* Popup + control của Leaflet cho hợp theme tối */
+        .leaflet-container {
+            background: #0b1220;
+            font-family: inherit;
+        }
+
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            background: #131c30;
+            color: var(--text-main);
+        }
+
+        .leaflet-popup-content-wrapper {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .leaflet-popup-content {
+            margin: 12px 14px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .leaflet-popup-close-button {
+            color: var(--text-muted) !important;
+        }
+
+        .poi-popup strong {
+            display: block;
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+
+        .poi-popup span {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(9, 13, 22, 0.75);
+            color: var(--text-muted);
+        }
+
+        .leaflet-control-attribution a {
+            color: var(--primary);
+        }
+
+        .leaflet-bar a {
+            background: #131c30;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .leaflet-bar a:hover {
+            background: #1b2540;
+        }
+
+        /* Lớp tile tối: đảo màu tile OSM sáng, không cần API key từ nhà cung cấp khác.
+           invert -> nền tối, hue-rotate -> giữ đúng màu nước và cây cỏ, contrast -> dịu nhãn đường. */
+        .tile-layer--dark {
+            filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.92);
+        }
+
+        /* Control đổi lớp bản đồ: chỉnh cho nền tối */
+        .leaflet-control-layers {
+            background: rgba(19, 28, 48, 0.92);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 0.82rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .leaflet-control-layers-toggle {
+            background-color: #131c30;
+            filter: invert(1);
+        }
+
+        .leaflet-control-layers-list label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+            color: var(--text-main);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="app-header">
+        <h1>Audio Tour SGU</h1>
+        <p>Khám phá các điểm tham quan TP.HCM với thuyết minh tự động đa ngôn ngữ.</p>
+        <div class="app-header__actions">
+            <button type="button" id="nearMeButton" class="header-btn header-btn--primary" hidden>Gần tôi</button>
+            <button type="button" id="sortByNameButton" class="header-btn" title="Sắp xếp theo tên A-Z và bỏ khoảng cách"
+                hidden>Sắp xếp theo tên</button>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <!-- Thông báo lỗi API, mặc định ẩn -->
+        <div id="errorBanner" class="error-banner" role="alert" hidden>
+            <span aria-hidden="true">⚠️</span>
+            <div>
+                <span id="errorText"></span>
+                <p id="errorHint" class="error-banner__hint" hidden></p>
+            </div>
+        </div>
+
+        <!-- Thông báo offline: đang hiển thị dữ liệu lưu cục bộ (Task 9) -->
+        <div id="offlineBanner" class="offline-banner" role="status" hidden>
+            <span aria-hidden="true">📡</span>
+            <span id="offlineText"></span>
+        </div>
+
+        <!-- Bản đồ Leaflet -->
+        <div class="map-wrap">
+            <div id="map" role="region" aria-label="Bản đồ các điểm tham quan"></div>
+            <!-- Tile bản đồ tải từ Internet, offline thì bản đồ không có nền -->
+            <p id="mapTileNote" class="map-tile-note">Tile bản đồ OpenStreetMap cần kết nối Internet.</p>
+            <p id="mapHint" class="map-hint" hidden>Chưa có điểm tham quan nào có tọa độ để hiển thị trên bản đồ.</p>
+            <!-- Thông báo vị trí của người dùng, không phải lỗi API -->
+            <p id="geoNotice" class="geo-notice" role="status" hidden></p>
+            <!-- Chú thích khi trang không nằm trong secure context -->
+            <p id="geoSecureNote" class="geo-notice geo-notice--muted" hidden>
+                Tính năng “Gần tôi” chỉ chạy trên kết nối an toàn (HTTPS hoặc http://localhost).
+            </p>
+        </div>
+
+        <!-- Danh sách POI -->
+        <div class="section-head">
+            <h2>Danh sách điểm tham quan</h2>
+            <span id="poiCount" class="section-count"></span>
+        </div>
+        <!-- Thông báo đang lọc theo tour, kèm nút bỏ lọc (Task 7) -->
+        <p id="tourFilterNotice" class="tour-filter" hidden>
+            <span id="tourFilterText"></span>
+            <button type="button" id="clearTourFilter" class="tour-filter__btn">Xem tất cả</button>
+        </p>
+        <ul id="poiList" class="poi-list"></ul>
+
+        <!-- Danh sách tuyến tham quan (Task 7) -->
+        <section id="tourSection" aria-labelledby="tourSectionTitle">
+            <div class="section-head">
+                <h2 id="tourSectionTitle">Tuyến tham quan</h2>
+                <span id="tourCount" class="section-count"></span>
+            </div>
+            <!-- Ghi chú riêng cho lỗi tải tour, không dùng #errorBanner (lỗi API chính) -->
+            <p id="tourNotice" class="tour-note" hidden></p>
+            <ul id="tourList" class="tour-list"></ul>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        Đồ án Công nghệ Phần mềm - Trường Đại học Sài Gòn (SGU)
+    </footer>
+
+    <!-- Bottom sheet chi tiết POI, mặc định ẩn (Task 5) -->
+    <div id="poiSheet" class="poi-sheet" hidden aria-hidden="true">
+        <div class="poi-sheet__backdrop" id="poiSheetBackdrop"></div>
+        <div class="poi-sheet__panel" id="poiSheetPanel" role="dialog" aria-modal="true" tabindex="-1">
+            <div class="poi-sheet__grabber" aria-hidden="true"></div>
+            <button type="button" class="poi-sheet__close" id="poiSheetClose" aria-label="Đóng chi tiết điểm tham quan">
+                <span aria-hidden="true">✕</span>
+            </button>
+
+            <img class="poi-sheet__img" id="poiSheetImage" alt="" hidden>
+
+            <h3 class="poi-sheet__name" id="poiSheetName"></h3>
+            <p class="poi-sheet__address" id="poiSheetAddress" hidden></p>
+            <p class="poi-sheet__distance" id="poiSheetDistance" hidden></p>
+
+            <div class="poi-sheet__langs" id="poiSheetLangs" role="group" aria-label="Ngôn ngữ thuyết minh"></div>
+            <p class="poi-sheet__note" id="poiSheetNote" hidden></p>
+
+            <div class="poi-sheet__actions">
+                <button type="button" class="poi-sheet__btn poi-sheet__btn--primary" id="poiSheetListen">Nghe thuyết minh</button>
+                <button type="button" class="poi-sheet__btn poi-sheet__btn--ghost" id="poiSheetMap">Xem trên bản đồ</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        'use strict';
+
+        const POIS_API = "/api/locations/pois";
+        const TOURS_API = "/api/tours";
+        const LANGUAGES_API = "/api/languages";
+        const NARRATIONS_API = "/api/narrations";
+        // Một nguồn tile duy nhất: OpenStreetMap, không cần API key.
+        // Lớp "Tối" dùng CHUNG tile này rồi đảo màu bằng CSS filter, nên không phụ thuộc
+        // nhà cung cấp bản đồ thứ hai (CartoDB đã yêu cầu key theo chính sách mới).
+        const TILE_URL_OSM = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+        const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+        const DEFAULT_LANGUAGE = "vi";
+
+        // Task 9: khoá cache POI trong localStorage để trang vẫn dùng được khi mất mạng
+        const POIS_CACHE_KEY = "audiotour_pois_cache";
+
+        // Danh sách ngôn ngữ dùng khi GET /api/languages lỗi (API chưa mở public hoặc mất mạng):
+        // sheet vẫn phải cho chọn được ngôn ngữ nên giữ 2 mã cố định của dự án.
+        const FALLBACK_LANGUAGES = [
+            { code: "vi", name: "Tiếng Việt" },
+            { code: "en", name: "English" }
+        ];
+
+        // State dùng chung cho các task sau (Task 5/6/7)
+        const state = {
+            pois: [],
+            poisById: new Map(),
+            markersById: new Map(),
+            map: null,
+            languages: [],
+            selectedLanguage: DEFAULT_LANGUAGE,
+            sheetPoi: null,
+            sheetOpener: null,
+            sheetClosing: false,
+            narrationToken: 0,
+            // Task 6: vị trí người dùng + khoảng cách tới POI
+            userLocation: null,
+            distanceById: new Map(),
+            userMarker: null,
+            userAccuracyCircle: null,
+            geoPending: false,
+            // Task 7: danh sách tour + lọc POI theo tour + kiểu sắp xếp đang dùng
+            tours: [],
+            activeTour: null,
+            tourPoiIds: new Set(),
+            sortMode: "default",
+            // Task 9: mốc thời gian cache POI lưu cục bộ lần gần nhất
+            cacheSavedAt: null
+        };
+
+        const dom = {
+            map: document.getElementById("map"),
+            mapHint: document.getElementById("mapHint"),
+            poiList: document.getElementById("poiList"),
+            poiCount: document.getElementById("poiCount"),
+            errorBanner: document.getElementById("errorBanner"),
+            errorText: document.getElementById("errorText"),
+            errorHint: document.getElementById("errorHint"),
+            offlineBanner: document.getElementById("offlineBanner"),
+            offlineText: document.getElementById("offlineText"),
+            poiSheet: document.getElementById("poiSheet"),
+            poiSheetBackdrop: document.getElementById("poiSheetBackdrop"),
+            poiSheetPanel: document.getElementById("poiSheetPanel"),
+            poiSheetClose: document.getElementById("poiSheetClose"),
+            poiSheetImage: document.getElementById("poiSheetImage"),
+            poiSheetName: document.getElementById("poiSheetName"),
+            poiSheetAddress: document.getElementById("poiSheetAddress"),
+            poiSheetLangs: document.getElementById("poiSheetLangs"),
+            poiSheetNote: document.getElementById("poiSheetNote"),
+            poiSheetListen: document.getElementById("poiSheetListen"),
+            poiSheetMap: document.getElementById("poiSheetMap"),
+            poiSheetDistance: document.getElementById("poiSheetDistance"),
+            nearMeButton: document.getElementById("nearMeButton"),
+            sortByNameButton: document.getElementById("sortByNameButton"),
+            geoNotice: document.getElementById("geoNotice"),
+            geoSecureNote: document.getElementById("geoSecureNote"),
+            tourSection: document.getElementById("tourSection"),
+            tourList: document.getElementById("tourList"),
+            tourCount: document.getElementById("tourCount"),
+            tourNotice: document.getElementById("tourNotice"),
+            tourFilterNotice: document.getElementById("tourFilterNotice"),
+            tourFilterText: document.getElementById("tourFilterText"),
+            clearTourFilter: document.getElementById("clearTourFilter")
+        };
+
+        // ===== Tiện ích =====
+
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return "";
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function showError(message, hint) {
+            dom.errorText.textContent = message;
+            dom.errorBanner.hidden = false;
+            if (hint) {
+                dom.errorHint.textContent = hint;
+                dom.errorHint.hidden = false;
+            } else {
+                dom.errorHint.textContent = "";
+                dom.errorHint.hidden = true;
+            }
+        }
+
+        function hideError() {
+            dom.errorBanner.hidden = true;
+            dom.errorHint.textContent = "";
+            dom.errorHint.hidden = true;
+        }
+
+        function showOfflineBanner(text) {
+            dom.offlineText.textContent = text;
+            dom.offlineBanner.hidden = false;
+        }
+
+        function hideOfflineBanner() {
+            dom.offlineText.textContent = "";
+            dom.offlineBanner.hidden = true;
+        }
+
+        function showMapHint(text) {
+            dom.mapHint.textContent = text;
+            dom.mapHint.hidden = false;
+        }
+
+        function readCoordinates(poi) {
+            if (poi.latitude === null || poi.latitude === undefined ||
+                poi.longitude === null || poi.longitude === undefined) {
+                return null;
+            }
+            const lat = Number(poi.latitude);
+            const lng = Number(poi.longitude);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+            return [lat, lng];
+        }
+
+        // ===== Cache offline (Task 9) =====
+
+        // Định dạng mốc thời gian cache: "21/10/2026, 14:35"
+        function formatCacheTime(timestamp) {
+            const date = new Date(timestamp);
+            if (!timestamp || isNaN(date.getTime())) return "thời gian trước";
+            return date.toLocaleString("vi-VN", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
+            });
+        }
+
+        // Lưu danh sách POI xuống localStorage kèm mốc thời gian.
+        // localStorage có thể bị chặn (private mode, quota) -> bỏ qua, không được làm hỏng trang.
+        function savePoisCache(pois) {
+            try {
+                const payload = { savedAt: Date.now(), pois: pois };
+                localStorage.setItem(POIS_CACHE_KEY, JSON.stringify(payload));
+                state.cacheSavedAt = payload.savedAt;
+                return true;
+            } catch (error) {
+                console.warn("Không lưu được cache POI vào localStorage:", error);
+                return false;
+            }
+        }
+
+        // Đọc cache: JSON hỏng hoặc không có -> trả null (coi như không có cache)
+        function readPoisCache() {
+            try {
+                const raw = localStorage.getItem(POIS_CACHE_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || !Array.isArray(parsed.pois) || !parsed.pois.length) return null;
+                const pois = parsed.pois.filter(poi => poi && poi.id !== undefined && poi.id !== null);
+                if (!pois.length) return null;
+                return { pois: pois, savedAt: Number(parsed.savedAt) || 0 };
+            } catch (error) {
+                console.warn("Cache POI trong localStorage bị hỏng, bỏ qua:", error);
+                return null;
+            }
+        }
+
+        // Nạp danh sách POI vào state và vẽ lại danh sách + marker + đếm POI
+        function applyPois(pois) {
+            state.pois = pois;
+            state.poisById = new Map(pois.map(poi => [String(poi.id), poi]));
+            renderVisiblePois();
+            renderMarkers(state.pois, state.activeTour ? state.tourPoiIds : null);
+            updatePoiCount();
+        }
+
+        // ===== Gọi API =====
+
+        async function loadPois() {
+            hideError();
+            renderListStatus("Đang tải danh sách điểm tham quan…");
+            try {
+                const response = await fetch(POIS_API, { headers: { "Accept": "application/json" } });
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const data = await response.json();
+                if (!Array.isArray(data)) throw new Error("Dữ liệu trả về không phải danh sách");
+
+                applyPois(data);
+                savePoisCache(data);
+                hideOfflineBanner();
+            } catch (error) {
+                console.error("Lỗi tải danh sách POI:", error);
+                const cached = readPoisCache();
+                if (cached) {
+                    // Có cache: vẫn dùng được trang, chỉ báo đang offline
+                    state.cacheSavedAt = cached.savedAt;
+                    applyPois(cached.pois);
+                    showOfflineBanner("Đang offline - đang hiển thị dữ liệu lưu cục bộ (cập nhật lúc " +
+                        formatCacheTime(cached.savedAt) + ").");
+                    return;
+                }
+                // Không có cache: báo lỗi rõ ràng + gợi ý tải trước gói offline, trang không bị trắng
+                state.pois = [];
+                state.poisById.clear();
+                state.cacheSavedAt = null;
+                dom.poiCount.textContent = "";
+                renderListStatus("Chưa tải được danh sách điểm tham quan. Bạn có thể tải trước gói thuyết minh offline cho từng điểm tham quan rồi quay lại.");
+                showError(
+                    "Không tải được danh sách điểm tham quan từ máy chủ. Kiểm tra kết nối rồi tải lại trang.",
+                    "Bạn có thể tải trước gói thuyết minh offline cho từng điểm tham quan.");
+                hideOfflineBanner();
+                showMapHint("Bản đồ chưa tải được dữ liệu điểm tham quan.");
+            }
+        }
+
+        // ===== Render danh sách =====
+
+        function renderListStatus(text) {
+            dom.poiList.textContent = "";
+            const item = document.createElement("li");
+            item.className = "poi-list__status";
+            item.textContent = text;
+            dom.poiList.appendChild(item);
+        }
+
+        function renderPoiList(pois) {
+            dom.poiList.textContent = "";
+            if (!pois.length) {
+                renderListStatus("Chưa có điểm tham quan nào.");
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            pois.forEach(poi => fragment.appendChild(createPoiCard(poi)));
+            dom.poiList.appendChild(fragment);
+        }
+
+        function createPoiCard(poi) {
+            const item = document.createElement("li");
+            item.className = "poi-card";
+
+            // Nút chính: mở bottom sheet chi tiết POI
+            const focusButton = document.createElement("button");
+            focusButton.type = "button";
+            focusButton.className = "poi-card__focus";
+            focusButton.dataset.poiId = poi.id;
+            focusButton.setAttribute("aria-label", "Xem thông tin " + poi.name);
+
+            if (poi.imageUrl) {
+                const image = document.createElement("img");
+                image.className = "poi-card__img";
+                image.src = poi.imageUrl;
+                image.alt = poi.name;
+                image.loading = "lazy";
+                image.addEventListener("error", () => image.remove());
+                focusButton.appendChild(image);
+            }
+
+            const body = document.createElement("span");
+            body.className = "poi-card__body";
+
+            const name = document.createElement("span");
+            name.className = "poi-card__name";
+            name.textContent = poi.name;
+            body.appendChild(name);
+
+            const address = document.createElement("span");
+            address.className = "poi-card__address";
+            address.textContent = poi.address || "";
+            body.appendChild(address);
+
+            // Khoảng cách tới vị trí người dùng (chỉ có khi đã bấm "Gần tôi" và POI có tọa độ)
+            const distance = state.distanceById.get(String(poi.id));
+            if (distance !== undefined) {
+                const distanceTag = document.createElement("span");
+                distanceTag.className = "poi-card__distance";
+                distanceTag.textContent = formatDistance(distance);
+                body.appendChild(distanceTag);
+            }
+
+            focusButton.appendChild(body);
+            item.appendChild(focusButton);
+
+            // Nút mở trang thuyết minh
+            const listenButton = document.createElement("button");
+            listenButton.type = "button";
+            listenButton.className = "poi-card__cta";
+            listenButton.dataset.poiId = poi.id;
+            listenButton.textContent = "Nghe";
+            listenButton.setAttribute("aria-label", "Nghe thuyết minh tại " + poi.name);
+            item.appendChild(listenButton);
+
+            return item;
+        }
+
+        // ===== Bản đồ Leaflet =====
+
+        function initMap() {
+            if (state.map) return;
+            if (typeof L === "undefined") {
+                showError("Không tải được thư viện bản đồ (Leaflet) từ CDN. Danh sách điểm tham quan vẫn dùng được.");
+                return;
+            }
+            state.map = L.map(dom.map, { scrollWheelZoom: false });
+
+            // Hai lớp dùng chung một nguồn tile OSM: lớp tối đảo màu bằng CSS filter.
+            // Đổi lớp không phát sinh request mới (trình duyệt dùng cache tile đã tải).
+            const darkLayer = L.tileLayer(TILE_URL_OSM, {
+                attribution: TILE_ATTRIBUTION,
+                maxZoom: 19,
+                className: "tile-layer--dark"
+            }).addTo(state.map);
+            const streetLayer = L.tileLayer(TILE_URL_OSM, {
+                attribution: TILE_ATTRIBUTION,
+                maxZoom: 19
+            });
+            L.control.layers({ "Tối": darkLayer, "Đường phố": streetLayer }, null, {
+                position: "topright"
+            }).addTo(state.map);
+        }
+
+        function createPoiIcon(extraClass) {
+            return L.divIcon({
+                className: "poi-marker" + (extraClass ? " " + extraClass : ""),
+                html: '<span class="poi-marker__dot"></span>',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -16]
+            });
+        }
+
+        function popupHtml(poi) {
+            return '<div class="poi-popup"><strong>' + escapeHtml(poi.name) + "</strong><span>" +
+                escapeHtml(poi.address || "") + "</span></div>";
+        }
+
+        // highlightIds = tập id POI thuộc tour đang lọc (null = không lọc).
+        // POI thuộc tour nổi bật, POI ngoài tour vẫn còn trên bản đồ nhưng mờ đi.
+        function renderMarkers(pois, highlightIds) {
+            if (!state.map) return;
+
+            state.markersById.forEach(marker => marker.remove());
+            state.markersById.clear();
+
+            const bounds = L.latLngBounds([]);
+            const tourBounds = L.latLngBounds([]);
+            pois.forEach(poi => {
+                const position = readCoordinates(poi);
+                if (!position) return; // POI thiếu tọa độ: vẫn có trong danh sách, không vẽ marker
+                const inTour = highlightIds ? highlightIds.has(String(poi.id)) : false;
+                const marker = L.marker(position, {
+                    icon: createPoiIcon(highlightIds ? (inTour ? "poi-marker--tour" : "poi-marker--dim") : ""),
+                    title: poi.name,
+                    alt: poi.name
+                });
+                marker.bindPopup(popupHtml(poi));
+                marker.on("click", () => openPoiSheet(poi, marker.getElement()));
+                marker.addTo(state.map);
+                state.markersById.set(String(poi.id), marker);
+                bounds.extend(position);
+                if (inTour) tourBounds.extend(position);
+            });
+
+            const target = tourBounds.isValid() ? tourBounds : bounds;
+            if (target.isValid()) {
+                dom.mapHint.hidden = true;
+                state.map.fitBounds(target, { padding: [40, 40] });
+                if (state.userLocation) {
+                    // Người dùng đã bấm "Gần tôi" trước khi dữ liệu POI tải xong: giữ bản đồ ở vị trí của họ
+                    state.map.panTo([state.userLocation.lat, state.userLocation.lng]);
+                }
+            } else {
+                showMapHint("Chưa có điểm tham quan nào có tọa độ để hiển thị trên bản đồ.");
+            }
+        }
+
+        // ===== Vị trí người dùng & khoảng cách (Task 6) =====
+
+        const EARTH_RADIUS_KM = 6371;
+
+        // Công thức Haversine: a = sin²(Δφ/2) + cosφ₁·cosφ₂·sin²(Δλ/2), d = 2R·asin(√a) (trả về mét)
+        function haversineDistanceMeters(lat1, lng1, lat2, lng2) {
+            const toRad = value => value * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1);
+            const dLng = toRad(lng2 - lng1);
+            const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+            return 2 * EARTH_RADIUS_KM * 1000 * Math.asin(Math.min(1, Math.sqrt(a)));
+        }
+
+        // < 1000 m -> "xxx m"; từ 1 km -> "x,xx km" (dấu phẩy thập phân theo vi-VN)
+        function formatDistance(meters) {
+            const rounded = Math.round(meters);
+            if (rounded < 1000) return rounded + " m";
+            return (meters / 1000).toLocaleString("vi-VN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }) + " km";
+        }
+
+        function computeDistances() {
+            state.distanceById = new Map();
+            if (!state.userLocation) return;
+            state.pois.forEach(poi => {
+                const position = readCoordinates(poi);
+                if (!position) return; // POI không có tọa độ: không tính, để trống
+                state.distanceById.set(String(poi.id), haversineDistanceMeters(
+                    state.userLocation.lat, state.userLocation.lng, position[0], position[1]));
+            });
+        }
+
+        // Sắp xếp tăng dần theo khoảng cách, POI không có tọa độ nằm cuối (thứ tự gốc giữ nguyên)
+        function sortPoisByDistance(pois) {
+            return pois.slice().sort((a, b) => {
+                const da = state.distanceById.get(String(a.id));
+                const db = state.distanceById.get(String(b.id));
+                if (da === undefined && db === undefined) return 0;
+                if (da === undefined) return 1;
+                if (db === undefined) return -1;
+                return da - db;
+            });
+        }
+
+        function applyDistanceSort() {
+            computeDistances();
+            state.sortMode = "distance";
+            dom.sortByNameButton.hidden = false;
+            renderVisiblePois();
+            updateSheetDistance();
+        }
+
+        // Về thứ tự theo tên A-Z và xoá khoảng cách
+        function applyNameSort() {
+            state.distanceById = new Map();
+            state.sortMode = "name";
+            dom.sortByNameButton.hidden = true;
+            renderVisiblePois();
+            updateSheetDistance();
+        }
+
+        function showGeoNotice(text) {
+            dom.geoNotice.textContent = text;
+            dom.geoNotice.hidden = false;
+        }
+
+        function hideGeoNotice() {
+            dom.geoNotice.textContent = "";
+            dom.geoNotice.hidden = true;
+        }
+
+        function updateSheetDistance() {
+            const distance = state.sheetPoi ? state.distanceById.get(String(state.sheetPoi.id)) : undefined;
+            if (distance === undefined) {
+                dom.poiSheetDistance.textContent = "";
+                dom.poiSheetDistance.hidden = true;
+                return;
+            }
+            dom.poiSheetDistance.textContent = "Cách bạn khoảng " + formatDistance(distance);
+            dom.poiSheetDistance.hidden = false;
+        }
+
+        // Marker vị trí hiện tại + vòng tròn bán kính độ chính xác (đơn vị mét)
+        function renderUserMarker(latlng, accuracy) {
+            if (!state.map || typeof L === "undefined") return;
+            if (state.userAccuracyCircle) state.map.removeLayer(state.userAccuracyCircle);
+            if (state.userMarker) state.map.removeLayer(state.userMarker);
+
+            state.userAccuracyCircle = L.circle(latlng, {
+                radius: Math.max(20, Math.round(accuracy || 0)),
+                color: "#10b981",
+                weight: 1,
+                opacity: 0.6,
+                fillColor: "#10b981",
+                fillOpacity: 0.12
+            }).addTo(state.map);
+
+            state.userMarker = L.circleMarker(latlng, {
+                radius: 8,
+                color: "#ffffff",
+                weight: 3,
+                fillColor: "#10b981",
+                fillOpacity: 1
+            }).addTo(state.map);
+        }
+
+        function geoErrorMessage(error) {
+            if (error && error.code === 1) {
+                return "Không lấy được vị trí: bạn đã từ chối quyền truy cập vị trí. " +
+                    "Bạn vẫn có thể xem danh sách POI bình thường.";
+            }
+            if (error && error.code === 3) {
+                return "Lấy vị trí quá thời gian cho phép. Bạn vẫn có thể xem danh sách POI bình thường.";
+            }
+            return "Không lấy được vị trí. Bạn vẫn có thể xem danh sách POI bình thường.";
+        }
+
+        function setNearMeBusy(busy) {
+            state.geoPending = busy;
+            dom.nearMeButton.disabled = busy;
+            dom.nearMeButton.textContent = busy ? "Đang lấy vị trí..." : "Gần tôi";
+        }
+
+        function requestUserLocation() {
+            if (state.geoPending) return;
+            if (window.isSecureContext !== true || !navigator.geolocation) {
+                dom.nearMeButton.hidden = true;
+                dom.geoSecureNote.hidden = false;
+                return;
+            }
+
+            hideGeoNotice();
+            setNearMeBusy(true);
+            try {
+                navigator.geolocation.getCurrentPosition(position => {
+                    setNearMeBusy(false);
+                    state.userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    renderUserMarker([state.userLocation.lat, state.userLocation.lng], position.coords.accuracy);
+                    if (state.map) state.map.panTo([state.userLocation.lat, state.userLocation.lng]);
+                    applyDistanceSort();
+                    showGeoNotice("Đã sắp xếp POI theo khoảng cách từ vị trí hiện tại của bạn.");
+                }, error => {
+                    setNearMeBusy(false);
+                    showGeoNotice(geoErrorMessage(error));
+                }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+            } catch (error) {
+                setNearMeBusy(false);
+                showGeoNotice("Không lấy được vị trí. Bạn vẫn có thể xem danh sách POI bình thường.");
+            }
+        }
+
+        // Chỉ bật nút "Gần tôi" khi trang chạy trong secure context (HTTPS hoặc localhost)
+        function initGeoSupport() {
+            const supported = window.isSecureContext === true &&
+                !!navigator.geolocation && typeof navigator.geolocation.getCurrentPosition === "function";
+            if (!supported) {
+                dom.nearMeButton.hidden = true;
+                dom.geoSecureNote.hidden = false;
+                return;
+            }
+            dom.nearMeButton.hidden = false;
+        }
+
+        // ===== Tuyến tham quan & lọc POI theo tour (Task 7) =====
+
+        // Định dạng thời lượng: "45 phút", "60 phút", "1 giờ 30 phút"
+        function formatTourDuration(minutes) {
+            const total = Math.max(0, Math.round(Number(minutes) || 0));
+            const hours = Math.floor(total / 60);
+            const rest = total % 60;
+            if (hours === 0 || rest === 0) return total + " phút";
+            return hours + " giờ " + rest + " phút";
+        }
+
+        async function loadTours() {
+            try {
+                const response = await fetch(TOURS_API, { headers: { "Accept": "application/json" } });
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const data = await response.json();
+                if (!Array.isArray(data)) throw new Error("Dữ liệu trả về không phải danh sách");
+                state.tours = data;
+                dom.tourNotice.hidden = true;
+                renderTourList(data);
+            } catch (error) {
+                // Lỗi tải tour không được làm hỏng bản đồ / danh sách POI, chỉ ghi chú trong section tour
+                console.warn("Không tải được danh sách tour:", error);
+                state.tours = [];
+                dom.tourList.textContent = "";
+                dom.tourCount.textContent = "";
+                dom.tourNotice.textContent = "Không tải được danh sách tour";
+                dom.tourNotice.hidden = false;
+            }
+        }
+
+        function renderTourList(tours) {
+            dom.tourList.textContent = "";
+            dom.tourCount.textContent = tours.length ? tours.length + " tuyến" : "";
+            if (!tours.length) {
+                const item = document.createElement("li");
+                item.className = "tour-list__status";
+                item.textContent = "Chưa có tuyến tham quan nào.";
+                dom.tourList.appendChild(item);
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            tours.forEach(tour => fragment.appendChild(createTourCard(tour)));
+            dom.tourList.appendChild(fragment);
+            updateTourActiveState();
+        }
+
+        function createTourCard(tour) {
+            const item = document.createElement("li");
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "tour-card";
+            button.dataset.tourId = tour.id;
+            button.setAttribute("aria-pressed", "false");
+
+            if (tour.imageUrl) {
+                const image = document.createElement("img");
+                image.className = "tour-card__img";
+                image.src = tour.imageUrl;
+                image.alt = "";
+                image.loading = "lazy";
+                image.addEventListener("error", () => image.remove());
+                button.appendChild(image);
+            }
+
+            const body = document.createElement("span");
+            body.className = "tour-card__body";
+
+            const name = document.createElement("span");
+            name.className = "tour-card__name";
+            name.textContent = tour.name || "";
+            body.appendChild(name);
+
+            if (tour.description) {
+                const description = document.createElement("span");
+                description.className = "tour-card__desc";
+                description.textContent = tour.description;
+                body.appendChild(description);
+            }
+
+            const meta = document.createElement("span");
+            meta.className = "tour-card__meta";
+            meta.textContent = formatTourDuration(tour.estimatedDurationMinutes) +
+                " · " + (tour.locations || []).length + " điểm dừng";
+            body.appendChild(meta);
+
+            button.appendChild(body);
+            item.appendChild(button);
+            return item;
+        }
+
+        function updateTourActiveState() {
+            dom.tourList.querySelectorAll("button[data-tour-id]").forEach(button => {
+                const active = Boolean(state.activeTour) &&
+                    String(state.activeTour.id) === button.dataset.tourId;
+                button.setAttribute("aria-pressed", String(active));
+            });
+        }
+
+        // Tập POI đang hiển thị: khi lọc theo tour chỉ còn POI thuộc tour đó
+        function currentPois() {
+            if (!state.activeTour) return state.pois.slice();
+            return state.pois.filter(poi => state.tourPoiIds.has(String(poi.id)));
+        }
+
+        function updatePoiCount() {
+            dom.poiCount.textContent = currentPois().length + " điểm";
+        }
+
+        // Vẽ lại danh sách POI đang hiển thị, giữ nguyên kiểu sắp xếp hiện tại
+        function renderVisiblePois() {
+            const pois = currentPois();
+            if (state.sortMode === "distance") {
+                renderPoiList(sortPoisByDistance(pois));
+            } else if (state.sortMode === "name") {
+                renderPoiList(pois.sort((a, b) =>
+                    String(a.name || "").localeCompare(String(b.name || ""), "vi")));
+            } else {
+                renderPoiList(pois);
+            }
+        }
+
+        function applyTourFilter(tour) {
+            state.activeTour = tour;
+            state.tourPoiIds = new Set((tour.locations || []).map(location => String(location.id)));
+
+            renderVisiblePois();
+            updatePoiCount();
+            renderMarkers(state.pois, state.tourPoiIds);
+
+            dom.tourFilterText.textContent = "Đang xem tour: " + (tour.name || "");
+            dom.tourFilterNotice.hidden = false;
+            updateTourActiveState();
+        }
+
+        function clearTourFilter() {
+            state.activeTour = null;
+            state.tourPoiIds = new Set();
+
+            dom.tourFilterNotice.hidden = true;
+            dom.tourFilterText.textContent = "";
+            renderVisiblePois();
+            updatePoiCount();
+            renderMarkers(state.pois, null);
+            updateTourActiveState();
+        }
+
+        // ===== Hành động =====
+
+        // Đưa bản đồ tới marker của POI và mở popup
+        function focusPoi(poi) {
+            const marker = state.markersById.get(String(poi.id));
+            if (!marker || !state.map) return;
+            state.map.panTo(marker.getLatLng());
+            marker.openPopup();
+        }
+
+        // Mở trang thuyết minh (được gọi từ nút "Nghe" của card và từ bottom sheet)
+        function openPlayer(poi, languageCode) {
+            window.location.href = "player.html?locationId=" + encodeURIComponent(poi.id) +
+                "&lang=" + encodeURIComponent(languageCode);
+        }
+
+        // ===== Bottom sheet chi tiết POI =====
+
+        // Tải danh sách ngôn ngữ để đổ vào hàng chọn trong sheet
+        async function loadLanguages() {
+            try {
+                const response = await fetch(LANGUAGES_API, { headers: { "Accept": "application/json" } });
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const data = await response.json();
+                if (!Array.isArray(data) || !data.length) throw new Error("Danh sách ngôn ngữ rỗng");
+                state.languages = data
+                    .filter(item => item && item.code)
+                    .map(item => ({ code: item.code, name: item.name || item.code }));
+            } catch (error) {
+                console.warn("Không tải được danh sách ngôn ngữ, dùng danh sách mặc định:", error);
+                state.languages = FALLBACK_LANGUAGES.slice();
+            }
+            if (state.sheetPoi) {
+                resolveSelectedLanguage();
+                renderSheetLanguages();
+            }
+        }
+
+        function currentLanguages() {
+            return state.languages.length ? state.languages : FALLBACK_LANGUAGES;
+        }
+
+        // Ngôn ngữ đang chọn phải nằm trong danh sách hiện có, không thì lấy phần tử đầu
+        function resolveSelectedLanguage() {
+            const languages = currentLanguages();
+            if (!languages.some(item => item.code === state.selectedLanguage)) {
+                state.selectedLanguage = languages[0].code;
+            }
+            return state.selectedLanguage;
+        }
+
+        function renderSheetLanguages() {
+            dom.poiSheetLangs.textContent = "";
+            currentLanguages().forEach(language => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "poi-sheet__lang";
+                button.dataset.lang = language.code;
+                button.textContent = language.name;
+                button.setAttribute("aria-pressed", String(language.code === state.selectedLanguage));
+                dom.poiSheetLangs.appendChild(button);
+            });
+        }
+
+        function showSheetNote(text) {
+            dom.poiSheetNote.textContent = text;
+            dom.poiSheetNote.hidden = false;
+        }
+
+        function hideSheetNote() {
+            dom.poiSheetNote.textContent = "";
+            dom.poiSheetNote.hidden = true;
+        }
+
+        // Kiểm tra POI có bản thuyết minh cho ngôn ngữ đang chọn hay không.
+        // 404 -> hiện ghi chú nhỏ nhưng vẫn cho bấm nút nghe; lỗi mạng -> im lặng, không chặn thao tác.
+        async function checkNarrationAvailability(poi, languageCode) {
+            const token = ++state.narrationToken;
+            hideSheetNote();
+            try {
+                const url = NARRATIONS_API + "?locationId=" + encodeURIComponent(poi.id) +
+                    "&languageCode=" + encodeURIComponent(languageCode);
+                const response = await fetch(url, { headers: { "Accept": "application/json" } });
+                if (token !== state.narrationToken) return;
+                if (response.status === 404) {
+                    showSheetNote("Chưa có bản thuyết minh cho ngôn ngữ này tại điểm này.");
+                }
+            } catch (error) {
+                // Lỗi mạng: không hiện gì để không chặn thao tác của người dùng
+            }
+        }
+
+        // Mở bottom sheet chi tiết cho 1 POI. opener = phần tử đã bấm, dùng để trả focus khi đóng.
+        function openPoiSheet(poi, opener) {
+            if (!poi) return;
+            state.sheetPoi = poi;
+            state.sheetOpener = opener instanceof HTMLElement ? opener : null;
+            state.sheetClosing = false;
+            state.selectedLanguage = DEFAULT_LANGUAGE;
+            resolveSelectedLanguage();
+
+            dom.poiSheetPanel.setAttribute("aria-label", poi.name || "Chi tiết điểm tham quan");
+            dom.poiSheetName.textContent = poi.name || "";
+            dom.poiSheetAddress.textContent = poi.address || "";
+            dom.poiSheetAddress.hidden = !poi.address;
+
+            dom.poiSheetImage.removeAttribute("src");
+            dom.poiSheetImage.hidden = true;
+            if (poi.imageUrl) {
+                dom.poiSheetImage.alt = poi.name || "";
+                dom.poiSheetImage.onerror = () => { dom.poiSheetImage.hidden = true; };
+                dom.poiSheetImage.src = poi.imageUrl;
+                dom.poiSheetImage.hidden = false;
+            }
+
+            renderSheetLanguages();
+            checkNarrationAvailability(poi, state.selectedLanguage);
+            updateSheetDistance();
+
+            dom.poiSheet.hidden = false;
+            dom.poiSheet.setAttribute("aria-hidden", "false");
+            dom.poiSheet.classList.remove("is-open");
+            void dom.poiSheet.offsetHeight; // ép vẽ trạng thái ban đầu để transition trượt lên chạy
+            requestAnimationFrame(() => dom.poiSheet.classList.add("is-open"));
+            document.body.classList.add("sheet-open");
+            dom.poiSheetPanel.focus();
+        }
+
+        function closePoiSheet() {
+            if (dom.poiSheet.hidden || state.sheetClosing) return;
+            state.sheetClosing = true;
+            const opener = state.sheetOpener;
+            const poi = state.sheetPoi;
+
+            dom.poiSheet.classList.remove("is-open");
+            dom.poiSheet.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("sheet-open");
+            state.narrationToken++; // vô hiệu hoá request đang chờ
+            state.sheetPoi = null;
+            state.sheetOpener = null;
+            setTimeout(() => {
+                if (!state.sheetClosing) return; // sheet đã được mở lại trong lúc trượt xuống
+                dom.poiSheet.hidden = true;
+                state.sheetClosing = false;
+            }, 280);
+
+            restoreSheetFocus(opener, poi);
+        }
+
+        // Trả focus về phần tử đã mở sheet, fallback về card của POI trong danh sách
+        function restoreSheetFocus(opener, poi) {
+            if (opener && document.contains(opener)) {
+                opener.focus();
+                return;
+            }
+            if (!poi) return;
+            dom.poiList.querySelectorAll("button[data-poi-id]").forEach(button => {
+                if (button.dataset.poiId === String(poi.id)) button.focus();
+            });
+        }
+
+        // ===== Sự kiện =====
+
+        dom.nearMeButton.addEventListener("click", () => requestUserLocation());
+        dom.sortByNameButton.addEventListener("click", () => applyNameSort());
+
+        // Bấm 1 tour -> lọc danh sách POI theo các điểm dừng của tour đó
+        dom.tourList.addEventListener("click", (event) => {
+            const button = event.target.closest("button[data-tour-id]");
+            if (!button) return;
+            const tour = state.tours.find(item => String(item.id) === button.dataset.tourId);
+            if (!tour) return;
+            applyTourFilter(tour);
+        });
+
+        dom.clearTourFilter.addEventListener("click", () => clearTourFilter());
+
+        dom.poiList.addEventListener("click", (event) => {
+            const button = event.target.closest("button[data-poi-id]");
+            if (!button) return;
+            const poi = state.poisById.get(String(button.dataset.poiId));
+            if (!poi) return;
+            if (button.classList.contains("poi-card__cta")) {
+                openPlayer(poi, DEFAULT_LANGUAGE);
+            } else {
+                openPoiSheet(poi, button);
+            }
+        });
+
+        // Đổi ngôn ngữ trong sheet -> cập nhật nút nghe và kiểm tra lại bản thuyết minh
+        dom.poiSheetLangs.addEventListener("click", (event) => {
+            const button = event.target.closest("button[data-lang]");
+            if (!button || !state.sheetPoi) return;
+            state.selectedLanguage = button.dataset.lang;
+            renderSheetLanguages();
+            checkNarrationAvailability(state.sheetPoi, state.selectedLanguage);
+        });
+
+        dom.poiSheetClose.addEventListener("click", () => closePoiSheet());
+        dom.poiSheetBackdrop.addEventListener("click", () => closePoiSheet());
+
+        dom.poiSheetListen.addEventListener("click", () => {
+            if (!state.sheetPoi) return;
+            openPlayer(state.sheetPoi, state.selectedLanguage);
+        });
+
+        dom.poiSheetMap.addEventListener("click", () => {
+            if (!state.sheetPoi) return;
+            const poi = state.sheetPoi;
+            closePoiSheet();
+            focusPoi(poi);
+        });
+
+        // Đóng sheet bằng phím Escape
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && !dom.poiSheet.hidden) {
+                closePoiSheet();
+            }
+        });
+
+        // Giữ focus bên trong sheet khi đang mở (aria-modal)
+        dom.poiSheetPanel.addEventListener("keydown", (event) => {
+            if (event.key !== "Tab") return;
+            const focusables = dom.poiSheetPanel.querySelectorAll(
+                "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+            if (!focusables.length) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
+
+        // ===== Mạng: offline / online (Task 9) =====
+
+        // Mất mạng: báo offline nếu đang có dữ liệu POI trong bộ nhớ
+        function handleOffline() {
+            if (!state.pois.length) return;
+            const time = state.cacheSavedAt ? " (cập nhật lúc " + formatCacheTime(state.cacheSavedAt) + ")" : "";
+            showOfflineBanner("Đang offline - đang hiển thị dữ liệu lưu cục bộ" + time + ".");
+        }
+
+        // Có mạng lại: ẩn banner offline và tải lại danh sách POI (kèm cập nhật cache)
+        function handleOnline() {
+            if (navigator.onLine === false) return;
+            hideOfflineBanner();
+            loadPois();
+        }
+
+        // ===== Khởi động =====
+
+        window.addEventListener("offline", handleOffline);
+        window.addEventListener("online", handleOnline);
+
+        initMap();
+        initGeoSupport();
+        loadPois();
+        loadTours();
+        loadLanguages();
+    </script>
+</body>
+
+</html>
