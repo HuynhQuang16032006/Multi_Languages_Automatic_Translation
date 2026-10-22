@@ -276,15 +276,26 @@
         }
         document.getElementById("deviceLabel").innerText = deviceId;
 
-        let currentLocationId = urlParams.get("locationId") ? parseInt(urlParams.get("locationId")) : 4;
+        const locationIdParam = urlParams.get("locationId");
+        let currentLocationId = locationIdParam ? parseInt(locationIdParam) : null;
         let currentLang = urlParams.get("lang") || "vi";
         const qrCodeParam = urlParams.get("qr");
+        // Cách khách đến được POI này, ghi vào playback log
+        const triggerParam = urlParams.get("trigger");
+        const triggerType = ["QR_CODE", "MANUAL", "GEOFENCE"].includes(triggerParam)
+            ? triggerParam
+            : (qrCodeParam ? "QR_CODE" : "MANUAL");
+
+        // Không có locationId lẫn mã QR: về trang chọn, không phát nhầm POI mặc định
+        if (!currentLocationId && !qrCodeParam) {
+            window.location.replace("index.html");
+        }
 
         let listenSeconds = 0;
         let isLeft = false;
         let narrationSeq = 0; // tăng mỗi lần tải kịch bản, chặn race khi đổi ngôn ngữ nhanh
         // Chỉ khi đã xác định được POI mới được ghi nhận phiên nghe (tránh ghi nhầm POI mặc định)
-        let sessionValid = !qrCodeParam;
+        let sessionValid = !qrCodeParam && Boolean(currentLocationId);
         let locationResolved = false;
 
         const player = document.getElementById("audioPlayer");
@@ -307,6 +318,7 @@
 
         // 3. Tải thông tin địa điểm theo QR hoặc ID
         async function initLocation() {
+            if (!currentLocationId && !qrCodeParam) return;
             syncLanguageButtons();
             try {
                 let url = `/api/locations/${currentLocationId}`;
@@ -416,7 +428,8 @@
                 locationId: currentLocationId,
                 languageCode: currentLang,
                 action: action,
-                listenDurationSeconds: listenSeconds
+                listenDurationSeconds: listenSeconds,
+                triggerType: triggerType
             };
 
             try {
@@ -448,7 +461,8 @@
                 locationId: currentLocationId,
                 languageCode: currentLang,
                 action: "LEAVE",
-                listenDurationSeconds: listenSeconds
+                listenDurationSeconds: listenSeconds,
+                triggerType: triggerType
             });
 
             if (sessionValid) {
@@ -464,16 +478,9 @@
                 }
             }
 
-            document.body.innerHTML = `
-                <div style="text-align: center; padding: 60px 20px; font-family: sans-serif;">
-                    <div style="font-size: 3rem; margin-bottom: 16px;">👋</div>
-                    <h2 style="color: #38bdf8; margin-bottom: 10px;">Cảm ơn bạn đã trải nghiệm!</h2>
-                    <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 24px;">Phiên nghe của bạn đã kết thúc và được lưu vào lịch sử Dashboard.</p>
-                    <button onclick="location.reload()" style="background: #38bdf8; color: #0b1120; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer;">
-                        Bắt đầu lại
-                    </button>
-                </div>
-            `;
+            // Trở về giao diện người dùng ngay, giữ toà nếu khách vào từ QR
+            const venue = urlParams.get("venue");
+            window.location.href = "index.html" + (venue ? "?venue=" + encodeURIComponent(venue) : "");
         }
 
         // 6. Tự động gửi LEAVE khi đóng tab / tắt trình duyệt
@@ -484,7 +491,8 @@
                     locationId: currentLocationId,
                     languageCode: currentLang,
                     action: "LEAVE",
-                    listenDurationSeconds: listenSeconds
+                    listenDurationSeconds: listenSeconds,
+                    triggerType: triggerType
                 });
                 if (navigator.sendBeacon) {
                     navigator.sendBeacon("/api/analytics/heartbeat", new Blob([payload], { type: "application/json" }));

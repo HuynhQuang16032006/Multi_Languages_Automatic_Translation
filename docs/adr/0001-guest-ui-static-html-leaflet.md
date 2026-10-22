@@ -2,7 +2,7 @@
 
 | Trường | Nội dung |
 | --- | --- |
-| Trạng thái | Accepted |
+| Trạng thái | Accepted (nguồn tile thay bởi ADR 0003) |
 | Ngày | 2026-10-21 |
 | Nhánh | `feature/guest-ui-map` |
 

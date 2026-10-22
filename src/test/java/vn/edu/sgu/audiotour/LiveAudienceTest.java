@@ -3,12 +3,14 @@ package vn.edu.sgu.audiotour;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import vn.edu.sgu.audiotour.dto.DeviceHeartbeatRequest;
 import vn.edu.sgu.audiotour.dto.HeartbeatResponse;
 import vn.edu.sgu.audiotour.entity.Location;
 import vn.edu.sgu.audiotour.entity.PlaybackLog;
+import vn.edu.sgu.audiotour.entity.TriggerType;
 import vn.edu.sgu.audiotour.exception.NotFoundException;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
 import vn.edu.sgu.audiotour.repository.PlaybackLogRepository;
@@ -111,6 +113,18 @@ class LiveAudienceTest {
         assertEquals(0, result.activeUsers());
         assertTrue(liveAudience.snapshot().isEmpty());
         verify(playbackLogRepository, times(1)).save(any(PlaybackLog.class));
+    }
+
+    @Test
+    void manualTriggerIsWrittenToPlaybackLog() {
+        DeviceHeartbeatRequest join = heartbeat("device-a", "JOIN");
+        join.setTriggerType(TriggerType.MANUAL);
+        liveAudience.record(join);
+        liveAudience.record(heartbeat("device-a", "LEAVE"));
+
+        ArgumentCaptor<PlaybackLog> captor = ArgumentCaptor.forClass(PlaybackLog.class);
+        verify(playbackLogRepository).save(captor.capture());
+        assertEquals(TriggerType.MANUAL, captor.getValue().getTriggerType());
     }
 
     @Test

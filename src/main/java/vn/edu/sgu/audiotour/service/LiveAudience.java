@@ -75,6 +75,7 @@ public class LiveAudience {
         boolean locationChanged = joined || !locationId.equals(session.locationId);
         // Chỉ tra DB khi phiên mới hoặc đổi POI: PING 3 giây/lần không cần query
         String locationName = locationChanged ? lookupLocationName(locationId) : session.locationName;
+        TriggerType triggerType = request.getTriggerType() != null ? request.getTriggerType() : TriggerType.QR_CODE;
 
         int listenSeconds = request.getListenDurationSeconds() != null
                 ? Math.max(0, request.getListenDurationSeconds())
@@ -82,12 +83,13 @@ public class LiveAudience {
 
         if (joined) {
             sessions.put(deviceId,
-                    new Session(deviceId, locationId, locationName, languageCode, now, listenSeconds));
+                    new Session(deviceId, locationId, locationName, languageCode, triggerType, now, listenSeconds));
         } else {
             session.lastHeartbeatAt = now;
             session.locationId = locationId;
             session.locationName = locationName;
             session.languageCode = languageCode;
+            session.triggerType = triggerType;
             session.listenSeconds = Math.max(session.listenSeconds, listenSeconds);
         }
 
@@ -104,7 +106,7 @@ public class LiveAudience {
             String languageCode = request.getLanguageCode() != null && !request.getLanguageCode().isBlank()
                     ? request.getLanguageCode()
                     : removed.languageCode;
-            writeLog(removed.locationId, languageCode, duration, deviceId);
+            writeLog(removed.locationId, languageCode, duration, deviceId, removed.triggerType);
         }
         return new HeartbeatResult(HeartbeatResponse.Status.LEFT, deviceId, sessions.size());
     }
@@ -119,12 +121,13 @@ public class LiveAudience {
                 return;
             }
             if (session.listenSeconds > 0) {
-                writeLog(session.locationId, session.languageCode, session.listenSeconds, deviceId);
+                writeLog(session.locationId, session.languageCode, session.listenSeconds, deviceId, session.triggerType);
             }
         });
     }
 
-    private void writeLog(Long locationId, String languageCode, int listenSeconds, String deviceId) {
+    private void writeLog(Long locationId, String languageCode, int listenSeconds, String deviceId,
+                          TriggerType triggerType) {
         try {
             Location location = locationRepository.findById(locationId).orElse(null);
             if (location == null) {
@@ -134,7 +137,7 @@ public class LiveAudience {
             entry.setLocation(location);
             entry.setLanguageCode(languageCode);
             entry.setListenDurationSeconds(Math.max(listenSeconds, MIN_LOGGED_SECONDS));
-            entry.setTriggerType(TriggerType.QR_CODE);
+            entry.setTriggerType(triggerType != null ? triggerType : TriggerType.QR_CODE);
             entry.setLatitude(location.getLatitude());
             entry.setLongitude(location.getLongitude());
             entry.setDeviceId(deviceId);
@@ -197,15 +200,17 @@ public class LiveAudience {
         private Long locationId;
         private String locationName;
         private String languageCode;
+        private TriggerType triggerType;
         private long lastHeartbeatAt;
         private int listenSeconds;
 
         private Session(String deviceId, Long locationId, String locationName, String languageCode,
-                        long joinedAt, int listenSeconds) {
+                        TriggerType triggerType, long joinedAt, int listenSeconds) {
             this.deviceId = deviceId;
             this.locationId = locationId;
             this.locationName = locationName;
             this.languageCode = languageCode;
+            this.triggerType = triggerType;
             this.joinedAt = joinedAt;
             this.lastHeartbeatAt = joinedAt;
             this.listenSeconds = listenSeconds;

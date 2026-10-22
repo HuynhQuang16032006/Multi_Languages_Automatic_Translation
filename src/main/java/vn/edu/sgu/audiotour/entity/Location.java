@@ -2,6 +2,7 @@ package vn.edu.sgu.audiotour.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -62,6 +63,14 @@ public class Location {
     @EqualsAndHashCode.Exclude
     @Schema(description = "Địa điểm cha (nếu là phòng ban/khu vực con)")
     private Location parentLocation;
+
+    // Chỉ trả id của cha để client biết POI thuộc toà nào mà không phải tải cả cây.
+    // getId() trên proxy LAZY không khởi tạo entity.
+    @JsonProperty("parentId")
+    @Schema(description = "ID của địa điểm cha, null nếu là địa điểm gốc", example = "4")
+    public Long getParentId() {
+        return parentLocation != null ? parentLocation.getId() : null;
+    }
 
     @OneToMany(mappedBy = "parentLocation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude

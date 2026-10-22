@@ -61,4 +61,21 @@ class GuestHomePageTest {
                 .andExpect(content().string(containsString("poiList")))
                 .andExpect(content().string(containsString("leaflet")));
     }
+
+    // QR theo toà: trang chủ phải đọc ?venue= và có banner "Bạn đang ở"
+    @Test
+    void testIndexHtmlHandlesVenueParam() throws Exception {
+        mockMvc.perform(get("/index.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"venueBanner\"")))
+                .andExpect(content().string(containsString("get(\"venue\")")));
+    }
+
+    // Không có locationId lẫn qr: player phải quay về trang chọn, không phát nhầm POI mặc định
+    @Test
+    void testPlayerSendsGuestsBackWithoutLocation() throws Exception {
+        mockMvc.perform(get("/player.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("window.location.replace(\"index.html\")")));
+    }
 }

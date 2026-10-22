@@ -709,9 +709,9 @@
             opacity: 0.3;
         }
 
-        /* Popup + control của Leaflet cho hợp theme tối */
+        /* Popup của Leaflet cho hợp theme tối; nền map để sáng để không nháy đen khi tải tile */
         .leaflet-container {
-            background: #0b1220;
+            background: #e5e7eb;
             font-family: inherit;
         }
 
@@ -768,34 +768,41 @@
             background: #1b2540;
         }
 
-        /* Lớp tile tối: đảo màu tile OSM sáng, không cần API key từ nhà cung cấp khác.
-           invert -> nền tối, hue-rotate -> giữ đúng màu nước và cây cỏ, contrast -> dịu nhãn đường. */
-        .tile-layer--dark {
-            filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.92);
+        /* Banner toà nhà khi mở bằng QR: biết đang ở đâu trước khi chọn phòng */
+        .venue-banner {
+            margin-bottom: 16px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: rgba(56, 189, 248, 0.10);
         }
 
-        /* Control đổi lớp bản đồ: chỉnh cho nền tối */
-        .leaflet-control-layers {
-            background: rgba(19, 28, 48, 0.92);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 10px 12px;
-            font-size: 0.82rem;
-            backdrop-filter: blur(10px);
+        .venue-banner__eyebrow {
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
         }
 
-        .leaflet-control-layers-toggle {
-            background-color: #131c30;
-            filter: invert(1);
+        .venue-banner__name {
+            margin: 2px 0 6px;
+            font-size: 1.15rem;
         }
 
-        .leaflet-control-layers-list label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 4px 0;
-            color: var(--text-main);
+        .venue-banner__suggestion {
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .venue-banner__listen {
+            margin-top: 10px;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-weight: 700;
+            background: var(--primary);
+            color: #0b1120;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -828,11 +835,19 @@
             <span id="offlineText"></span>
         </div>
 
+        <!-- QR theo toà: biết đang đứng ở toà nào trước khi chọn phòng -->
+        <section id="venueBanner" class="venue-banner" aria-labelledby="venueName" hidden>
+            <p class="venue-banner__eyebrow">Bạn đang ở</p>
+            <h2 class="venue-banner__name" id="venueName"></h2>
+            <p class="venue-banner__suggestion" id="venueSuggestion" hidden></p>
+            <button type="button" class="venue-banner__listen" id="venueListen" hidden>Nghe ngay</button>
+        </section>
+
         <!-- Bản đồ Leaflet -->
         <div class="map-wrap">
             <div id="map" role="region" aria-label="Bản đồ các điểm tham quan"></div>
             <!-- Tile bản đồ tải từ Internet, offline thì bản đồ không có nền -->
-            <p id="mapTileNote" class="map-tile-note">Tile bản đồ OpenStreetMap cần kết nối Internet.</p>
+            <p id="mapTileNote" class="map-tile-note">Nền bản đồ (Esri) cần kết nối Internet.</p>
             <p id="mapHint" class="map-hint" hidden>Chưa có điểm tham quan nào có tọa độ để hiển thị trên bản đồ.</p>
             <!-- Thông báo vị trí của người dùng, không phải lỗi API -->
             <p id="geoNotice" class="geo-notice" role="status" hidden></p>
@@ -903,12 +918,13 @@
         const TOURS_API = "/api/tours";
         const LANGUAGES_API = "/api/languages";
         const NARRATIONS_API = "/api/narrations";
-        // Một nguồn tile duy nhất: OpenStreetMap, không cần API key.
-        // Lớp "Tối" dùng CHUNG tile này rồi đảo màu bằng CSS filter, nên không phụ thuộc
-        // nhà cung cấp bản đồ thứ hai (CartoDB đã yêu cầu key theo chính sách mới).
-        const TILE_URL_OSM = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-        const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+        // Một nguồn tile duy nhất: Esri World Street Map, không cần API key.
+        // Đổi từ OpenStreetMap vì DNS của mạng demo chặn tile.openstreetmap.org.
+        const TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+        const TILE_ATTRIBUTION = 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
         const DEFAULT_LANGUAGE = "vi";
+        // GPS sai số lớn hơn ngưỡng này thì không khẳng định "phòng gần nhất": phòng trong nhà cách nhau ~15 m
+        const VENUE_ACCURACY_LIMIT_METERS = 30;
 
         // Task 9: khoá cache POI trong localStorage để trang vẫn dùng được khi mất mạng
         const POIS_CACHE_KEY = "audiotour_pois_cache";
@@ -944,7 +960,12 @@
             tourPoiIds: new Set(),
             sortMode: "default",
             // Task 9: mốc thời gian cache POI lưu cục bộ lần gần nhất
-            cacheSavedAt: null
+            cacheSavedAt: null,
+            // QR theo toà (?venue=)
+            venue: null,
+            venueResolved: false,
+            venueSuggestedPoi: null,
+            geoAccuracy: null
         };
 
         const dom = {
@@ -973,6 +994,10 @@
             sortByNameButton: document.getElementById("sortByNameButton"),
             geoNotice: document.getElementById("geoNotice"),
             geoSecureNote: document.getElementById("geoSecureNote"),
+            venueBanner: document.getElementById("venueBanner"),
+            venueName: document.getElementById("venueName"),
+            venueSuggestion: document.getElementById("venueSuggestion"),
+            venueListen: document.getElementById("venueListen"),
             tourSection: document.getElementById("tourSection"),
             tourList: document.getElementById("tourList"),
             tourCount: document.getElementById("tourCount"),
@@ -1091,6 +1116,11 @@
             renderVisiblePois();
             renderMarkers(state.pois, state.activeTour ? state.tourPoiIds : null);
             updatePoiCount();
+            // Chỉ đọc ?venue= một lần, sau khi đã có dữ liệu POI
+            if (!state.venueResolved && pois.length) {
+                state.venueResolved = true;
+                renderVenueBanner();
+            }
         }
 
         // ===== Gọi API =====
@@ -1221,19 +1251,10 @@
             }
             state.map = L.map(dom.map, { scrollWheelZoom: false });
 
-            // Hai lớp dùng chung một nguồn tile OSM: lớp tối đảo màu bằng CSS filter.
-            // Đổi lớp không phát sinh request mới (trình duyệt dùng cache tile đã tải).
-            const darkLayer = L.tileLayer(TILE_URL_OSM, {
-                attribution: TILE_ATTRIBUTION,
-                maxZoom: 19,
-                className: "tile-layer--dark"
-            }).addTo(state.map);
-            const streetLayer = L.tileLayer(TILE_URL_OSM, {
+            // Một lớp bản đồ duy nhất: nền đường phố Esri (sáng), không có lớp tối.
+            L.tileLayer(TILE_URL, {
                 attribution: TILE_ATTRIBUTION,
                 maxZoom: 19
-            });
-            L.control.layers({ "Tối": darkLayer, "Đường phố": streetLayer }, null, {
-                position: "topright"
             }).addTo(state.map);
         }
 
@@ -1356,6 +1377,94 @@
             updateSheetDistance();
         }
 
+        // ===== QR theo toà (?venue=) =====
+
+        // ?venue=4 -> toà đang đứng. Tham số là phòng con thì dùng toà cha; sai thì bỏ qua.
+        function readVenueParam() {
+            const raw = new URLSearchParams(window.location.search).get("venue");
+            if (!raw) return null;
+            const poi = state.poisById.get(String(raw));
+            if (!poi) return null;
+            const parentId = poi.parentId !== null && poi.parentId !== undefined ? String(poi.parentId) : null;
+            return (parentId && state.poisById.get(parentId)) || poi;
+        }
+
+        // Phòng của toà: các POI con; toà không có con thì lấy chính toà
+        function venueCandidates() {
+            if (!state.venue) return [];
+            const venueId = String(state.venue.id);
+            const children = state.pois.filter(poi => poi.parentId !== null && poi.parentId !== undefined &&
+                String(poi.parentId) === venueId);
+            return children.length ? children : [state.venue];
+        }
+
+        // Cùng toà lên trước, rồi độ ưu tiên giảm dần, rồi tên A-Z (dùng khi chưa có GPS)
+        function sortPoisForVenue(pois) {
+            const venueId = state.venue ? String(state.venue.id) : "";
+            const inVenue = poi => String(poi.id) === venueId ||
+                (poi.parentId !== null && poi.parentId !== undefined && String(poi.parentId) === venueId);
+            return pois.slice().sort((a, b) => {
+                const byScope = (inVenue(a) ? 0 : 1) - (inVenue(b) ? 0 : 1);
+                if (byScope !== 0) return byScope;
+                const byPriority = (Number(b.priority) || 0) - (Number(a.priority) || 0);
+                if (byPriority !== 0) return byPriority;
+                return String(a.name || "").localeCompare(String(b.name || ""), "vi");
+            });
+        }
+
+        // Chỉ nêu tên phòng khi GPS đủ chính xác; sai số lớn hơn ngưỡng thì chỉ nói tới mức toà
+        function updateVenueSuggestion() {
+            if (!state.venue) return;
+            state.venueSuggestedPoi = null;
+            dom.venueListen.hidden = true;
+            dom.venueSuggestion.hidden = false;
+
+            if (!state.userLocation) {
+                dom.venueSuggestion.textContent = "Chưa xác định được vị trí của bạn. Chọn phòng bên dưới để nghe.";
+                return;
+            }
+            if (state.geoAccuracy !== null && state.geoAccuracy > VENUE_ACCURACY_LIMIT_METERS) {
+                dom.venueSuggestion.textContent = "Vị trí chưa đủ chính xác để xác định phòng. Chọn phòng bên dưới để nghe.";
+                return;
+            }
+            let nearest = null;
+            let nearestDistance = Infinity;
+            venueCandidates().forEach(poi => {
+                const position = readCoordinates(poi);
+                if (!position) return;
+                const distance = haversineDistanceMeters(
+                    state.userLocation.lat, state.userLocation.lng, position[0], position[1]);
+                if (distance < nearestDistance) {
+                    nearest = poi;
+                    nearestDistance = distance;
+                }
+            });
+            if (!nearest) {
+                dom.venueSuggestion.textContent = "Chọn phòng bên dưới để nghe.";
+                return;
+            }
+            dom.venueSuggestion.textContent = "Gần nhất: " + nearest.name + " · " + formatDistance(nearestDistance);
+            state.venueSuggestedPoi = nearest;
+            dom.venueListen.hidden = false;
+        }
+
+        function renderVenueBanner() {
+            state.venue = readVenueParam();
+            if (!state.venue) return;
+            dom.venueName.textContent = state.venue.name || "";
+            dom.venueBanner.hidden = false;
+            updateVenueSuggestion();
+            // Chưa có GPS: phòng cùng toà lên trước để chọn nhanh
+            if (state.sortMode === "default") {
+                state.sortMode = "venue";
+                renderVisiblePois();
+            }
+            // GPS chỉ chạy trong secure context; xin vị trí ngay để có gợi ý
+            if (window.isSecureContext === true && navigator.geolocation) {
+                requestUserLocation();
+            }
+        }
+
         function showGeoNotice(text) {
             dom.geoNotice.textContent = text;
             dom.geoNotice.hidden = false;
@@ -1435,9 +1544,11 @@
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
                     };
+                    state.geoAccuracy = Number(position.coords.accuracy) || null;
                     renderUserMarker([state.userLocation.lat, state.userLocation.lng], position.coords.accuracy);
                     if (state.map) state.map.panTo([state.userLocation.lat, state.userLocation.lng]);
                     applyDistanceSort();
+                    updateVenueSuggestion();
                     showGeoNotice("Đã sắp xếp POI theo khoảng cách từ vị trí hiện tại của bạn.");
                 }, error => {
                     setNearMeBusy(false);
@@ -1575,6 +1686,8 @@
             const pois = currentPois();
             if (state.sortMode === "distance") {
                 renderPoiList(sortPoisByDistance(pois));
+            } else if (state.sortMode === "venue") {
+                renderPoiList(sortPoisForVenue(pois));
             } else if (state.sortMode === "name") {
                 renderPoiList(pois.sort((a, b) =>
                     String(a.name || "").localeCompare(String(b.name || ""), "vi")));
@@ -1620,8 +1733,12 @@
 
         // Mở trang thuyết minh (được gọi từ nút "Nghe" của card và từ bottom sheet)
         function openPlayer(poi, languageCode) {
+            // Vào từ QR của toà -> QR_CODE; tự vào trang rồi chọn -> MANUAL
+            const trigger = state.venue ? "QR_CODE" : "MANUAL";
+            // Giữ toà để player quay về đúng trang chọn của toà đó
+            const venueParam = state.venue ? "&venue=" + encodeURIComponent(state.venue.id) : "";
             window.location.href = "player.html?locationId=" + encodeURIComponent(poi.id) +
-                "&lang=" + encodeURIComponent(languageCode);
+                "&lang=" + encodeURIComponent(languageCode) + "&trigger=" + trigger + venueParam;
         }
 
         // ===== Bottom sheet chi tiết POI =====
@@ -1773,6 +1890,9 @@
 
         dom.nearMeButton.addEventListener("click", () => requestUserLocation());
         dom.sortByNameButton.addEventListener("click", () => applyNameSort());
+        dom.venueListen.addEventListener("click", () => {
+            if (state.venueSuggestedPoi) openPlayer(state.venueSuggestedPoi, state.selectedLanguage);
+        });
 
         // Bấm 1 tour -> lọc danh sách POI theo các điểm dừng của tour đó
         dom.tourList.addEventListener("click", (event) => {

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.sgu.audiotour.entity.TriggerType;
 
 @Data
 @Builder
@@ -27,4 +28,8 @@ public class DeviceHeartbeatRequest {
 
     @Schema(description = "Số giây thực tế người dùng đã nghe", example = "25")
     private Integer listenDurationSeconds;
+
+    @Schema(description = "Cách khách đến được POI: QR_CODE (quét QR), MANUAL (tự chọn), GEOFENCE. Mặc định QR_CODE.",
+            example = "QR_CODE")
+    private TriggerType triggerType;
 }

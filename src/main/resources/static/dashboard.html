@@ -384,13 +384,12 @@
         <div class="card qr-card">
             <div class="qr-box">
                 <img id="qrImage"
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=http://172.20.10.8:8080/player.html?qr=QR-DINH-DOC-LAP-01"
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=http://172.20.10.8:8080/?venue=4"
                     alt="Mã QR Tham Gia">
             </div>
             <div class="qr-info">
                 <h3>Quét Mã QR Để Tham Gia Live</h3>
-                <p>Thầy và các bạn mở Camera điện thoại quét mã QR bên cạnh để vào nghe bài thuyết minh Dinh Độc Lập
-                    trực tiếp:</p>
+                <p>Quét mã QR bên cạnh để mở trang chọn phòng của toà đang chọn, rồi chọn phòng để nghe:</p>
 
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
                     <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">IP MÁY CHỦ
@@ -399,12 +398,16 @@
                         style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #38bdf8; font-weight: 700; padding: 5px 10px; border-radius: 6px; width: 135px; font-size: 0.85rem;"
                         oninput="updateQrCode()">
                     <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 700;">: 8080</span>
+                    <select id="venueSelect" onchange="onVenueChange()" aria-label="Chọn toà để sinh mã QR"
+                        style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #38bdf8; font-weight: 700; padding: 5px 10px; border-radius: 6px; font-size: 0.85rem;">
+                        <option value="4">Dinh Độc Lập</option>
+                    </select>
                     <button onclick="updateQrCode()"
                         style="background: #38bdf8; border: none; color: #090d16; font-weight: 700; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Cập
                         nhật QR</button>
                 </div>
 
-                <div class="qr-link-box" id="qrLinkText">http://172.20.10.8:8080/player.html?qr=QR-DINH-DOC-LAP-01</div>
+                <div class="qr-link-box" id="qrLinkText">http://172.20.10.8:8080/?venue=4</div>
 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn-open-tabs" onclick="openSimulatedDevices(4)">
@@ -502,16 +505,44 @@
         }
         document.getElementById("serverIpInput").value = defaultLanIp;
 
+        // Toà đang chọn để sinh QR; danh sách toà nạp từ /api/locations
+        let venueId = "4";
+
         function updateQrCode() {
             let hostIp = document.getElementById("serverIpInput").value.trim();
             if (!hostIp || hostIp === 'localhost' || hostIp === '127.0.0.1') {
                 hostIp = defaultLanIp;
             }
-            const playerUrl = `http://${hostIp}:8080/player.html?qr=QR-PHONG-KHANH-TIET`;
-            document.getElementById("qrLinkText").innerText = playerUrl;
-            document.getElementById("qrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(playerUrl)}`;
+            const venueUrl = `http://${hostIp}:8080/?venue=${venueId}`;
+            document.getElementById("qrLinkText").innerText = venueUrl;
+            document.getElementById("qrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(venueUrl)}`;
         }
         updateQrCode();
+
+        function onVenueChange() {
+            venueId = document.getElementById("venueSelect").value;
+            updateQrCode();
+        }
+
+        async function loadVenues() {
+            try {
+                const res = await fetch("/api/locations");
+                if (!res.ok) return;
+                const roots = await res.json();
+                if (!Array.isArray(roots) || !roots.length) return;
+                const select = document.getElementById("venueSelect");
+                select.innerHTML = roots.map(poi =>
+                    `<option value="${poi.id}">${escapeHtml(poi.name)}</option>`).join("");
+                if (!roots.some(poi => String(poi.id) === venueId)) {
+                    venueId = String(roots[0].id);
+                }
+                select.value = venueId;
+                updateQrCode();
+            } catch (error) {
+                console.warn("Không tải được danh sách toà, giữ toà mặc định:", error);
+            }
+        }
+        loadVenues();
 
         // Hàm mở nhanh 4 tab giả lập nếu muốn test ngay trên máy
         function openSimulatedDevices(count) {
