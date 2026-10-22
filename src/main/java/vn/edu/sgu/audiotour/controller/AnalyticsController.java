@@ -8,11 +8,11 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import vn.edu.sgu.audiotour.dto.DashboardResponse;
 import vn.edu.sgu.audiotour.dto.DeviceHeartbeatRequest;
+import vn.edu.sgu.audiotour.dto.HeartbeatResponse;
 import vn.edu.sgu.audiotour.dto.PlaybackLogRequest;
 import vn.edu.sgu.audiotour.entity.PlaybackLog;
 import vn.edu.sgu.audiotour.service.AnalyticsService;
-
-import java.util.Map;
+import vn.edu.sgu.audiotour.service.LiveAudience;
 
 @RestController
 @RequestMapping("/api/analytics")
@@ -21,11 +21,13 @@ import java.util.Map;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final LiveAudience liveAudience;
 
     @PostMapping("/heartbeat")
     @Operation(summary = "Gửi nhịp tim (Heartbeat) giám sát thiết bị truy cập thời gian thực", description = "Mobile App gửi định kỳ mỗi 3s (action=JOIN/PING/LEAVE). Khi thiết bị out hoặc ngắt kết nối quá 8s, số lượng online tự động giảm và lưu lịch sử")
-    public ResponseEntity<Map<String, Object>> recordHeartbeat(@RequestBody DeviceHeartbeatRequest request) {
-        return ResponseEntity.ok(analyticsService.processHeartbeat(request));
+    public ResponseEntity<HeartbeatResponse> recordHeartbeat(@RequestBody DeviceHeartbeatRequest request) {
+        LiveAudience.HeartbeatResult result = liveAudience.record(request);
+        return ResponseEntity.ok(new HeartbeatResponse(result.status(), result.deviceId(), result.activeUsers()));
     }
 
     @PostMapping("/logs")

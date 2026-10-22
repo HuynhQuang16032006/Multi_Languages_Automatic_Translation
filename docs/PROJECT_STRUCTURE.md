@@ -29,6 +29,7 @@ docs/
     BRANCHING.md  [    153 B]   8 dòng
     COMPLETED_REPORT.md  [   2703 B]   89 dòng
     PROJECT_STRUCTURE.md  <-- file này
+GLOSSARY.md  [   1536 B]   33 dòng
 mvnw  [  11790 B]
 mvnw.cmd  [   8481 B]   189 dòng
 pom.xml  [   3794 B]   137 dòng
@@ -42,15 +43,17 @@ src/
                         audiotour/
                             AudiotourApplication.java  [    332 B]   13 dòng
                             config/
+                                ClockConfig.java  [    475 B]   19 dòng
                                 DataInitializer.java  [  11764 B]   182 dòng
                                 OpenApiConfig.java  [   1569 B]   28 dòng
                             controller/
-                                AnalyticsController.java  [   1832 B]   33 dòng
+                                AnalyticsController.java  [   2704 B]   44 dòng
                                 AudioPackageController.java  [   2020 B]   40 dòng
                                 LocationController.java  [   3066 B]   54 dòng
                                 TourController.java  [   1530 B]   34 dòng
                             dto/
                                 DashboardResponse.java  [   1620 B]   51 dòng
+                                HeartbeatResponse.java  [    792 B]   26 dòng
                                 PlaybackLogRequest.java  [   1476 B]   39 dòng
                             entity/
                                 Language.java  [    577 B]   24 dòng
@@ -68,9 +71,11 @@ src/
                                 PlaybackLogRepository.java  [   1162 B]   25 dòng
                                 TourRepository.java  [    602 B]   21 dòng
                             service/
-                                AnalyticsService.java  [   3847 B]   82 dòng
+                                AnalyticsService.java  [   5891 B]  115 dòng
                                 AudioPackageService.java  [   3377 B]   77 dòng
+                                LiveAudience.java  [   9254 B]  214 dòng
                                 LocationService.java  [   1916 B]   47 dòng
+                                ServerAddress.java  [   1548 B]   43 dòng
                                 TourService.java  [    758 B]   26 dòng
         resources/
             application.yml  [    588 B]   26 dòng
@@ -81,11 +86,12 @@ src/
                 edu/
                     sgu/
                         audiotour/
-                            AnalyticsControllerValidationTest.java  [   2785 B]   71 dòng
-                            AnalyticsServiceTest.java  [   3676 B]   91 dòng
+                            AnalyticsControllerValidationTest.java  [   4349 B]  103 dòng
+                            AnalyticsServiceTest.java  [   3949 B]  100 dòng
                             AudioPackageControllerTest.java  [   1887 B]   49 dòng
                             AudioPackageServiceTest.java  [   4338 B]   118 dòng
                             AudiotourApplicationTests.java  [    228 B]   13 dòng
+                            LiveAudienceTest.java  [   6379 B]  191 dòng
                             LocationControllerTest.java  [   2881 B]   82 dòng
                             LocationServiceTest.java  [   2630 B]   85 dòng
                             TourServiceTest.java  [   1722 B]   61 dòng
@@ -119,14 +125,14 @@ uploads/
 
 | Tầng | Số file | Số dòng |
 | :--- | ---: | ---: |
-| Controller | 4 | 161 |
-| DTO | 2 | 90 |
-| Exception | 1 | 46 |
-| Config | 2 | 210 |
-| Service | 4 | 232 |
-| Repository | 5 | 112 |
-| Entity | 6 | 242 |
-| Test | 8 | 570 |
+| Controller | 7 | 338 |
+| DTO | 8 | 275 |
+| Exception | 4 | 112 |
+| Config | 4 | 293 |
+| Service | 9 | 716 |
+| Repository | 5 | 141 |
+| Entity | 6 | 243 |
+| Test | 23 | 2019 |
 
 > `DataInitializer.java` (182 dòng) chiếm phần lớn tầng `config`. Đây là seed data, không phải cấu hình Spring.
 

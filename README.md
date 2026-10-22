@@ -29,7 +29,7 @@ graph TD
 ```
 
 - **Tầng 1 - Controller (Presentation Tier):** `LocationController`, `NarrationController`, `AudioPackageController`, `AnalyticsController`, `TourController`, `LanguageController`, `AuthController`.
-- **Tầng 2 - Service (Business Logic Tier):** `LocationService`, `NarrationService`, `AudioPackageService`, `AnalyticsService`, `TourService`, `LanguageService`, `AuthService`.
+- **Tầng 2 - Service (Business Logic Tier):** `LocationService`, `NarrationService`, `AudioPackageService`, `AnalyticsService`, `TourService`, `LanguageService`, `AuthService`, cùng `LiveAudience` (giữ các phiên đang nghe) và `ServerAddress` (dò IP LAN cho mã QR).
 - **Tầng 3 - Repository & Data (Data Access Tier):** `LocationRepository`, `LanguageRepository`, `NarrationRepository`, `PlaybackLogRepository`, `TourRepository`.
 
 ---
@@ -44,7 +44,7 @@ graph TD
 - **Migration:** Flyway (`ddl-auto: validate`)
 - **Tiện ích:** Project Lombok (Constructor Injection với `@RequiredArgsConstructor`)
 - **Tài liệu API:** Springdoc OpenAPI 3 / Swagger UI
-- **Kiểm thử tự động:** JUnit 5, Mockito (94 test tự động)
+- **Kiểm thử tự động:** JUnit 5, Mockito (106 test tự động)
 - **Giao diện du khách:** HTML tĩnh + vanilla JavaScript + Leaflet 1.9.4 (không bundler, không bước build)
 - **CI/CD:** GitHub Actions tự động kiểm thử và đóng gói khi có Commit/PR
 

@@ -285,6 +285,7 @@
         let narrationSeq = 0; // tăng mỗi lần tải kịch bản, chặn race khi đổi ngôn ngữ nhanh
         // Chỉ khi đã xác định được POI mới được ghi nhận phiên nghe (tránh ghi nhầm POI mặc định)
         let sessionValid = !qrCodeParam;
+        let locationResolved = false;
 
         const player = document.getElementById("audioPlayer");
         const scriptText = document.getElementById("scriptText");
@@ -306,7 +307,6 @@
 
         // 3. Tải thông tin địa điểm theo QR hoặc ID
         async function initLocation() {
-            let locationResolved = false;
             syncLanguageButtons();
             try {
                 let url = `/api/locations/${currentLocationId}`;
@@ -410,7 +410,7 @@
 
         // 4. Cơ chế gửi Heartbeat định kỳ mỗi 3 giây
         async function sendHeartbeat(action = "PING") {
-            if (isLeft || !sessionValid) return;
+            if (isLeft || !sessionValid || !locationResolved) return;
             const payload = {
                 deviceId: deviceId,
                 locationId: currentLocationId,

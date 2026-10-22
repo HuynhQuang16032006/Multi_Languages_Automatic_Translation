@@ -14,6 +14,8 @@ import vn.edu.sgu.audiotour.entity.TriggerType;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
 import vn.edu.sgu.audiotour.repository.PlaybackLogRepository;
 import vn.edu.sgu.audiotour.service.AnalyticsService;
+import vn.edu.sgu.audiotour.service.LiveAudience;
+import vn.edu.sgu.audiotour.service.ServerAddress;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,12 @@ class AnalyticsServiceTest {
 
     @Mock
     private LocationRepository locationRepository;
+
+    @Mock
+    private LiveAudience liveAudience;
+
+    @Mock
+    private ServerAddress serverAddress;
 
     @InjectMocks
     private AnalyticsService analyticsService;
@@ -77,6 +85,7 @@ class AnalyticsServiceTest {
         List<Object[]> heatmapRows = new ArrayList<>();
         heatmapRows.add(new Object[]{10.7770, 106.6953, 50L});
         when(playbackLogRepository.getHeatmapPoints()).thenReturn(heatmapRows);
+        when(liveAudience.snapshot()).thenReturn(List.of());
 
         DashboardResponse response = analyticsService.getDashboardData();
 

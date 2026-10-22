@@ -10,10 +10,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import vn.edu.sgu.audiotour.controller.AnalyticsController;
+import vn.edu.sgu.audiotour.dto.DeviceHeartbeatRequest;
+import vn.edu.sgu.audiotour.dto.HeartbeatResponse;
 import vn.edu.sgu.audiotour.dto.PlaybackLogRequest;
 import vn.edu.sgu.audiotour.entity.PlaybackLog;
 import vn.edu.sgu.audiotour.exception.GlobalExceptionHandler;
 import vn.edu.sgu.audiotour.service.AnalyticsService;
+import vn.edu.sgu.audiotour.service.LiveAudience;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -27,6 +30,9 @@ class AnalyticsControllerValidationTest {
 
     @Mock
     private AnalyticsService analyticsService;
+
+    @Mock
+    private LiveAudience liveAudience;
 
     @InjectMocks
     private AnalyticsController analyticsController;
@@ -67,5 +73,31 @@ class AnalyticsControllerValidationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void testHeartbeatReturnsTypedResponse() throws Exception {
+        when(liveAudience.record(any(DeviceHeartbeatRequest.class)))
+                .thenReturn(new LiveAudience.HeartbeatResult(HeartbeatResponse.Status.ACTIVE, "device-a", 2));
+
+        mockMvc.perform(post("/api/analytics/heartbeat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"deviceId\":\"device-a\",\"locationId\":7,\"languageCode\":\"vi\",\"action\":\"JOIN\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.deviceId").value("device-a"))
+                .andExpect(jsonPath("$.activeUsers").value(2));
+    }
+
+    @Test
+    void testHeartbeatWithUnknownActionReturns400() throws Exception {
+        when(liveAudience.record(any(DeviceHeartbeatRequest.class)))
+                .thenThrow(new IllegalArgumentException("Action không hợp lệ"));
+
+        mockMvc.perform(post("/api/analytics/heartbeat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"deviceId\":\"device-a\",\"locationId\":7,\"languageCode\":\"vi\",\"action\":\"LEAV\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
     }
 }
