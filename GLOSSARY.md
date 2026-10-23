@@ -17,8 +17,24 @@ Phòng trong một Venue mà du khách đang đứng; khác với phòng du khá
 _Avoid_: Active room, selected room (đó là phòng du khách chọn, không nhất thiết là nơi đang đứng)
 
 **Narration**:
-Bài thuyết minh của một POI trong một ngôn ngữ, gồm nội dung văn bản và bản thu âm.
+Bài thuyết minh của một POI trong một ngôn ngữ, gồm nội dung văn bản và file âm thanh (bản thu tay hoặc bản sinh tự động).
 _Avoid_: Audio, script, bài giảng
+
+**Language**:
+Ngôn ngữ mà hệ thống cung cấp bản thuyết minh cho du khách, gồm mã và tên hiển thị. Một Language chỉ có nội dung tại những POI đã có Narration tương ứng; các POI còn lại hiện là chưa có bản thuyết minh.
+_Avoid_: locale; "ngôn ngữ TTS" (đó là tập ngôn ngữ nhà cung cấp TTS đọc được, rộng hơn Language)
+
+**Machine Translation** (MT):
+Bước tạo nội dung cho Narration của một Language mới bằng dịch vụ dịch tự động, lấy bản `vi` làm nguồn. Kết quả là Narration mới; bản nguồn không đổi.
+_Avoid_: auto-translate, dịch tự động (khi nói về khái niệm)
+
+**Generated Audio** (bản thu tự sinh):
+File MP3 do hệ thống tạo từ `textContent` của một Narration bằng TTS, lưu cùng thư mục với bản thu tay và tái sử dụng ở các lần gọi sau.
+_Avoid_: Audio tự động, file ảo
+
+**TTS** (Text-to-Speech):
+Dịch vụ chuyển văn bản thành giọng nói; trong hệ thống này là ElevenLabs, sinh ra Generated Audio cho một Narration.
+_Avoid_: Đọc văn bản, voice bot
 
 **Tour**:
 Một tuyến gồm nhiều POI theo thứ tự tham quan.

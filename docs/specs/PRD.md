@@ -31,7 +31,7 @@ Phạm vi tài liệu này: **toàn bộ backend**. Mobile App và Web CMS là h
 | :--- | :--- | :--- |
 | G1 | Du khách nghe được thuyết minh tại điểm tham quan mà không cần mạng | 100% gói offline tải lại được sau khi đồng bộ |
 | G2 | Tự động hóa kích hoạt thuyết minh khi du khách đến nơi | ≥ 80% lượt nghe kích hoạt bằng QR hoặc geofence, không cần thao tác tay |
-| G3 | Đa ngôn ngữ cho du khách nước ngoài | Danh mục có đủ `vi` + `en`; mọi POI bàn giao có ≥ 1 ngôn ngữ (dữ liệu seed: 6/6 POI có `vi`, 1/6 POI có `en`) |
+| G3 | Đa ngôn ngữ cho du khách nước ngoài | Danh mục có đủ `vi` + `en`; mọi POI bàn giao có ≥ 1 ngôn ngữ (dữ liệu seed: 6/6 POI có `vi`, 1/6 POI có `en`, 1/6 POI có `zh` — bản dịch mẫu để thử TTS) |
 | G4 | Cung cấp dữ liệu vận hành cho CMS | Dashboard trả về Top POI, tỷ lệ QR/GPS, heatmap, thời gian nghe trung bình |
 | G5 | Bàn giao API ổn định cho team Mobile | Tài liệu OpenAPI 3 sinh tự động + mọi nhóm endpoint (auth, locations, packages, analytics, tours, languages) có kiểm thử tự động |
 
@@ -39,7 +39,7 @@ Phạm vi tài liệu này: **toàn bộ backend**. Mobile App và Web CMS là h
 
 - Ứng dụng di động (Android/iOS) — nơi tiêu thụ API.
 - Giao diện Web CMS — chỉ cung cấp API Dashboard.
-- Cơ chế dịch máy tự động (TTS/MT). Nội dung thuyết minh được biên soạn và ghi âm thủ công.
+- Cơ chế dịch máy tự động (MT) giữa các ngôn ngữ. Văn bản thuyết minh vẫn biên soạn thủ công; riêng file âm thanh có thể sinh tự động từ văn bản bằng TTS (ADR 0004). Bước tiếp theo đã có đặc tả và quyết định: `docs/specs/feature-them-ngon-ngu.md`, ADR 0005 (chưa triển khai).
 - Thanh toán, đặt vé, đánh giá, bình luận.
 - Quản lý người dùng nhiều tài khoản / phân quyền RBAC.
 
@@ -127,6 +127,14 @@ Cột **UC** trỏ tới mã ca sử dụng trong `docs/USE_CASES.md`.
 | FR-VER-01 | Nhóm `/api/...` giữ định dạng mảng JSON phẳng | Không phá client cũ | UC-01, UC-03, UC-08 |
 | FR-VER-02 | Nhóm `/api/v1/...` trả dạng phân trang | `{ content, totalElements, totalPages, size, number, ... }`, hỗ trợ `page`, `size`, `sort`; mặc định `size=20` | — |
 | FR-VER-03 | Tài liệu OpenAPI 3 + Swagger UI tự sinh | `http://localhost:8080/swagger-ui.html` | — |
+
+### 4.8. Sinh audio thuyết minh (FR-TTS)
+
+| ID | Yêu cầu | Quy tắc nghiệp vụ | UC |
+| :--- | :--- | :--- | :--- |
+| FR-TTS-01 | Sinh file MP3 cho 1 bài thuyết minh từ `textContent` | `POST /api/narrations/{id}/audio` (token admin) ghi file vào `uploads/audio` và lưu tên file vào `audioUrl`; `durationInSeconds` ước lượng `length/15` | — |
+| FR-TTS-02 | Tái sử dụng file đã sinh | File đã tồn tại thì trả lại ngay, **không** gọi nhà cung cấp TTS, không tốn credit; `force=true` mới sinh lại | — |
+| FR-TTS-03 | Lỗi TTS không làm hỏng luồng audio | Ghi file tạm rồi move; thiếu `ELEVENLABS_API_KEY` hoặc upstream lỗi trả **503** kèm nguyên nhân, app vẫn khởi động bình thường | — |
 
 ---
 
@@ -395,7 +403,7 @@ Các mục dưới đây **chưa có trong hệ thống hiện tại**, ghi lạ
 | :--- | :--- | :--- | :--- |
 | B-01 | API upload/nghiệp vụ CRUD cho POI, Narration, Tour | Cao | Hiện chỉ có CRUD cho `Language`; POI/Tour/Narration chỉ đọc và seed tay trong `DataInitializer` |
 | B-02 | Quản lý nhiều tài khoản + phân quyền | Trung bình | Hiện 1 tài khoản admin đơn lẻ từ biến môi trường, không có DB user, không có refresh token |
-| B-03 | Cơ chế tự động dịch / TTS sinh audio theo ngôn ngữ | Trung bình | Nội dung hiện biên soạn + ghi âm thủ công; mới 1/6 POI có bản `en` |
+| B-03 | Dịch máy tự động nội dung thuyết minh sang ngôn ngữ khác | Trung bình | TTS sinh audio đã có (`POST /api/narrations/{id}/audio`, ADR 0004); phần dịch văn bản chưa làm; mới 1/6 POI có bản `en`. Đặc tả: `docs/specs/feature-them-ngon-ngu.md`, quyết định: ADR 0005 |
 | B-04 | Lưu trữ file âm thanh ngoài ổ đĩa cục bộ (S3/MinIO) | Trung bình | `uploads/audio` chỉ là thư mục cục bộ, không scale ngang |
 | B-05 | Cache gói offline (Redis) | Thấp | Hiện nén ZIP lại từ đầu mỗi lần gọi |
 | B-06 | Lọc dashboard theo khoảng thời gian / ngôn ngữ | Trung bình | Hiện thống kê toàn bộ lịch sử |
