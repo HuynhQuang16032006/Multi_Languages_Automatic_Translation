@@ -1,5 +1,7 @@
 HELP.md
 target/
+# Cấu hình cục bộ chứa secret (Spring Boot tự đọc file:./config/application.yml)
+/config/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
