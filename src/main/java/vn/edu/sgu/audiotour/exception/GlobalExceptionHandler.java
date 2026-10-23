@@ -40,6 +40,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
     }
 
+    // TTS/ dịch vụ ngoài không dùng được (thiếu API key, upstream lỗi): 503, không phải lỗi dữ liệu client
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleServiceUnavailable(ServiceUnavailableException ex, WebRequest request) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "Service Unavailable", ex.getMessage(), request);
+    }
+
     // Ràng buộc DB (unique / foreign key) không được lộ message SQL thô ra ngoài
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex, WebRequest request) {

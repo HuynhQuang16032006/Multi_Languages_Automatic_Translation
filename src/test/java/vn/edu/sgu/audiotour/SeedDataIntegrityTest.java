@@ -28,7 +28,7 @@ class SeedDataIntegrityTest {
 
     // Chỉ các file MP3 này thực sự tồn tại trong uploads/audio và được DataInitializer seed
     private static final List<String> EXPECTED_AUDIO_FILES = List.of(
-            "dinh-doc-lap-vi.mp3", "phong-khanh-tiet-vi.mp3", "phong-khanh-tiet-en.mp3",
+            "dinh-doc-lap-vi.mp3", "dinh-doc-lap-zh.mp3", "phong-khanh-tiet-vi.mp3", "phong-khanh-tiet-en.mp3",
             "phong-dai-yen-vi.mp3", "tram-khanh-hoi-vi.mp3", "tram-vinh-hoi-vi.mp3",
             "tram-xom-chieu-vi.mp3");
 

@@ -78,6 +78,12 @@ class PublicReadAccessTest {
     }
 
     @Test
+    void testGenerateAudioWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(post("/api/narrations/1/audio"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void testGetAnalyticsDashboardWithoutTokenReturns200() throws Exception {
         mockMvc.perform(get("/api/analytics/dashboard"))
                 .andExpect(status().isOk());

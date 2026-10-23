@@ -41,4 +41,15 @@ app:
   admin:
     username: ${APP_ADMIN_USERNAME:admin}
     password: ${APP_ADMIN_PASSWORD:admin123}
+  tts:
+    # ElevenLabs: free tier 10.000 ký tự/tháng. Lấy key tại https://elevenlabs.io/app/settings/api-keys
+    # Để trống thì app vẫn khởi động, endpoint sinh audio trả 503.
+    api-key: ${ELEVENLABS_API_KEY:}
+    base-url: https://api.elevenlabs.io
+    # Tiếng Việt không có trong eleven_multilingual_v2; flash/v3 mới hỗ trợ vi
+    model-id: ${TTS_MODEL_ID:eleven_flash_v2_5}
+    # Một voice dùng chung cho mọi ngôn ngữ (voice ElevenLabs không gắn ngôn ngữ).
+    # BẮT BUỘC điền voice ID thuộc tài khoản (Voices -> Voice Design, free tier 3 slot);
+    # voice thư viện như Rachel bị free tier chặn qua API (lỗi 402 paid_plan_required).
+    voice-id: ${TTS_VOICE:Zt0RvThLQEeXvt7v82wV}
 

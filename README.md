@@ -115,6 +115,7 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 | | `GET` | `/api/locations/{id}/sub-locations` | Lấy các khu vực con bên trong 1 địa điểm (VD: các phòng trong Dinh Độc Lập) | Public |
 | | `GET` | `/api/locations/by-qr/{qrCode}` | Quét mã QR nhận thông tin địa điểm (không cần GPS) | Public |
 | **Thuyết minh** | `GET` | `/api/narrations?locationId={id}&languageCode={vi\|en}` | Lấy nội dung văn bản thuyết minh + tên file MP3 (404 nếu POI chưa có bản thuyết minh cho ngôn ngữ đó) | Public |
+| | `POST` | `/api/narrations/{id}/audio?force=false` | Sinh file MP3 từ `textContent` bằng ElevenLabs TTS rồi lưu vào `uploads/audio`; file đã có thì dùng lại, `force=true` để sinh lại (503 nếu thiếu API key) | Token admin |
 | **Gói Offline** | `GET` | `/api/packages/stream?locationId={id}&languageCode={code}` | Phát trực tiếp file MP3 (dùng cho trang thuyết minh) | Public |
 | | `GET` | `/api/packages/offline?locationId={id}&languageCode={code}` | Tải file ZIP `tour-offline.zip` gồm `content.txt` và file MP3 thật | Public |
 | **Phân tích** | `POST` | `/api/analytics/heartbeat` | Nhịp tim ẩn danh mỗi 3s khi du khách đang nghe (`deviceId` tự sinh ở client) | Public |
@@ -130,6 +131,8 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 | | `DELETE` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Xoá ngôn ngữ (204 No Content) | Token admin |
 
 > 📄 **Phân trang chỉ có trên `/api/v1`:** các endpoint `/api/...` giữ nguyên định dạng mảng JSON như trước để client cũ không bị ảnh hưởng. Chỉ `/api/v1/...` trả về `{ content, totalElements, totalPages, size, number, ... }`.
+
+> 🎙️ **Sinh audio tự động (TTS):** `POST /api/narrations/{id}/audio` đọc `textContent` bằng ElevenLabs, ghi MP3 vào `uploads/audio` và lưu tên file vào `audioUrl`. File đã có thì dùng lại (không tốn credit); thêm `?force=true` để sinh lại. Cần `ELEVENLABS_API_KEY` — thiếu key thì endpoint trả **503**, app vẫn chạy bình thường. Tiếng Việt chỉ có ở model `eleven_flash_v2_5`/`eleven_v3`, **không** có ở `eleven_multilingual_v2`. Free tier 10.000 ký tự/tháng, không có giấy phép thương mại và phải ghi công `elevenlabs.io` khi công bố audio. Thử nhanh: `curl -X POST "http://localhost:8080/api/narrations/1/audio" -H "Authorization: Bearer <token>"` (thêm `?force=true` nếu file đã tồn tại và bạn muốn nghe giọng mới — lệnh này ghi đè file seed, lấy lại bằng `git checkout uploads/audio`). Chi tiết: [`docs/adr/0004-tts-elevenlabs.md`](docs/adr/0004-tts-elevenlabs.md).
 
 ---
 
@@ -212,5 +215,19 @@ java -jar target/audiotour-0.0.1-SNAPSHOT.jar
 | `JWT_SECRET` | secret dev | Profile prod: bắt buộc, tối thiểu 32 byte (HS256) |
 | `JWT_EXPIRATION_MS` | `86400000` | Thời hạn token (24 giờ) |
 | `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` | `admin` / `admin123` | Profile prod: bắt buộc; username ≥ 3 ký tự |
+| `ELEVENLABS_API_KEY` | (trống) | Key cho TTS; trống thì `POST /api/narrations/{id}/audio` trả 503 |
+| `TTS_VOICE` | (trống) | Một voice ID dùng chung cho mọi ngôn ngữ; **bắt buộc** — voice thư viện bị free tier chặn qua API (402) |
+| `TTS_MODEL_ID` | `eleven_flash_v2_5` | Không đổi sang `eleven_multilingual_v2` (không có `vi`) |
 
 Danh sách đầy đủ xem tại `.env.example`. Quy trình rollback xem tại `docs/ROLLBACK.md`.
+
+**Không muốn set biến môi trường?** Tạo `config/application.yml` (đã nằm trong `.gitignore`, Spring Boot tự đọc và override classpath) rồi điền:
+
+```yaml
+app:
+  tts:
+    api-key: "sk_..."
+    voice-id: "<voice_id>"   # một voice dùng chung cho vi/en/zh
+```
+
+Chạy `.\mvnw.cmd spring-boot:run` là đủ. Lưu ý: `.env` chỉ dùng cho `docker compose`; `spring-boot:run` không đọc `.env`.

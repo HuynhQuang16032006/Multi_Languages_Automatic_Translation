@@ -155,6 +155,22 @@ public class DataInitializer implements CommandLineRunner {
             recordSampleLog(phongKhanhTiet, "en", 115, TriggerType.QR_CODE, 10.7771, 106.6954);
             recordSampleLog(tramVinhHoi, "vi", 75, TriggerType.GEOFENCE, 10.7585, 106.7012);
         }
+
+        seedChineseNarration();
+    }
+
+    // Bản dịch mẫu tiếng Trung cho Dinh Độc Lập (idempotent) để thử voice zh trên DB đã seed vi/en
+    private void seedChineseNarration() {
+        Location dinhDocLap = locationRepository.findByQrCode("QR-DINH-DOC-LAP-01").orElse(null);
+        if (dinhDocLap == null
+                || narrationRepository.findByLocationIdAndLanguageCode(dinhDocLap.getId(), "zh").isPresent()) {
+            return;
+        }
+        Language zh = languageRepository.findByCode("zh")
+                .orElseGet(() -> languageRepository.save(new Language(null, "zh", "中文")));
+        createNarration(dinhDocLap, zh,
+                "独立宫位于胡志明市第一郡南圻起义街135号，1962年在诺罗敦宫旧址上建成，由建筑师吴曰树设计。1975年4月30日中午，这里见证了越南南北统一的历史时刻。",
+                "dinh-doc-lap-zh.mp3", 6);
     }
 
     private void createNarration(Location loc, Language lang, String text, String audio, int duration) {
