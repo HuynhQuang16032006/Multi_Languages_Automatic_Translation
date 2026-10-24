@@ -75,12 +75,11 @@ Lỗi:
 
 | Mã | Khi nào | Ghi chú |
 | --- | --- | --- |
-| 400 | `code` không có trong danh sách hỗ trợ | |
-| 409 | `Language` đã tồn tại | Service hiện có đã xử lý |
-| 502 | DeepL lỗi hoặc timeout | Không ghi gì vào DB |
-| 503 | Thiếu `app.mt.api-key` hoặc TTS lỗi | Bản dịch đã lưu, `audioGenerated` cho biết số file thành công |
+| 400 | `code` không có trong danh sách hỗ trợ, hoặc chưa có narration `vi` để dịch | |
+| 409 | `Language` đã tồn tại | Kiểm tra trước khi gọi DeepL để không tốn credit |
+| 503 | Thiếu `app.mt.api-key` hoặc DeepL lỗi | Không ghi gì vào DB |
 
-Khi TTS lỗi giữa đường, admin gọi lại `POST /api/narrations/{id}/audio` cho từng narration thiếu. Endpoint hiện có đã làm được việc này.
+Khi TTS lỗi giữa đường, request vẫn trả 201 với `audioGenerated` nhỏ hơn `translations`. Sinh audio là side effect không rollback được (file đã ghi, credit đã tiêu), nên báo số lượng thay vì giả vờ hỏng cả thao tác. Admin gọi lại `POST /api/narrations/{id}/audio` cho từng narration thiếu; endpoint hiện có đã làm được việc này.
 
 ## Dữ liệu
 

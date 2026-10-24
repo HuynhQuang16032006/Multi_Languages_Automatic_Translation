@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.sgu.audiotour.dto.LanguageRequest;
 import vn.edu.sgu.audiotour.entity.Language;
+import vn.edu.sgu.audiotour.entity.Narration;
 import vn.edu.sgu.audiotour.exception.ConflictException;
 import vn.edu.sgu.audiotour.exception.NotFoundException;
 import vn.edu.sgu.audiotour.repository.LanguageRepository;
@@ -46,6 +47,18 @@ public class LanguageService {
             throw new ConflictException("Mã ngôn ngữ đã tồn tại: " + request.getCode());
         }
         return languageRepository.save(new Language(null, request.getCode(), request.getName()));
+    }
+
+    // Ghi Language và toàn bộ Narration đã dịch trong 1 transaction: lỗi giữa đường thì DB không đổi
+    @Transactional
+    public Language saveWithNarrations(Language language, List<Narration> narrations) {
+        Language saved = languageRepository.save(language);
+        narrations.forEach(narration -> {
+            narration.setLanguage(saved);
+            narration.setAudioUrl(null);
+        });
+        narrationRepository.saveAll(narrations);
+        return saved;
     }
 
     // Cập nhật ngôn ngữ theo ID

@@ -48,6 +48,19 @@ class PublicReadAccessTest {
     }
 
     @Test
+    void testGetSupportedLanguagesWithoutTokenReturns200() throws Exception {
+        mockMvc.perform(get("/api/languages/supported"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].code").exists());
+    }
+
+    @Test
+    void testAddLanguageWithTranslationWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(post("/api/languages/ja/translate"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void testGetV1LocationsWithoutTokenReturns200() throws Exception {
         mockMvc.perform(get("/api/v1/locations"))
                 .andExpect(status().isOk());

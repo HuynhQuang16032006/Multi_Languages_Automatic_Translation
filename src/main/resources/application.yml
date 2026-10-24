@@ -52,4 +52,37 @@ app:
     # BẮT BUỘC điền voice ID thuộc tài khoản (Voices -> Voice Design, free tier 3 slot);
     # voice thư viện như Rachel bị free tier chặn qua API (lỗi 402 paid_plan_required).
     voice-id: ${TTS_VOICE:Zt0RvThLQEeXvt7v82wV}
+  mt:
+    # DeepL Free: 500.000 ký tự/tháng, không cần thẻ. Để trống thì endpoint thêm ngôn ngữ trả 503.
+    api-key: ${DEEPL_API_KEY:}
+    base-url: ${DEEPL_BASE_URL:https://api-free.deepl.com}
+  languages:
+    # Admin được thêm những ngôn ngữ này: giao của eleven_flash_v2_5 (32 ngôn ngữ) và DeepL.
+    # vi là ngôn ngữ nguồn nên không nằm trong danh sách. Kiểm tra lại khi đổi TTS_MODEL_ID hoặc nhà cung cấp dịch.
+    supported:
+      - { code: ar, name: العربية }
+      - { code: bg, name: Български }
+      - { code: cs, name: Čeština }
+      - { code: da, name: Dansk }
+      - { code: de, name: Deutsch }
+      - { code: el, name: Ελληνικά }
+      - { code: en, name: English }
+      - { code: es, name: Español }
+      - { code: fi, name: Suomi }
+      - { code: fr, name: Français }
+      - { code: hu, name: Magyar }
+      - { code: id, name: Indonesia }
+      - { code: it, name: Italiano }
+      - { code: ja, name: 日本語 }
+      - { code: ko, name: 한국어 }
+      - { code: nl, name: Nederlands }
+      - { code: pl, name: Polski }
+      - { code: pt, name: Português }
+      - { code: ro, name: Română }
+      - { code: ru, name: Русский }
+      - { code: sk, name: Slovenčina }
+      - { code: sv, name: Svenska }
+      - { code: tr, name: Türkçe }
+      - { code: uk, name: Українська }
+      - { code: zh, name: 中文 }
 
