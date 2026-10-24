@@ -229,11 +229,8 @@
         <h2 class="location-title" id="poiTitle">Dinh Độc Lập</h2>
         <p class="location-address" id="poiAddress">135 Nam Kỳ Khởi Nghĩa, Bến Thành, Quận 1, TP.HCM</p>
 
-        <!-- Nút chuyển ngôn ngữ -->
-        <div class="lang-toggle">
-            <button class="lang-btn active" id="btnVi" onclick="setLanguage('vi')">🇻🇳 Tiếng Việt</button>
-            <button class="lang-btn" id="btnEn" onclick="setLanguage('en')">🇬🇧 English</button>
-        </div>
+        <!-- Nút chuyển ngôn ngữ: nạp động từ /api/languages -->
+        <div class="lang-toggle" id="langToggle"></div>
 
         <!-- Trình phát âm thanh HTML5 -->
         <div class="audio-container">
@@ -304,6 +301,11 @@
         const audioStatus = document.getElementById("audioStatus");
         // Fallback trung tính khi API lỗi - không dùng lại nội dung của POI khác
         const DEFAULT_SCRIPT_TEXT = "Chưa tải được bản thuyết minh của điểm tham quan này. Bạn vẫn có thể nghe âm thanh khi mạng ổn.";
+        // Giữ 2 ngôn ngữ gốc khi không gọi được /api/languages
+        const FALLBACK_LANGUAGES = [
+            { code: "vi", name: "Tiếng Việt" },
+            { code: "en", name: "English" }
+        ];
 
         // Đếm giây thực tế đang phát
         player.addEventListener("timeupdate", () => {
@@ -319,7 +321,7 @@
         // 3. Tải thông tin địa điểm theo QR hoặc ID
         async function initLocation() {
             if (!currentLocationId && !qrCodeParam) return;
-            syncLanguageButtons();
+            await loadLanguages();
             try {
                 let url = `/api/locations/${currentLocationId}`;
                 if (qrCodeParam) {
@@ -391,8 +393,7 @@
                     return;
                 }
                 if (res.status === 404) {
-                    const otherLang = currentLang === "en" ? "Tiếng Việt" : "English";
-                    scriptText.textContent = `Chưa có bản thuyết minh cho ngôn ngữ này tại điểm tham quan này. Hãy thử chuyển sang ${otherLang}.`;
+                    scriptText.textContent = "Chưa có bản thuyết minh cho ngôn ngữ này tại điểm tham quan này. Hãy chọn ngôn ngữ khác.";
                     scriptNote.textContent = "";
                     return;
                 }
@@ -414,10 +415,40 @@
             sendHeartbeat("PING");
         }
 
+        // Nút ngôn ngữ nạp động: admin thêm ngôn ngữ trên dashboard thì player tự có, không cần sửa code
+        async function loadLanguages() {
+            let languages = FALLBACK_LANGUAGES;
+            try {
+                const res = await fetch("/api/languages");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length) languages = data;
+                }
+            } catch (e) {
+                console.warn("Không tải được danh sách ngôn ngữ, dùng mặc định:", e);
+            }
+            const toggle = document.getElementById("langToggle");
+            toggle.innerHTML = "";
+            languages.forEach(language => {
+                const button = document.createElement("button");
+                button.className = "lang-btn";
+                button.dataset.lang = language.code;
+                button.textContent = language.name;
+                button.addEventListener("click", () => setLanguage(language.code));
+                toggle.appendChild(button);
+            });
+            // ?lang= trỏ tới ngôn ngữ đã bị xóa -> rơi về ngôn ngữ đầu danh sách
+            if (!languages.some(language => language.code === currentLang)) {
+                currentLang = languages[0].code;
+            }
+            syncLanguageButtons();
+        }
+
         // Đồng bộ nút ngôn ngữ với currentLang (gọi lúc init vì ?lang= có thể mở bằng 'en')
         function syncLanguageButtons() {
-            document.getElementById("btnVi").classList.toggle("active", currentLang === "vi");
-            document.getElementById("btnEn").classList.toggle("active", currentLang === "en");
+            document.querySelectorAll("#langToggle .lang-btn").forEach(button => {
+                button.classList.toggle("active", button.dataset.lang === currentLang);
+            });
         }
 
         // 4. Cơ chế gửi Heartbeat định kỳ mỗi 3 giây

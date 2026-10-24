@@ -125,8 +125,10 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 | | `GET` | `/api/v1/tours` | Bản phân trang của `/api/tours` (`page`, `size`, `sort`) | Public |
 | | `GET` | `/api/tours/{id}` | Lấy chi tiết lộ trình 1 tour | Public |
 | **Ngôn ngữ** | `GET` | `/api/languages`, `/api/v1/languages` | Danh sách ngôn ngữ (`/api/v1` có phân trang) | Public |
+| | `GET` | `/api/languages/supported` | Danh sách ngôn ngữ admin được phép thêm (giao của TTS và DeepL, đọc từ `app.languages.supported`) | Public |
 | | `GET` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Lấy chi tiết 1 ngôn ngữ | Public |
 | | `POST` | `/api/languages`, `/api/v1/languages` | Thêm ngôn ngữ mới (201 Created; 409 Conflict nếu trùng `code`) | Token admin |
+| | `POST` | `/api/languages/{code}/translate` | Dịch toàn bộ thuyết minh `vi` sang `code` bằng DeepL, lưu narration mới rồi sinh audio (201 kèm `translations`, `audioGenerated`) | Token admin |
 | | `PUT` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Cập nhật ngôn ngữ theo ID | Token admin |
 | | `DELETE` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Xoá ngôn ngữ (204 No Content) | Token admin |
 
@@ -218,6 +220,8 @@ java -jar target/audiotour-0.0.1-SNAPSHOT.jar
 | `ELEVENLABS_API_KEY` | (trống) | Key cho TTS; trống thì `POST /api/narrations/{id}/audio` trả 503 |
 | `TTS_VOICE` | (trống) | Một voice ID dùng chung cho mọi ngôn ngữ; **bắt buộc** — voice thư viện bị free tier chặn qua API (402) |
 | `TTS_MODEL_ID` | `eleven_flash_v2_5` | Không đổi sang `eleven_multilingual_v2` (không có `vi`) |
+| `DEEPL_API_KEY` | (trống) | Key DeepL Free cho `POST /api/languages/{code}/translate`; trống thì endpoint trả 503 |
+| `DEEPL_BASE_URL` | `https://api-free.deepl.com` | Pro plan dùng `https://api.deepl.com` |
 
 Danh sách đầy đủ xem tại `.env.example`. Quy trình rollback xem tại `docs/ROLLBACK.md`.
 
@@ -228,6 +232,8 @@ app:
   tts:
     api-key: "sk_..."
     voice-id: "<voice_id>"   # một voice dùng chung cho vi/en/zh
+  mt:
+    api-key: "<DeepL key>"   # bắt buộc để thêm ngôn ngữ mới
 ```
 
 Chạy `.\mvnw.cmd spring-boot:run` là đủ. Lưu ý: `.env` chỉ dùng cho `docker compose`; `spring-boot:run` không đọc `.env`.

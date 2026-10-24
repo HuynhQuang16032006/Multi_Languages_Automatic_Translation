@@ -355,17 +355,25 @@
     </div>
 
     <script>
-        const scriptMap = {
-            "4_vi": "Dinh Độc Lập, nay là Di tích Lịch sử Dinh Độc Lập, tọa lạc tại số 135 đường Nam Kỳ Khởi Nghĩa, Quận 1, TP.HCM. Công trình do kiến trúc sư Ngô Viết Thụ thiết kế, là chứng nhân lịch sử đánh dấu thời khắc hòa bình, thống nhất non sông trưa ngày 30 tháng 4 năm 1975.",
-            "5_vi": "Chào mừng quý khách đến với Phòng Khánh Tiết tại Dinh Độc Lập. Đây là căn phòng có diện tích lớn nhất trong Dinh với sức chứa hơn 500 người, từng là nơi diễn ra các cuộc họp nội các và tiếp đón nguyên thủ quốc gia.",
-            "5_en": "Welcome to the Chamber of Reception at the Independence Palace. This is the largest hall in the palace with a capacity of over five hundred people, historically serving as the venue for crucial cabinet meetings and state receptions.",
-            "6_vi": "Phòng Đại Yến tọa lạc tại tầng một của Dinh Độc Lập, là nơi từng tổ chức các buổi chiêu đãi dạ tiệc cấp nhà nước với hơn một trăm khách, mang phong cách kiến trúc Đông Tây kết hợp hài hòa.",
-            "1_vi": "Chào mừng quý khách đến với trạm dừng xe buýt Khánh Hội, Quận 4. Vùng đất Khánh Hội xưa gắn liền với thương cảng Sài Gòn sầm uất và sự giao lưu văn hóa của cư dân Nam Bộ từ thời khẩn hoang.",
-            "2_vi": "Trạm dừng xe buýt Vĩnh Hội đưa quý khách đến với không gian giao thương sầm uất của Quận 4, từng là đầu mối vận chuyển hàng hóa đường thủy nhộn nhịp, nay là thiên đường ẩm thực đường phố.",
-            "3_vi": "Trạm dừng Xóm Chiếu là nơi lưu giữ nét văn hóa làng nghề truyền thống nổi tiếng từ thế kỷ trước, từng là trung tâm dệt chiếu cói nức tiếng phương Nam."
-        };
+        // Nạp ngôn ngữ thật từ API để bản demo cũng thấy ngôn ngữ admin vừa thêm;
+        // select giữ sẵn 2 option vi/en trong HTML làm fallback khi API lỗi
+        async function loadLanguages() {
+            try {
+                const res = await fetch("/api/languages");
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!Array.isArray(data) || !data.length) return;
+                const select = document.getElementById("languageSelect");
+                const selected = select.value;
+                select.innerHTML = data.map(language =>
+                    `<option value="${language.code}">${language.name} (${language.code})</option>`).join("");
+                if (data.some(language => language.code === selected)) select.value = selected;
+            } catch (e) {
+                console.warn("Không tải được danh sách ngôn ngữ, dùng mặc định:", e);
+            }
+        }
 
-        function updatePreview() {
+        async function updatePreview() {
             const locSelect = document.getElementById("locationSelect");
             const langSelect = document.getElementById("languageSelect");
             const opt = locSelect.options[locSelect.selectedIndex];
@@ -374,10 +382,21 @@
             document.getElementById("locAddress").innerText = opt.getAttribute("data-desc");
             document.getElementById("locQr").innerText = "Mã QR: " + opt.getAttribute("data-qr");
             document.getElementById("locImg").src = opt.getAttribute("data-img");
-
-            const key = opt.value + "_" + langSelect.value;
-            document.getElementById("scriptBox").innerText = scriptMap[key] || "Bài thuyết minh chuẩn bị sẵn sàng cho điểm tham quan này.";
             document.getElementById("statusLog").style.display = "none";
+
+            // Kịch bản lấy từ API, không hardcode: ngôn ngữ mới do admin thêm cũng hiện đúng
+            const scriptBox = document.getElementById("scriptBox");
+            try {
+                const res = await fetch(`/api/narrations?locationId=${opt.value}&languageCode=${langSelect.value}`);
+                if (!res.ok) {
+                    scriptBox.innerText = "Chưa có bản thuyết minh cho ngôn ngữ này tại điểm tham quan này.";
+                    return;
+                }
+                const data = await res.json();
+                scriptBox.innerText = data.textContent || "Chưa có bản thuyết minh cho ngôn ngữ này tại điểm tham quan này.";
+            } catch (e) {
+                scriptBox.innerText = "Không tải được bản thuyết minh từ máy chủ.";
+            }
         }
 
         function playAudioDirectly() {
@@ -401,8 +420,8 @@
             window.location.href = `/api/packages/offline?locationId=${locId}&languageCode=${lang}`;
         }
 
-        // Chạy lần đầu
-        updatePreview();
+        // Chạy lần đầu: nạp danh sách ngôn ngữ rồi mới dựng preview
+        loadLanguages().then(updatePreview);
     </script>
 </body>
 </html>

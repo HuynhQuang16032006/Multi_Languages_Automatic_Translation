@@ -497,7 +497,146 @@
         </div>
     </div>
 
+    <!-- Card: Thêm ngôn ngữ mới (dịch toàn bộ thuyết minh tiếng Việt + sinh audio) -->
+    <div class="card" style="margin-top: 20px;">
+        <div class="table-header">
+            <h2>Thêm Ngôn Ngữ Mới</h2>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Dịch máy toàn bộ bản thuyết minh tiếng Việt rồi sinh audio</span>
+        </div>
+
+        <div id="loginBox" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <input id="adminUsername" type="text" value="admin" placeholder="Tên đăng nhập" autocomplete="username"
+                style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #38bdf8; font-weight: 700; padding: 5px 10px; border-radius: 6px; width: 140px; font-size: 0.85rem;">
+            <input id="adminPassword" type="password" placeholder="Mật khẩu admin" autocomplete="current-password"
+                style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #38bdf8; font-weight: 700; padding: 5px 10px; border-radius: 6px; width: 160px; font-size: 0.85rem;">
+            <button onclick="login()"
+                style="background: #38bdf8; border: none; color: #090d16; font-weight: 700; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Đăng
+                nhập</button>
+            <span id="loginMsg" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+        </div>
+
+        <div id="addLanguageBox" style="display: none; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <select id="newLanguageSelect" aria-label="Chọn ngôn ngữ cần thêm"
+                style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #38bdf8; font-weight: 700; padding: 5px 10px; border-radius: 6px; font-size: 0.85rem;">
+                <option value="">Đang tải danh sách...</option>
+            </select>
+            <button id="addLanguageBtn" onclick="addLanguage()"
+                style="background: #22c55e; border: none; color: #090d16; font-weight: 700; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Thêm
+                ngôn ngữ (dịch + sinh audio)</button>
+            <span id="addLanguageMsg" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+        </div>
+    </div>
+
     <script>
+        // --- Thêm ngôn ngữ mới: cần JWT admin vì POST /api/languages/** yêu cầu auth ---
+        const TOKEN_KEY = "audiotour_admin_token";
+
+        function authHeaders() {
+            const token = sessionStorage.getItem(TOKEN_KEY);
+            return token ? { "Authorization": "Bearer " + token } : {};
+        }
+
+        async function login() {
+            const message = document.getElementById("loginMsg");
+            message.textContent = "Đang đăng nhập...";
+            try {
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: document.getElementById("adminUsername").value.trim(),
+                        password: document.getElementById("adminPassword").value
+                    })
+                });
+                if (!res.ok) {
+                    message.textContent = "Sai tài khoản hoặc mật khẩu.";
+                    return;
+                }
+                const data = await res.json();
+                sessionStorage.setItem(TOKEN_KEY, data.token);
+                message.textContent = "";
+                await showAddLanguageBox();
+            } catch (error) {
+                message.textContent = "Không gọi được API đăng nhập.";
+            }
+        }
+
+        async function showAddLanguageBox() {
+            document.getElementById("loginBox").style.display = "none";
+            document.getElementById("addLanguageBox").style.display = "flex";
+            await loadSupportedLanguages();
+        }
+
+        // Ngôn ngữ có thể thêm = whitelist của server trừ những ngôn ngữ đã có
+        async function loadSupportedLanguages() {
+            const select = document.getElementById("newLanguageSelect");
+            try {
+                const [supportedRes, currentRes] = await Promise.all([
+                    fetch("/api/languages/supported"),
+                    fetch("/api/languages")
+                ]);
+                if (!supportedRes.ok) {
+                    select.innerHTML = '<option value="">Không tải được danh sách</option>';
+                    return;
+                }
+                const supported = await supportedRes.json();
+                const current = currentRes.ok ? await currentRes.json() : [];
+                const existing = new Set(current.map(item => item.code));
+                const options = supported.filter(item => !existing.has(item.code));
+                select.innerHTML = options.length
+                    ? options.map(item => `<option value="${escapeHtml(item.code)}">${escapeHtml(item.name)} (${escapeHtml(item.code)})</option>`).join("")
+                    : '<option value="">Tất cả ngôn ngữ hỗ trợ đã có</option>';
+            } catch (error) {
+                select.innerHTML = '<option value="">Không tải được danh sách</option>';
+                console.error("Lỗi tải danh sách ngôn ngữ:", error);
+            }
+        }
+
+        async function addLanguage() {
+            const code = document.getElementById("newLanguageSelect").value;
+            const button = document.getElementById("addLanguageBtn");
+            const message = document.getElementById("addLanguageMsg");
+            if (!code) return;
+
+            button.disabled = true;
+            message.textContent = "Đang dịch và sinh audio, có thể mất khoảng 30 giây...";
+            try {
+                const res = await fetch(`/api/languages/${encodeURIComponent(code)}/translate`, {
+                    method: "POST",
+                    headers: authHeaders()
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (res.status === 401) {
+                    sessionStorage.removeItem(TOKEN_KEY);
+                    message.textContent = "";
+                    document.getElementById("loginBox").style.display = "flex";
+                    document.getElementById("addLanguageBox").style.display = "none";
+                    document.getElementById("loginMsg").textContent = "Phiên đăng nhập đã hết hạn, đăng nhập lại.";
+                    return;
+                }
+                if (!res.ok) {
+                    message.textContent = data.message || `Lỗi ${res.status}`;
+                    return;
+                }
+
+                const audioNote = data.audioGenerated < data.translations
+                    ? `, chỉ ${data.audioGenerated}/${data.translations} file audio (bấm sinh lại cho phần thiếu)`
+                    : "";
+                message.textContent = `Đã thêm ${data.language.name}: ${data.translations} bản dịch${audioNote}.`;
+                await loadSupportedLanguages();
+            } catch (error) {
+                message.textContent = "Không gọi được API thêm ngôn ngữ.";
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // Tab này đã đăng nhập rồi thì vào thẳng phần thêm ngôn ngữ
+        if (sessionStorage.getItem(TOKEN_KEY)) {
+            showAddLanguageBox();
+        }
+
         // Xác định địa chỉ IP máy chủ để điện thoại quét (mặc định LAN IP 172.20.10.8)
         let defaultLanIp = "172.20.10.8";
         if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.hostname !== '') {
