@@ -504,18 +504,7 @@
             <span style="font-size: 0.8rem; color: var(--text-muted);">Dịch máy toàn bộ bản thuyết minh tiếng Việt rồi sinh audio</span>
         </div>
 
-        <div id="loginBox" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <input id="adminUsername" type="text" value="admin" placeholder="Tên đăng nhập" autocomplete="username"
-                style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #38bdf8; font-weight: 700; padding: 5px 10px; border-radius: 6px; width: 140px; font-size: 0.85rem;">
-            <input id="adminPassword" type="password" placeholder="Mật khẩu admin" autocomplete="current-password"
-                style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #38bdf8; font-weight: 700; padding: 5px 10px; border-radius: 6px; width: 160px; font-size: 0.85rem;">
-            <button onclick="login()"
-                style="background: #38bdf8; border: none; color: #090d16; font-weight: 700; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Đăng
-                nhập</button>
-            <span id="loginMsg" style="font-size: 0.8rem; color: var(--text-muted);"></span>
-        </div>
-
-        <div id="addLanguageBox" style="display: none; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <div id="addLanguageBox" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <select id="newLanguageSelect" aria-label="Chọn ngôn ngữ cần thêm"
                 style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #38bdf8; font-weight: 700; padding: 5px 10px; border-radius: 6px; font-size: 0.85rem;">
                 <option value="">Đang tải danh sách...</option>
@@ -528,44 +517,7 @@
     </div>
 
     <script>
-        // --- Thêm ngôn ngữ mới: cần JWT admin vì POST /api/languages/** yêu cầu auth ---
-        const TOKEN_KEY = "audiotour_admin_token";
-
-        function authHeaders() {
-            const token = sessionStorage.getItem(TOKEN_KEY);
-            return token ? { "Authorization": "Bearer " + token } : {};
-        }
-
-        async function login() {
-            const message = document.getElementById("loginMsg");
-            message.textContent = "Đang đăng nhập...";
-            try {
-                const res = await fetch("/api/auth/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        username: document.getElementById("adminUsername").value.trim(),
-                        password: document.getElementById("adminPassword").value
-                    })
-                });
-                if (!res.ok) {
-                    message.textContent = "Sai tài khoản hoặc mật khẩu.";
-                    return;
-                }
-                const data = await res.json();
-                sessionStorage.setItem(TOKEN_KEY, data.token);
-                message.textContent = "";
-                await showAddLanguageBox();
-            } catch (error) {
-                message.textContent = "Không gọi được API đăng nhập.";
-            }
-        }
-
-        async function showAddLanguageBox() {
-            document.getElementById("loginBox").style.display = "none";
-            document.getElementById("addLanguageBox").style.display = "flex";
-            await loadSupportedLanguages();
-        }
+        // --- Thêm ngôn ngữ mới: endpoint public, dashboard chỉ admin dùng nên không cần đăng nhập ---
 
         // Ngôn ngữ có thể thêm = whitelist của server trừ những ngôn ngữ đã có
         async function loadSupportedLanguages() {
@@ -602,19 +554,10 @@
             message.textContent = "Đang dịch và sinh audio, có thể mất khoảng 30 giây...";
             try {
                 const res = await fetch(`/api/languages/${encodeURIComponent(code)}/translate`, {
-                    method: "POST",
-                    headers: authHeaders()
+                    method: "POST"
                 });
                 const data = await res.json().catch(() => ({}));
 
-                if (res.status === 401) {
-                    sessionStorage.removeItem(TOKEN_KEY);
-                    message.textContent = "";
-                    document.getElementById("loginBox").style.display = "flex";
-                    document.getElementById("addLanguageBox").style.display = "none";
-                    document.getElementById("loginMsg").textContent = "Phiên đăng nhập đã hết hạn, đăng nhập lại.";
-                    return;
-                }
                 if (!res.ok) {
                     message.textContent = data.message || `Lỗi ${res.status}`;
                     return;
@@ -632,10 +575,8 @@
             }
         }
 
-        // Tab này đã đăng nhập rồi thì vào thẳng phần thêm ngôn ngữ
-        if (sessionStorage.getItem(TOKEN_KEY)) {
-            showAddLanguageBox();
-        }
+        // Nạp danh sách ngay khi mở trang
+        loadSupportedLanguages();
 
         // Xác định địa chỉ IP máy chủ để điện thoại quét (mặc định LAN IP 172.20.10.8)
         let defaultLanIp = "172.20.10.8";

@@ -1,11 +1,13 @@
 package vn.edu.sgu.audiotour;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -55,9 +57,11 @@ class PublicReadAccessTest {
     }
 
     @Test
-    void testAddLanguageWithTranslationWithoutTokenReturns401() throws Exception {
-        mockMvc.perform(post("/api/languages/ja/translate"))
-                .andExpect(status().isUnauthorized());
+    void testAddLanguageWithTranslationIsPublic() throws Exception {
+        // Mã ngoài whitelist -> 400 trước khi gọi DeepL: test không tốn credit và không ghi DB
+        mockMvc.perform(post("/api/languages/zz/translate"))
+                .andExpect(result -> assertNotEquals(HttpServletResponse.SC_UNAUTHORIZED,
+                        result.getResponse().getStatus()));
     }
 
     @Test

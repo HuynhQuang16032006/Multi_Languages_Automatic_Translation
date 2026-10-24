@@ -128,7 +128,7 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 | | `GET` | `/api/languages/supported` | Danh sách ngôn ngữ admin được phép thêm (giao của TTS và DeepL, đọc từ `app.languages.supported`) | Public |
 | | `GET` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Lấy chi tiết 1 ngôn ngữ | Public |
 | | `POST` | `/api/languages`, `/api/v1/languages` | Thêm ngôn ngữ mới (201 Created; 409 Conflict nếu trùng `code`) | Token admin |
-| | `POST` | `/api/languages/{code}/translate` | Dịch toàn bộ thuyết minh `vi` sang `code` bằng DeepL, lưu narration mới rồi sinh audio (201 kèm `translations`, `audioGenerated`) | Token admin |
+| | `POST` | `/api/languages/{code}/translate` | Dịch toàn bộ thuyết minh `vi` sang `code` bằng DeepL, lưu narration mới rồi sinh audio (201 kèm `translations`, `audioGenerated`) | Public |
 | | `PUT` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Cập nhật ngôn ngữ theo ID | Token admin |
 | | `DELETE` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Xoá ngôn ngữ (204 No Content) | Token admin |
 

@@ -18,11 +18,11 @@ Chủ đồ án chốt: admin bấm nút thêm ngôn ngữ, hệ thống tự d�
 
 ## Quyết định
 
-1. **Admin thêm ngôn ngữ qua dashboard, không mở endpoint ghi cho khách.** Dashboard có form đăng nhập nhỏ gọi `POST /api/auth/login`, giữ token trong `sessionStorage`. Mở `POST /api/languages` cho người lạ là lỗ hổng ghi dữ liệu, không đáng đổi lấy 20 dòng code.
+1. **Endpoint thêm ngôn ngữ để public; dashboard không có đăng nhập.** Dashboard là trang riêng của admin, khách không mở. Chủ đồ án chốt bỏ form đăng nhập cho gọn. Đánh đổi: ai biết URL cũng gọi được `POST /api/languages/{code}/translate`. Thiệt hại bị chặn bởi whitelist và bởi mỗi ngôn ngữ chỉ thêm được một lần (409), tối đa đúng 25 ngôn ngữ, và không lộ token admin. Các endpoint ghi khác (`POST /api/languages`, `POST /api/narrations/{id}/audio`) vẫn cần token. Deploy công khai thì trả token lại cho endpoint này.
 2. **Một request làm trọn việc thêm ngôn ngữ**: dịch 6 narration `vi`, lưu, rồi sinh 6 file MP3. Endpoint `POST /api/languages/{code}/translate`.
 3. **DeepL Free làm dịch vụ dịch.** 500.000 ký tự/tháng, không cần thẻ, có `vi` cả hai chiều. Một ngôn ngữ mới tốn khoảng 1.600 ký tự.
 4. **Nguồn dịch cố định là `vi`.** Đây là bản đầy đủ nhất và là ngôn ngữ gốc của đề tài. Không dịch chéo từ `en`/`zh`.
-5. **Dịch all-or-nothing.** Dịch đủ 6 bản rồi mới ghi `Language` và 6 `Narration` trong một transaction. Lỗi một bản thì không ghi gì, trả 502. Nửa ngôn ngữ có nội dung, nửa không, tệ hơn là không có ngôn ngữ.
+5. **Dịch all-or-nothing.** Dịch đủ 6 bản rồi mới ghi `Language` và 6 `Narration` trong một transaction. Lỗi một bản thì không ghi gì, trả 503. Nửa ngôn ngữ có nội dung, nửa không, tệ hơn là không có ngôn ngữ.
 6. **Sinh audio sau khi commit, không rollback được.** Gọi TTS từng narration qua `TtsService` hiện có. DeepL lỗi thì chưa ghi gì. TTS lỗi giữa đường thì các file trước đã ghi và đã tốn credit; response trả `audioGenerated` để admin biết còn thiếu bao nhiêu, và gọi lại `POST /api/narrations/{id}/audio` cho phần thiếu.
 7. **Sinh audio ngay, không lazy.** Du khách không có token nên không tự kích hoạt được TTS, và endpoint stream công khai không tự sinh file. Để trống audio nghĩa là du khách gặp lỗi khi bấm nghe. Ngôn ngữ vừa thêm thì kiểu gì cũng demo, nên tiết kiệm quota bằng cách bắt admin bấm thêm một nút là tiết kiệm giả.
 8. **Danh sách ngôn ngữ hỗ trợ nằm trong cấu hình**, là giao của ngôn ngữ `eleven_flash_v2_5` đọc được và ngôn ngữ DeepL dịch được. Endpoint công khai `GET /api/languages/supported` trả danh sách này cho dashboard. Một nguồn duy nhất, không hardcode hai nơi.

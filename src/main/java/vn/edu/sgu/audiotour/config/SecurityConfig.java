@@ -31,6 +31,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/v1/auth/login").permitAll()
+                        // Dashboard tự gọi thêm ngôn ngữ không cần đăng nhập (trang chỉ admin dùng).
+                        // Ngôn ngữ chỉ thêm được 1 lần nên thiệt hại tối đa = số ngôn ngữ trong whitelist.
+                        .requestMatchers(HttpMethod.POST, "/api/languages/*/translate").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/packages/stream", "/api/packages/offline", "/api/locations/by-qr/**", "/api/analytics/**", "/demo.html", "/index.html", "/dashboard.html", "/player.html", "/favicon.ico").permitAll()
                         // Trang chủ du khách: "/" serve welcome page (index.html)

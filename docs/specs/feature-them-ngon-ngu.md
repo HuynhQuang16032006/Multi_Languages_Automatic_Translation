@@ -18,7 +18,7 @@ Admin đăng nhập dashboard, chọn một ngôn ngữ trong danh sách hỗ tr
 
 Trong phạm vi:
 
-- Nút "Thêm ngôn ngữ" trên dashboard, kèm đăng nhập admin.
+- Nút "Thêm ngôn ngữ" trên dashboard (dashboard là trang của admin, không cần đăng nhập).
 - Endpoint dịch + sinh audio cho một ngôn ngữ.
 - Danh sách ngôn ngữ hỗ trợ đọc từ cấu hình.
 - `player.html` và `demo.html` lấy ngôn ngữ động từ API thay vì hardcode.
@@ -33,7 +33,7 @@ Ngoài phạm vi:
 
 ## Luồng
 
-1. Admin mở `dashboard.html`, đăng nhập bằng `POST /api/auth/login`, token giữ trong `sessionStorage`.
+1. Admin mở `dashboard.html` (trang của admin, mở là dùng được, không đăng nhập).
 2. Dashboard gọi `GET /api/languages/supported`, đổ vào dropdown. Mỗi mục hiện tên và mã.
 3. Admin chọn ngôn ngữ, bấm "Thêm". Dashboard gọi `POST /api/languages/{code}/translate` và hiện trạng thái chờ.
 4. Server kiểm tra mã nằm trong danh sách hỗ trợ và chưa tồn tại. Sau đó lấy 6 narration `vi` làm nguồn.
@@ -57,9 +57,9 @@ Trả danh sách mã và tên ngôn ngữ lấy từ cấu hình, không đọc 
 ]
 ```
 
-### `POST /api/languages/{code}/translate` (cần token)
+### `POST /api/languages/{code}/translate` (public)
 
-Không có body. `code` là mã trong danh sách hỗ trợ.
+Không có body. `code` là mã trong danh sách hỗ trợ. Endpoint mở công khai vì dashboard là trang riêng của admin và mỗi ngôn ngữ chỉ thêm được một lần (409 nếu đã có), nên thiệt hại tối đa nếu bị gọi lạ là bằng đúng whitelist.
 
 Thành công 201:
 
@@ -118,8 +118,8 @@ DeepL nhận mã chữ hoa. `zh` gửi thành `ZH-HANS`; các mã còn lại ch�
 
 `dashboard.html`:
 
-- Form đăng nhập nhỏ, gọi `POST /api/auth/login`, lưu token trong `sessionStorage`, đính `Authorization: Bearer` cho mọi request ghi.
-- Khối "Thêm ngôn ngữ": dropdown từ `/api/languages/supported`, nút thêm, spinner trong lúc chờ, thông báo kết quả.
+- Không cần đăng nhập: gọi thẳng `POST /api/languages/{code}/translate`, nút bị disable trong lúc chờ.
+- Khối "Thêm ngôn ngữ": dropdown từ `/api/languages/supported` (đã trừ ngôn ngữ hiện có), nút thêm, thông báo kết quả.
 
 `player.html`:
 
@@ -137,9 +137,9 @@ DeepL nhận mã chữ hoa. `zh` gửi thành `ZH-HANS`; các mã còn lại ch�
 1. DB sạch, thêm `ja`: 201, DB có 4 `Language`, 6 `Narration` mới, `uploads/audio` có 6 file `<locationId>-ja.mp3`, player phát được.
 2. Gọi lại `ja`: 409, không sinh thêm file.
 3. Mã `xx` ngoài danh sách: 400.
-4. Tắt mạng hoặc dùng key DeepL sai: 502, DB không có `ja`.
+4. Tắt mạng hoặc dùng key DeepL sai: 503, DB không có `ja`.
 5. Xoá một file MP3 của `ja`: player hiện thông báo, không treo.
-6. Không token: `POST /api/languages/ja/translate` trả 401; `GET /api/languages/supported` trả 200.
+6. Không token: `POST /api/languages/ja/translate` vẫn chạy (public); `POST /api/languages` vẫn trả 401.
 7. 115 test hiện có vẫn xanh, thêm test cho `TranslationService` và luồng thêm ngôn ngữ.
 
 ## Ước lượng
@@ -147,7 +147,7 @@ DeepL nhận mã chữ hoa. `zh` gửi thành `ZH-HANS`; các mã còn lại ch�
 | Việc | Thời gian |
 | --- | --- |
 | `TranslationService`, cấu hình, endpoint, xử lý lỗi | 2 giờ |
-| Đăng nhập + khối thêm ngôn ngữ trên dashboard | 1 giờ |
+| Khối thêm ngôn ngữ trên dashboard | 1 giờ |
 | `player.html`, `demo.html` lấy ngôn ngữ động | 45 phút |
 | Test + chạy thử end-to-end | 1 giờ |
 
