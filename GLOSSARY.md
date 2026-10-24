@@ -24,6 +24,10 @@ _Avoid_: Audio, script, bài giảng
 Ngôn ngữ mà hệ thống cung cấp bản thuyết minh cho du khách, gồm mã và tên hiển thị. Một Language chỉ có nội dung tại những POI đã có Narration tương ứng; các POI còn lại hiện là chưa có bản thuyết minh.
 _Avoid_: locale; "ngôn ngữ TTS" (đó là tập ngôn ngữ nhà cung cấp TTS đọc được, rộng hơn Language)
 
+**Preferred Language** (ngôn ngữ ưa thích):
+Ngôn ngữ mà du khách đã chủ động chọn hoặc hệ thống tự động nhận diện từ thiết bị, được lưu giữ qua các lượt nghe và các lần quét mã để tự động áp dụng cho các điểm tham quan kế tiếp.
+_Avoid_: Selected language (đó chỉ là giá trị tạm thời trên giao diện hiện tại), guest language, default language (đó là ngôn ngữ fallback của hệ thống)
+
 **Machine Translation** (MT):
 Bước tạo nội dung cho Narration của một Language mới bằng dịch vụ dịch tự động, lấy bản `vi` làm nguồn. Kết quả là Narration mới; bản nguồn không đổi.
 _Avoid_: auto-translate, dịch tự động (khi nói về khái niệm)

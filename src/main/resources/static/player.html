@@ -279,7 +279,53 @@
 
         const locationIdParam = urlParams.get("locationId");
         let currentLocationId = locationIdParam ? parseInt(locationIdParam) : null;
-        let currentLang = urlParams.get("lang") || "vi";
+        
+        const PREFERRED_LANG_KEY = "audiotour_preferred_lang";
+        const DEFAULT_LANGUAGE = "vi";
+
+        // Giữ 2 ngôn ngữ gốc khi không gọi được /api/languages
+        const FALLBACK_LANGUAGES = [
+            { code: "vi", name: "Tiếng Việt" },
+            { code: "en", name: "English" }
+        ];
+
+        function getSavedLanguage() {
+            try {
+                return localStorage.getItem(PREFERRED_LANG_KEY);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function savePreferredLanguage(code) {
+            try {
+                localStorage.setItem(PREFERRED_LANG_KEY, code);
+            } catch (e) {
+                console.warn("Không thể lưu ngôn ngữ ưa thích vào localStorage:", e);
+            }
+        }
+
+        function detectDeviceLanguage(supportedList) {
+            if (!navigator.language) return null;
+            const langCode = navigator.language.split("-")[0].toLowerCase();
+            const found = supportedList.find(item => item.code.toLowerCase() === langCode);
+            return found ? found.code : null;
+        }
+
+        function resolveInitialLanguage(supportedList = FALLBACK_LANGUAGES) {
+            const urlLang = urlParams.get("lang");
+            if (urlLang) {
+                savePreferredLanguage(urlLang);
+                return urlLang;
+            }
+            const saved = getSavedLanguage();
+            if (saved) return saved;
+            const deviceLang = detectDeviceLanguage(supportedList);
+            if (deviceLang) return deviceLang;
+            return DEFAULT_LANGUAGE;
+        }
+
+        let currentLang = resolveInitialLanguage(FALLBACK_LANGUAGES);
         const qrCodeParam = urlParams.get("qr");
         // Cách khách đến được POI này, ghi vào playback log
         const triggerParam = urlParams.get("trigger");
@@ -305,11 +351,6 @@
         const audioStatus = document.getElementById("audioStatus");
         // Fallback trung tính khi API lỗi - không dùng lại nội dung của POI khác
         const DEFAULT_SCRIPT_TEXT = "Chưa tải được bản thuyết minh của điểm tham quan này. Bạn vẫn có thể nghe âm thanh khi mạng ổn.";
-        // Giữ 2 ngôn ngữ gốc khi không gọi được /api/languages
-        const FALLBACK_LANGUAGES = [
-            { code: "vi", name: "Tiếng Việt" },
-            { code: "en", name: "English" }
-        ];
 
         // Đếm giây thực tế đang phát
         player.addEventListener("timeupdate", () => {
@@ -355,6 +396,7 @@
 
             // Cập nhật audio stream
             loadAudioStream();
+            player.play().catch(e => console.log("Cần bấm Play trên di động"));
 
             // Lấy kịch bản thuyết minh thật từ API
             loadNarrationText();
@@ -378,7 +420,6 @@
         function loadAudioStream() {
             audioStatus.textContent = "";
             player.src = `/api/packages/stream?locationId=${currentLocationId}&languageCode=${currentLang}`;
-            player.play().catch(e => console.log("Cần bấm Play trên di động"));
         }
 
         // 3. Lấy kịch bản thuyết minh thật theo POI + ngôn ngữ đang chọn
@@ -397,7 +438,7 @@
                     return;
                 }
                 if (res.status === 404) {
-                    scriptText.textContent = "Chưa có bản thuyết minh cho ngôn ngữ này tại điểm tham quan này. Hãy chọn ngôn ngữ khác.";
+                    scriptText.textContent = "Chưa có bản thuyết minh cho ngôn ngữ này tại điểm tham quan này. Bạn có thể chọn ngôn ngữ khác ở thanh phía trên.";
                     scriptNote.textContent = "";
                     return;
                 }
@@ -411,11 +452,26 @@
         }
 
         function setLanguage(lang) {
+            if (!lang || lang === currentLang) return;
+
+            const wasPlaying = !player.paused && !player.ended && player.currentTime > 0;
+
+            // Chốt phiên nghe cũ trước khi đổi: Gọi sendHeartbeat("LEAVE") với currentLang cũ và listenSeconds hiện tại
+            sendHeartbeat("LEAVE");
+
             currentLang = lang;
+            savePreferredLanguage(lang);
             listenSeconds = 0; // reset để heartbeat không gửi thời gian nghe của bản thu âm cũ
+
             syncLanguageButtons();
             loadAudioStream();
             loadNarrationText();
+
+            if (wasPlaying) {
+                player.play().catch(e => console.log("Cần bấm Play trên di động:", e));
+            }
+
+            // Kích hoạt phiên nghe mới
             sendHeartbeat("PING");
         }
 
@@ -431,6 +487,11 @@
             } catch (e) {
                 console.warn("Không tải được danh sách ngôn ngữ, dùng mặc định:", e);
             }
+            // ?lang= hoặc giá trị lưu trỏ tới ngôn ngữ đã bị xóa -> rơi về ngôn ngữ đầu danh sách
+            if (!languages.some(language => language.code === currentLang)) {
+                currentLang = languages[0].code;
+                savePreferredLanguage(currentLang);
+            }
             const toggle = document.getElementById("langToggle");
             toggle.innerHTML = "";
             languages.forEach(language => {
@@ -441,10 +502,6 @@
                 button.addEventListener("click", () => setLanguage(language.code));
                 toggle.appendChild(button);
             });
-            // ?lang= trỏ tới ngôn ngữ đã bị xóa -> rơi về ngôn ngữ đầu danh sách
-            if (!languages.some(language => language.code === currentLang)) {
-                currentLang = languages[0].code;
-            }
             syncLanguageButtons();
         }
 
@@ -513,9 +570,10 @@
                 }
             }
 
-            // Trở về giao diện người dùng ngay, giữ toà nếu khách vào từ QR
+            // Trở về giao diện người dùng ngay, giữ toà và ngôn ngữ đã chọn
             const venue = urlParams.get("venue");
-            window.location.href = "index.html" + (venue ? "?venue=" + encodeURIComponent(venue) : "");
+            const venueParam = venue ? "&venue=" + encodeURIComponent(venue) : "";
+            window.location.href = "index.html?lang=" + encodeURIComponent(currentLang) + venueParam;
         }
 
         // 6. Tự động gửi LEAVE khi đóng tab / tắt trình duyệt
@@ -532,6 +590,13 @@
                 if (navigator.sendBeacon) {
                     navigator.sendBeacon("/api/analytics/heartbeat", new Blob([payload], { type: "application/json" }));
                 }
+            }
+        });
+
+        // 7. Đồng bộ đa tab: khi tab khác đổi Preferred Language thì cập nhật ngay
+        window.addEventListener("storage", (event) => {
+            if (event.key === PREFERRED_LANG_KEY && event.newValue && event.newValue !== currentLang) {
+                setLanguage(event.newValue);
             }
         });
 

@@ -108,6 +108,63 @@
             outline-offset: 2px;
         }
 
+        /* Bộ chọn ngôn ngữ toàn cục trên header */
+        .header-lang-picker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 44px;
+            padding: 0 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+        }
+
+        .header-lang-picker__icon {
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .header-lang-picker__select {
+            border: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+            cursor: pointer;
+            outline: none;
+            padding-right: 4px;
+        }
+
+        .header-lang-picker__select option {
+            background-color: #1a2235;
+            color: var(--text-main);
+        }
+
+        .header-lang-picker:focus-within {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .poi-sheet__switch-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            text-decoration: underline;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+            font-weight: 700;
+            padding: 0;
+            margin-left: 6px;
+        }
+
+        .poi-sheet__switch-btn:hover {
+            color: #7dd3fc;
+        }
+
         .app-main {
             flex: 1 1 auto;
             width: 100%;
@@ -809,13 +866,17 @@
 
 <body>
 
-    <header class="app-header">
+    <header class="app-header topbar">
         <h1>Audio Tour SGU</h1>
         <p>Khám phá các điểm tham quan TP.HCM với thuyết minh tự động đa ngôn ngữ.</p>
         <div class="app-header__actions">
             <button type="button" id="nearMeButton" class="header-btn header-btn--primary" hidden>Gần tôi</button>
             <button type="button" id="sortByNameButton" class="header-btn" title="Sắp xếp theo tên A-Z và bỏ khoảng cách"
                 hidden>Sắp xếp theo tên</button>
+            <div class="header-lang-picker" id="headerLangPicker" title="Chọn ngôn ngữ thuyết minh">
+                <span class="header-lang-picker__icon" aria-hidden="true">🌐</span>
+                <select id="headerLangSelect" class="header-lang-picker__select" aria-label="Chọn ngôn ngữ thuyết minh"></select>
+            </div>
         </div>
     </header>
 
@@ -923,6 +984,7 @@
         const TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
         const TILE_ATTRIBUTION = 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
         const DEFAULT_LANGUAGE = "vi";
+        const PREFERRED_LANG_KEY = "audiotour_preferred_lang";
         // GPS sai số lớn hơn ngưỡng này thì không khẳng định "phòng gần nhất": phòng trong nhà cách nhau ~15 m
         const VENUE_ACCURACY_LIMIT_METERS = 30;
 
@@ -943,7 +1005,7 @@
             markersById: new Map(),
             map: null,
             languages: [],
-            selectedLanguage: DEFAULT_LANGUAGE,
+            selectedLanguage: resolveInitialLanguage(FALLBACK_LANGUAGES),
             sheetPoi: null,
             sheetOpener: null,
             sheetClosing: false,
@@ -992,6 +1054,7 @@
             poiSheetDistance: document.getElementById("poiSheetDistance"),
             nearMeButton: document.getElementById("nearMeButton"),
             sortByNameButton: document.getElementById("sortByNameButton"),
+            headerLangSelect: document.getElementById("headerLangSelect"),
             geoNotice: document.getElementById("geoNotice"),
             geoSecureNote: document.getElementById("geoSecureNote"),
             venueBanner: document.getElementById("venueBanner"),
@@ -1743,7 +1806,81 @@
 
         // ===== Bottom sheet chi tiết POI =====
 
-        // Tải danh sách ngôn ngữ để đổ vào hàng chọn trong sheet
+        function getSavedLanguage() {
+            try {
+                return localStorage.getItem(PREFERRED_LANG_KEY);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function savePreferredLanguage(code) {
+            try {
+                localStorage.setItem(PREFERRED_LANG_KEY, code);
+            } catch (e) {
+                console.warn("Không lưu được Preferred Language vào localStorage:", e);
+            }
+        }
+
+        function detectDeviceLanguage(supportedList) {
+            if (!navigator.language) return null;
+            const langCode = navigator.language.split("-")[0].toLowerCase();
+            const found = supportedList.find(item => item.code.toLowerCase() === langCode);
+            return found ? found.code : null;
+        }
+
+        function resolveInitialLanguage(supportedList) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlLang = urlParams.get("lang");
+            if (urlLang) {
+                if (supportedList.some(item => item.code === urlLang)) {
+                    savePreferredLanguage(urlLang);
+                    return urlLang;
+                }
+            }
+            const saved = getSavedLanguage();
+            if (saved && supportedList.some(item => item.code === saved)) {
+                return saved;
+            }
+            const deviceLang = detectDeviceLanguage(supportedList);
+            if (deviceLang) {
+                return deviceLang;
+            }
+            const fallback = supportedList.some(item => item.code === DEFAULT_LANGUAGE)
+                ? DEFAULT_LANGUAGE
+                : (supportedList[0] ? supportedList[0].code : DEFAULT_LANGUAGE);
+            if (saved && !supportedList.some(item => item.code === saved)) {
+                savePreferredLanguage(fallback);
+            }
+            return fallback;
+        }
+
+        function renderHeaderLanguages() {
+            if (!dom.headerLangSelect) return;
+            dom.headerLangSelect.innerHTML = "";
+            currentLanguages().forEach(language => {
+                const opt = document.createElement("option");
+                opt.value = language.code;
+                opt.textContent = `${language.name} (${language.code})`;
+                if (language.code === state.selectedLanguage) opt.selected = true;
+                dom.headerLangSelect.appendChild(opt);
+            });
+            dom.headerLangSelect.value = state.selectedLanguage;
+        }
+
+        function setSelectedLanguage(code) {
+            const languages = currentLanguages();
+            if (!languages.some(item => item.code === code)) return;
+            state.selectedLanguage = code;
+            savePreferredLanguage(code);
+            renderHeaderLanguages();
+            if (state.sheetPoi) {
+                renderSheetLanguages();
+                checkNarrationAvailability(state.sheetPoi, state.selectedLanguage);
+            }
+        }
+
+        // Tải danh sách ngôn ngữ để đổ vào header và hàng chọn trong sheet
         async function loadLanguages() {
             try {
                 const response = await fetch(LANGUAGES_API, { headers: { "Accept": "application/json" } });
@@ -1757,9 +1894,11 @@
                 console.warn("Không tải được danh sách ngôn ngữ, dùng danh sách mặc định:", error);
                 state.languages = FALLBACK_LANGUAGES.slice();
             }
+            state.selectedLanguage = resolveInitialLanguage(currentLanguages());
+            renderHeaderLanguages();
             if (state.sheetPoi) {
-                resolveSelectedLanguage();
                 renderSheetLanguages();
+                checkNarrationAvailability(state.sheetPoi, state.selectedLanguage);
             }
         }
 
@@ -1771,8 +1910,12 @@
         function resolveSelectedLanguage() {
             const languages = currentLanguages();
             if (!languages.some(item => item.code === state.selectedLanguage)) {
-                state.selectedLanguage = languages[0].code;
+                state.selectedLanguage = languages.some(item => item.code === DEFAULT_LANGUAGE)
+                    ? DEFAULT_LANGUAGE
+                    : (languages[0] ? languages[0].code : DEFAULT_LANGUAGE);
+                savePreferredLanguage(state.selectedLanguage);
             }
+            renderHeaderLanguages();
             return state.selectedLanguage;
         }
 
@@ -1795,7 +1938,7 @@
         }
 
         function hideSheetNote() {
-            dom.poiSheetNote.textContent = "";
+            dom.poiSheetNote.innerHTML = "";
             dom.poiSheetNote.hidden = true;
         }
 
@@ -1810,7 +1953,20 @@
                 const response = await fetch(url, { headers: { "Accept": "application/json" } });
                 if (token !== state.narrationToken) return;
                 if (response.status === 404) {
-                    showSheetNote("Chưa có bản thuyết minh cho ngôn ngữ này tại điểm này.");
+                    const currentLangObj = currentLanguages().find(item => item.code === languageCode);
+                    const langName = currentLangObj ? currentLangObj.name : languageCode;
+                    let noteHtml = "Chưa có bản thuyết minh " + escapeHtml(langName) + " cho điểm này.";
+                    if (languageCode !== DEFAULT_LANGUAGE) {
+                        noteHtml += ' <button type="button" id="poiSheetSwitchVi" class="poi-sheet__switch-btn">Nghe bản Tiếng Việt</button>';
+                    }
+                    dom.poiSheetNote.innerHTML = noteHtml;
+                    dom.poiSheetNote.hidden = false;
+                    const switchBtn = document.getElementById("poiSheetSwitchVi");
+                    if (switchBtn) {
+                        switchBtn.addEventListener("click", () => {
+                            setSelectedLanguage(DEFAULT_LANGUAGE);
+                        });
+                    }
                 }
             } catch (error) {
                 // Lỗi mạng: không hiện gì để không chặn thao tác của người dùng
@@ -1823,7 +1979,6 @@
             state.sheetPoi = poi;
             state.sheetOpener = opener instanceof HTMLElement ? opener : null;
             state.sheetClosing = false;
-            state.selectedLanguage = DEFAULT_LANGUAGE;
             resolveSelectedLanguage();
 
             dom.poiSheetPanel.setAttribute("aria-label", poi.name || "Chi tiết điểm tham quan");
@@ -1911,19 +2066,39 @@
             const poi = state.poisById.get(String(button.dataset.poiId));
             if (!poi) return;
             if (button.classList.contains("poi-card__cta")) {
-                openPlayer(poi, DEFAULT_LANGUAGE);
+                openPlayer(poi, state.selectedLanguage);
             } else {
                 openPoiSheet(poi, button);
             }
         });
 
-        // Đổi ngôn ngữ trong sheet -> cập nhật nút nghe và kiểm tra lại bản thuyết minh
+        // Đổi ngôn ngữ trên header -> đồng bộ toàn cục
+        if (dom.headerLangSelect) {
+            dom.headerLangSelect.addEventListener("change", (e) => {
+                setSelectedLanguage(e.target.value);
+            });
+        }
+
+        // Đổi ngôn ngữ trong sheet -> đồng bộ Preferred Language và kiểm tra lại bản thuyết minh
         dom.poiSheetLangs.addEventListener("click", (event) => {
             const button = event.target.closest("button[data-lang]");
             if (!button || !state.sheetPoi) return;
-            state.selectedLanguage = button.dataset.lang;
-            renderSheetLanguages();
-            checkNarrationAvailability(state.sheetPoi, state.selectedLanguage);
+            setSelectedLanguage(button.dataset.lang);
+        });
+
+        // Đồng bộ lựa chọn ngôn ngữ thời gian thực giữa các tab qua storage event
+        window.addEventListener("storage", (event) => {
+            if (event.key === PREFERRED_LANG_KEY && event.newValue && event.newValue !== state.selectedLanguage) {
+                const languages = currentLanguages();
+                if (languages.some(item => item.code === event.newValue)) {
+                    state.selectedLanguage = event.newValue;
+                    renderHeaderLanguages();
+                    if (state.sheetPoi) {
+                        renderSheetLanguages();
+                        checkNarrationAvailability(state.sheetPoi, state.selectedLanguage);
+                    }
+                }
+            }
         });
 
         dom.poiSheetClose.addEventListener("click", () => closePoiSheet());
@@ -1986,6 +2161,7 @@
         window.addEventListener("offline", handleOffline);
         window.addEventListener("online", handleOnline);
 
+        renderHeaderLanguages();
         initMap();
         initGeoSupport();
         loadPois();

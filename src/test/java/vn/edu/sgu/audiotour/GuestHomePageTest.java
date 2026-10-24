@@ -78,4 +78,22 @@ class GuestHomePageTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("window.location.replace(\"index.html\")")));
     }
+
+    // ADR 0006: Trang chủ có bộ chọn ngôn ngữ toàn cục trên header và lưu trữ Preferred Language
+    @Test
+    void testIndexHtmlSupportsPreferredLanguage() throws Exception {
+        mockMvc.perform(get("/index.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("headerLangSelect")))
+                .andExpect(content().string(containsString("audiotour_preferred_lang")));
+    }
+
+    // ADR 0006: Player hỗ trợ ghi nhớ Preferred Language và đồng bộ đa tab
+    @Test
+    void testPlayerHtmlSupportsPreferredLanguage() throws Exception {
+        mockMvc.perform(get("/player.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("audiotour_preferred_lang")))
+                .andExpect(content().string(containsString("addEventListener(\"storage\"")));
+    }
 }
