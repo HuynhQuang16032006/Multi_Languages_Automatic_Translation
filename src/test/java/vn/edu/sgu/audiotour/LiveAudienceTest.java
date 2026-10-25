@@ -9,17 +9,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import vn.edu.sgu.audiotour.dto.DeviceHeartbeatRequest;
 import vn.edu.sgu.audiotour.dto.HeartbeatResponse;
 import vn.edu.sgu.audiotour.entity.Location;
-import vn.edu.sgu.audiotour.entity.PlaybackLog;
 import vn.edu.sgu.audiotour.entity.TriggerType;
 import vn.edu.sgu.audiotour.exception.NotFoundException;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
-import vn.edu.sgu.audiotour.repository.PlaybackLogRepository;
 import vn.edu.sgu.audiotour.service.LiveAudience;
+import vn.edu.sgu.audiotour.service.PlaybackLogRecorder;
 
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,7 +29,7 @@ class LiveAudienceTest {
     private LocationRepository locationRepository;
 
     @Mock
-    private PlaybackLogRepository playbackLogRepository;
+    private PlaybackLogRecorder playbackLogRecorder;
 
     private MutableClock clock;
     private LiveAudience liveAudience;
@@ -41,7 +37,7 @@ class LiveAudienceTest {
     @BeforeEach
     void setUp() {
         clock = new MutableClock(Instant.parse("2026-10-23T00:00:00Z"));
-        liveAudience = new LiveAudience(locationRepository, playbackLogRepository, clock);
+        liveAudience = new LiveAudience(locationRepository, playbackLogRecorder, clock);
 
         Location poi = new Location();
         poi.setId(7L);
@@ -112,7 +108,7 @@ class LiveAudienceTest {
         assertEquals(HeartbeatResponse.Status.LEFT, result.status());
         assertEquals(0, result.activeUsers());
         assertTrue(liveAudience.snapshot().isEmpty());
-        verify(playbackLogRepository, times(1)).save(any(PlaybackLog.class));
+        verify(playbackLogRecorder, times(1)).record(any(PlaybackLogRecorder.Entry.class));
     }
 
     @Test
@@ -122,9 +118,9 @@ class LiveAudienceTest {
         liveAudience.record(join);
         liveAudience.record(heartbeat("device-a", "LEAVE"));
 
-        ArgumentCaptor<PlaybackLog> captor = ArgumentCaptor.forClass(PlaybackLog.class);
-        verify(playbackLogRepository).save(captor.capture());
-        assertEquals(TriggerType.MANUAL, captor.getValue().getTriggerType());
+        ArgumentCaptor<PlaybackLogRecorder.Entry> captor = ArgumentCaptor.forClass(PlaybackLogRecorder.Entry.class);
+        verify(playbackLogRecorder).record(captor.capture());
+        assertEquals(TriggerType.MANUAL, captor.getValue().triggerType());
     }
 
     @Test
@@ -133,7 +129,7 @@ class LiveAudienceTest {
         liveAudience.record(heartbeat("device-a", "LEAVE"));
         liveAudience.record(heartbeat("device-a", "LEAVE"));
 
-        verify(playbackLogRepository, times(1)).save(any(PlaybackLog.class));
+        verify(playbackLogRecorder, times(1)).record(any(PlaybackLogRecorder.Entry.class));
     }
 
     @Test
@@ -142,21 +138,22 @@ class LiveAudienceTest {
 
         clock.advanceMillis(7_000);
         assertEquals(1, liveAudience.snapshot().size());
-        verify(playbackLogRepository, never()).save(any());
+        verify(playbackLogRecorder, never()).record(any());
 
         clock.advanceMillis(1_001);
         assertTrue(liveAudience.snapshot().isEmpty());
-        verify(playbackLogRepository, times(1)).save(any(PlaybackLog.class));
+        verify(playbackLogRecorder, times(1)).record(any(PlaybackLogRecorder.Entry.class));
 
         clock.advanceMillis(1_000);
         assertTrue(liveAudience.snapshot().isEmpty());
-        verifyNoMoreInteractions(playbackLogRepository);
+        verifyNoMoreInteractions(playbackLogRecorder);
     }
 
     @Test
     void logFailureDoesNotKeepSessionAlive() {
         liveAudience.record(heartbeat("device-a", "JOIN"));
-        when(playbackLogRepository.save(any(PlaybackLog.class))).thenThrow(new RuntimeException("DB down"));
+        when(playbackLogRecorder.record(any(PlaybackLogRecorder.Entry.class)))
+                .thenThrow(new RuntimeException("DB down"));
 
         clock.advanceMillis(8_001);
 
@@ -172,34 +169,5 @@ class LiveAudienceTest {
         request.setAction(action);
         request.setListenDurationSeconds(30);
         return request;
-    }
-
-    /** Clock chỉnh tay: thay cho sleep để test mốc hết hạn 8 giây. */
-    private static final class MutableClock extends Clock {
-
-        private Instant instant;
-
-        private MutableClock(Instant start) {
-            this.instant = start;
-        }
-
-        private void advanceMillis(long millis) {
-            instant = instant.plusMillis(millis);
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return instant;
-        }
     }
 }

@@ -6,14 +6,11 @@ import org.springframework.stereotype.Service;
 import vn.edu.sgu.audiotour.dto.DeviceHeartbeatRequest;
 import vn.edu.sgu.audiotour.dto.HeartbeatResponse;
 import vn.edu.sgu.audiotour.entity.Location;
-import vn.edu.sgu.audiotour.entity.PlaybackLog;
 import vn.edu.sgu.audiotour.entity.TriggerType;
 import vn.edu.sgu.audiotour.exception.NotFoundException;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
-import vn.edu.sgu.audiotour.repository.PlaybackLogRepository;
 
 import java.time.Clock;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -30,12 +27,10 @@ public class LiveAudience {
 
     // Quá 8 giây không có heartbeat thì coi như thiết bị đã rời đi
     private static final long HEARTBEAT_TIMEOUT_MILLIS = 8_000;
-    // Log ngắn hơn 5 giây không có ý nghĩa thống kê (giữ hành vi cũ)
-    private static final int MIN_LOGGED_SECONDS = 5;
 
     private final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
     private final LocationRepository locationRepository;
-    private final PlaybackLogRepository playbackLogRepository;
+    private final PlaybackLogRecorder playbackLogRecorder;
     private final Clock clock;
 
     /**
@@ -129,20 +124,8 @@ public class LiveAudience {
     private void writeLog(Long locationId, String languageCode, int listenSeconds, String deviceId,
                           TriggerType triggerType) {
         try {
-            Location location = locationRepository.findById(locationId).orElse(null);
-            if (location == null) {
-                return;
-            }
-            PlaybackLog entry = new PlaybackLog();
-            entry.setLocation(location);
-            entry.setLanguageCode(languageCode);
-            entry.setListenDurationSeconds(Math.max(listenSeconds, MIN_LOGGED_SECONDS));
-            entry.setTriggerType(triggerType != null ? triggerType : TriggerType.QR_CODE);
-            entry.setLatitude(location.getLatitude());
-            entry.setLongitude(location.getLongitude());
-            entry.setDeviceId(deviceId);
-            entry.setCreatedAt(LocalDateTime.now());
-            playbackLogRepository.save(entry);
+            playbackLogRecorder.record(new PlaybackLogRecorder.Entry(
+                    locationId, languageCode, listenSeconds, triggerType, deviceId, null, null));
         } catch (RuntimeException e) {
             // Mất một log còn hơn để phiên sống lại hoặc số đếm sai
             log.warn("Không ghi được playback log cho thiết bị {}: {}", deviceId, e.getMessage());

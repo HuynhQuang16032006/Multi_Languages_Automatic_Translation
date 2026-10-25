@@ -5,10 +5,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.sgu.audiotour.dto.DashboardResponse;
-import vn.edu.sgu.audiotour.dto.PlaybackLogRequest;
-import vn.edu.sgu.audiotour.entity.Location;
 import vn.edu.sgu.audiotour.entity.PlaybackLog;
-import vn.edu.sgu.audiotour.repository.LocationRepository;
 import vn.edu.sgu.audiotour.repository.PlaybackLogRepository;
 
 import java.time.LocalDateTime;
@@ -21,27 +18,8 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
 
     private final PlaybackLogRepository playbackLogRepository;
-    private final LocationRepository locationRepository;
     private final LiveAudience liveAudience;
     private final ServerAddress serverAddress;
-
-    @Transactional
-    public PlaybackLog recordPlaybackLog(PlaybackLogRequest request) {
-        Location location = locationRepository.findById(request.getLocationId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy địa điểm với ID: " + request.getLocationId()));
-
-        PlaybackLog log = new PlaybackLog();
-        log.setLocation(location);
-        log.setLanguageCode(request.getLanguageCode() != null ? request.getLanguageCode() : "vi");
-        log.setListenDurationSeconds(request.getListenDurationSeconds() != null ? request.getListenDurationSeconds() : 0);
-        log.setTriggerType(request.getTriggerType());
-        log.setLatitude(request.getLatitude() != null ? request.getLatitude() : location.getLatitude());
-        log.setLongitude(request.getLongitude() != null ? request.getLongitude() : location.getLongitude());
-        log.setDeviceId(request.getDeviceId());
-        log.setCreatedAt(LocalDateTime.now());
-
-        return playbackLogRepository.save(log);
-    }
 
     @Transactional
     public DashboardResponse getDashboardData() {

@@ -12,11 +12,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import vn.edu.sgu.audiotour.controller.AnalyticsController;
 import vn.edu.sgu.audiotour.dto.DeviceHeartbeatRequest;
 import vn.edu.sgu.audiotour.dto.HeartbeatResponse;
-import vn.edu.sgu.audiotour.dto.PlaybackLogRequest;
 import vn.edu.sgu.audiotour.entity.PlaybackLog;
 import vn.edu.sgu.audiotour.exception.GlobalExceptionHandler;
 import vn.edu.sgu.audiotour.service.AnalyticsService;
 import vn.edu.sgu.audiotour.service.LiveAudience;
+import vn.edu.sgu.audiotour.service.PlaybackLogRecorder;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -33,6 +33,9 @@ class AnalyticsControllerValidationTest {
 
     @Mock
     private LiveAudience liveAudience;
+
+    @Mock
+    private PlaybackLogRecorder playbackLogRecorder;
 
     @InjectMocks
     private AnalyticsController analyticsController;
@@ -67,7 +70,7 @@ class AnalyticsControllerValidationTest {
                 {"locationId":1,"languageCode":"vi","listenDurationSeconds":65,"triggerType":"QR_CODE"}
                 """;
 
-        when(analyticsService.recordPlaybackLog(any(PlaybackLogRequest.class))).thenReturn(new PlaybackLog());
+        when(playbackLogRecorder.record(any(PlaybackLogRecorder.Entry.class))).thenReturn(new PlaybackLog());
 
         mockMvc.perform(post("/api/analytics/logs")
                         .contentType(MediaType.APPLICATION_JSON)
