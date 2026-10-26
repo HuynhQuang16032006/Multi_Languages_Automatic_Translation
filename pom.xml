@@ -93,6 +93,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-flyway</artifactId>
 		</dependency>
+		<!-- Tự động restart khi code thay đổi (chỉ dùng khi dev, không đóng gói vào jar production) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -112,7 +119,7 @@
 
 	<build>
 		<plugins>
-					<plugin>
+			<plugin>
 			<groupId>org.jacoco</groupId>
 			<artifactId>jacoco-maven-plugin</artifactId>
 			<version>0.8.12</version>
@@ -127,7 +134,7 @@
 				</execution>
 			</executions>
 		</plugin>
-<plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
