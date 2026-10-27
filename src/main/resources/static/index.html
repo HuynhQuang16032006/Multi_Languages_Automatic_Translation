@@ -851,15 +851,469 @@
             line-height: 1.45;
         }
 
-        .venue-banner__listen {
-            margin-top: 10px;
-            border: none;
-            border-radius: 10px;
-            padding: 8px 14px;
-            font-weight: 700;
-            background: var(--primary);
-            color: #0b1120;
+        /* ===== MAP PIN (Icon Cây Ghim Chuẩn) ===== */
+        .poi-pin-wrapper {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        .poi-pin {
+            position: relative;
+            width: 32px;
+            height: 44px;
             cursor: pointer;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
+        }
+
+        .poi-pin:hover {
+            transform: scale(1.15) translateY(-3px);
+            z-index: 999 !important;
+        }
+
+        .poi-pin-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .poi-pin--active .poi-pin {
+            transform: scale(1.25) translateY(-5px);
+            filter: drop-shadow(0 0 10px #10b981) drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+            z-index: 1000 !important;
+        }
+
+        .poi-pin-pulse {
+            position: absolute;
+            top: 4px;
+            left: 5px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.6);
+            animation: pinPulseRing 1.5s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes pinPulseRing {
+            0% { transform: scale(0.8); opacity: 0.9; }
+            70% { transform: scale(2.2); opacity: 0; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+
+        .poi-marker--dim .poi-pin {
+            opacity: 0.35;
+            filter: grayscale(0.8);
+        }
+
+        /* ===== CÔNG CỤ NỔI TRÊN BẢN ĐỒ (GPS TOOLS) ===== */
+        .map-floating-tools {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 800;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .floating-tool-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .floating-tool-btn:hover {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: rgba(56, 189, 248, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .floating-tool-btn--active {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            color: #ffffff !important;
+            border-color: #34d399 !important;
+            box-shadow: 0 0 14px rgba(16, 185, 129, 0.5) !important;
+        }
+
+        /* ===== HÌNH NGƯỜI DU KHÁCH TRÊN BẢN ĐỒ (USER PERSON MARKER) ===== */
+        .user-person-icon-wrap {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        .user-person-container {
+            position: relative;
+            width: 44px;
+            height: 58px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            cursor: pointer;
+        }
+
+        .user-person-radar {
+            position: absolute;
+            bottom: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 36px;
+            height: 16px;
+            border-radius: 50%;
+            animation: personPulse 1.8s infinite ease-out;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes personPulse {
+            0% { transform: translateX(-50%) scale(0.6); opacity: 0.9; }
+            100% { transform: translateX(-50%) scale(2.6); opacity: 0; }
+        }
+
+        .user-person-tag {
+            position: absolute;
+            top: -4px;
+            color: #ffffff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 999px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            border: 1.5px solid #ffffff;
+            animation: personTagBob 2.2s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        @keyframes personTagBob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .user-person-svg {
+            width: 40px;
+            height: 50px;
+            display: block;
+            z-index: 5;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .user-person-container:hover .user-person-svg {
+            transform: scale(1.15) translateY(-2px);
+        }
+
+        /* ===== TOAST THÔNG BÁO VÙNG GPS ===== */
+        .map-toast {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            right: 180px;
+            z-index: 850;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 14px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            animation: slideDownToast 0.3s ease;
+        }
+
+        @keyframes slideDownToast {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .map-toast__icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .map-toast__content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .map-toast__content strong {
+            display: block;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .map-toast__content span {
+            display: block;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+
+        .map-toast__close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
+        .map-toast__close:hover {
+            color: var(--text-main);
+        }
+
+        @media (max-width: 640px) {
+            .map-toast {
+                left: 10px;
+                right: 10px;
+                top: 56px;
+            }
+        }
+
+        /* ===== BOTTOM AUDIO PLAYER BAR (TRÌNH PHÁT THUYẾT MINH) ===== */
+        .audio-player-bar {
+            position: sticky;
+            bottom: 16px;
+            z-index: 950;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            background: rgba(18, 25, 43, 0.94);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.15);
+            overflow: hidden;
+            animation: slideUpPlayer 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUpPlayer {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .audio-player-bar__inner {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+        }
+
+        .audio-player-bar__img {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .audio-player-bar__info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .audio-player-bar__header-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+
+        .player-trigger-badge {
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .player-trigger-badge--geo {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .player-trigger-badge--manual {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
+
+        .player-lang-badge {
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: rgba(129, 140, 248, 0.2);
+            color: #a5b4fc;
+            border: 1px solid rgba(129, 140, 248, 0.4);
+        }
+
+        .player-dist-badge {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .audio-player-bar__title {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 6px;
+        }
+
+        .audio-player-bar__progress-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .player-time {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+            min-width: 34px;
+        }
+
+        .player-seek-track {
+            position: relative;
+            flex: 1;
+            height: 6px;
+            display: flex;
+            align-items: center;
+        }
+
+        .player-seek-slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .player-seek-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #38bdf8;
+            box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .player-seek-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+        }
+
+        .audio-player-bar__controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .player-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 12px;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .player-btn:hover {
+            background: rgba(255, 255, 255, 0.16);
+            transform: translateY(-1px);
+        }
+
+        .player-btn--play {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #38bdf8, #2563eb);
+            border-color: #38bdf8;
+            color: #ffffff;
+            font-size: 1.15rem;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+        }
+
+        .player-btn--play:hover {
+            background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+        }
+
+        .player-btn--close {
+            color: var(--text-muted);
+        }
+
+        .player-btn--close:hover {
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        /* Khay kịch bản chữ thuyết minh */
+        .audio-player-drawer {
+            border-top: 1px solid var(--border);
+            padding: 14px 18px;
+            background: rgba(10, 15, 28, 0.85);
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .audio-player-drawer__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .audio-player-drawer__header h5 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        .drawer-close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .audio-player-drawer__body {
+            font-size: 0.86rem;
+            line-height: 1.6;
+            color: #cbd5e1;
         }
     </style>
 </head>
@@ -907,6 +1361,33 @@
         <!-- Bản đồ Leaflet -->
         <div class="map-wrap">
             <div id="map" role="region" aria-label="Bản đồ các điểm tham quan"></div>
+
+            <!-- Công cụ nổi trên bản đồ: Test GPS và GPS thật -->
+            <div class="map-floating-tools">
+                <button type="button" id="simGpsBtn" class="floating-tool-btn" title="Chế độ Test GPS: Click vào bản đồ để giả lập vị trí của bạn">
+                    <span class="tool-icon">🎯</span>
+                    <span id="simGpsText">Test GPS: TẮT</span>
+                </button>
+                <button type="button" id="liveGpsBtn" class="floating-tool-btn" title="Bật theo dõi GPS ngoài đời thực">
+                    <span class="tool-icon">📍</span>
+                    <span id="liveGpsText">Bật GPS Thật</span>
+                </button>
+                <button type="button" id="centerUserBtn" class="floating-tool-btn" title="Đưa bản đồ về vị trí của bạn" hidden>
+                    <span class="tool-icon">🚶</span>
+                    <span id="centerUserText">Vị trí của tôi</span>
+                </button>
+            </div>
+
+            <!-- Toast thông báo GPS tự động kích hoạt -->
+            <div id="gpsToast" class="map-toast" hidden>
+                <span class="map-toast__icon">⚡</span>
+                <div class="map-toast__content">
+                    <strong id="gpsToastTitle">Đã vào vùng GPS</strong>
+                    <span id="gpsToastDesc">Đang tự động phát thuyết minh...</span>
+                </div>
+                <button type="button" id="gpsToastClose" class="map-toast__close" aria-label="Đóng thông báo">✕</button>
+            </div>
+
             <!-- Tile bản đồ tải từ Internet, offline thì bản đồ không có nền -->
             <p id="mapTileNote" class="map-tile-note">Nền bản đồ (Esri) cần kết nối Internet.</p>
             <p id="mapHint" class="map-hint" hidden>Chưa có điểm tham quan nào có tọa độ để hiển thị trên bản đồ.</p>
@@ -914,9 +1395,56 @@
             <p id="geoNotice" class="geo-notice" role="status" hidden></p>
             <!-- Chú thích khi trang không nằm trong secure context -->
             <p id="geoSecureNote" class="geo-notice geo-notice--muted" hidden>
-                Tính năng “Gần tôi” chỉ chạy trên kết nối an toàn (HTTPS hoặc http://localhost).
+                Tính năng “Gần tôi” chỉ chạy trên kết nối an toàn (HTTPS hoặc http://localhost). Bạn có thể bật nút <strong>🎯 Test GPS</strong> ở trên để click bản đồ thử nghiệm tự động phát!
             </p>
         </div>
+
+        <!-- Trình phát Audio Thuyết Minh Tích Hợp (Embedded Bottom Audio Player) -->
+        <section id="audioPlayerBar" class="audio-player-bar" aria-label="Trình phát thuyết minh" hidden>
+            <div class="audio-player-bar__inner">
+                <img id="playerPoiImg" class="audio-player-bar__img" src="" alt="" onerror="this.style.display='none'">
+                <div class="audio-player-bar__info">
+                    <div class="audio-player-bar__header-row">
+                        <span id="playerTriggerBadge" class="player-trigger-badge player-trigger-badge--geo">⚡ GPS TỰ ĐỘNG</span>
+                        <span id="playerLangBadge" class="player-lang-badge">VI</span>
+                        <span id="playerDistanceBadge" class="player-dist-badge" hidden></span>
+                    </div>
+                    <h4 id="playerPoiTitle" class="audio-player-bar__title">Điểm Tham Quan</h4>
+                    <div class="audio-player-bar__progress-row">
+                        <span id="playerCurrentTime" class="player-time">00:00</span>
+                        <div class="player-seek-track">
+                            <input type="range" id="playerSeek" min="0" max="100" value="0" step="1" class="player-seek-slider" aria-label="Thanh tua âm thanh">
+                        </div>
+                        <span id="playerDuration" class="player-time">00:00</span>
+                    </div>
+                </div>
+                <div class="audio-player-bar__controls">
+                    <button type="button" id="playerPlayBtn" class="player-btn player-btn--play" aria-label="Phát hoặc Tạm dừng">
+                        <span id="playerPlayIcon">▶</span>
+                    </button>
+                    <button type="button" id="playerScriptToggleBtn" class="player-btn" title="Xem kịch bản văn bản">
+                        <span>📜</span>
+                    </button>
+                    <button type="button" id="playerCloseBtn" class="player-btn player-btn--close" title="Dừng nghe thuyết minh">
+                        <span>✕</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Khay xem kịch bản thuyết minh mở rộng -->
+            <div id="playerScriptDrawer" class="audio-player-drawer" hidden>
+                <div class="audio-player-drawer__header">
+                    <h5>📖 Kịch Bản Thuyết Minh (<span id="drawerLangText">Tiếng Việt</span>)</h5>
+                    <button type="button" id="closeDrawerBtn" class="drawer-close-btn" aria-label="Thu gọn kịch bản">✕</button>
+                </div>
+                <div id="drawerScriptBody" class="audio-player-drawer__body">
+                    <p id="drawerScriptText">Đang tải kịch bản thuyết minh...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Thẻ Audio HTML5 dùng để stream âm thanh -->
+        <audio id="mainAudio" preload="auto"></audio>
 
         <!-- Danh sách POI -->
         <div class="section-head">
@@ -1003,6 +1531,7 @@
             pois: [],
             poisById: new Map(),
             markersById: new Map(),
+            geofenceCirclesById: new Map(),
             map: null,
             languages: [],
             selectedLanguage: resolveInitialLanguage(FALLBACK_LANGUAGES),
@@ -1027,7 +1556,16 @@
             venue: null,
             venueResolved: false,
             venueSuggestedPoi: null,
-            geoAccuracy: null
+            geoAccuracy: null,
+            // Trình phát thuyết minh & Giám sát GPS thời gian thực
+            currentPlayingPoi: null,
+            currentTriggerType: "MANUAL",
+            listenSeconds: 0,
+            simGpsActive: false,
+            mapSimClickListenerAdded: false,
+            gpsWatching: false,
+            gpsWatchId: null,
+            toastTimeout: null
         };
 
         const dom = {
@@ -1067,7 +1605,36 @@
             tourNotice: document.getElementById("tourNotice"),
             tourFilterNotice: document.getElementById("tourFilterNotice"),
             tourFilterText: document.getElementById("tourFilterText"),
-            clearTourFilter: document.getElementById("clearTourFilter")
+            clearTourFilter: document.getElementById("clearTourFilter"),
+            // Audio player elements
+            audioPlayerBar: document.getElementById("audioPlayerBar"),
+            mainAudio: document.getElementById("mainAudio"),
+            playerPoiImg: document.getElementById("playerPoiImg"),
+            playerPoiTitle: document.getElementById("playerPoiTitle"),
+            playerTriggerBadge: document.getElementById("playerTriggerBadge"),
+            playerLangBadge: document.getElementById("playerLangBadge"),
+            playerDistanceBadge: document.getElementById("playerDistanceBadge"),
+            playerCurrentTime: document.getElementById("playerCurrentTime"),
+            playerDuration: document.getElementById("playerDuration"),
+            playerSeek: document.getElementById("playerSeek"),
+            playerPlayBtn: document.getElementById("playerPlayBtn"),
+            playerPlayIcon: document.getElementById("playerPlayIcon"),
+            playerScriptToggleBtn: document.getElementById("playerScriptToggleBtn"),
+            playerCloseBtn: document.getElementById("playerCloseBtn"),
+            playerScriptDrawer: document.getElementById("playerScriptDrawer"),
+            drawerLangText: document.getElementById("drawerLangText"),
+            drawerScriptText: document.getElementById("drawerScriptText"),
+            closeDrawerBtn: document.getElementById("closeDrawerBtn"),
+            // GPS tools elements
+            simGpsBtn: document.getElementById("simGpsBtn"),
+            simGpsText: document.getElementById("simGpsText"),
+            liveGpsBtn: document.getElementById("liveGpsBtn"),
+            liveGpsText: document.getElementById("liveGpsText"),
+            centerUserBtn: document.getElementById("centerUserBtn"),
+            gpsToast: document.getElementById("gpsToast"),
+            gpsToastTitle: document.getElementById("gpsToastTitle"),
+            gpsToastDesc: document.getElementById("gpsToastDesc"),
+            gpsToastClose: document.getElementById("gpsToastClose")
         };
 
         // ===== Tiện ích =====
@@ -1321,19 +1888,47 @@
             }).addTo(state.map);
         }
 
-        function createPoiIcon(extraClass) {
+        function createPoiIcon(extraClass, isPlaying) {
+            const activeClass = isPlaying ? " poi-pin--active" : "";
+            const combined = "poi-pin-wrapper" + (extraClass ? " " + extraClass : "") + activeClass;
+            const pinColor = isPlaying ? "#10b981" : "#0284c7";
+            const gradId = isPlaying ? "pinGradActive" : "pinGradDefault";
             return L.divIcon({
-                className: "poi-marker" + (extraClass ? " " + extraClass : ""),
-                html: '<span class="poi-marker__dot"></span>',
-                iconSize: [28, 28],
-                iconAnchor: [14, 14],
-                popupAnchor: [0, -16]
+                className: combined,
+                html: `
+                    <div class="poi-pin">
+                        <svg class="poi-pin-svg" viewBox="0 0 32 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="pinGradDefault" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#38bdf8"/>
+                                    <stop offset="100%" stop-color="#0284c7"/>
+                                </linearGradient>
+                                <linearGradient id="pinGradActive" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#34d399"/>
+                                    <stop offset="100%" stop-color="#059669"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M16 0C7.163 0 0 7.163 0 16c0 11.5 14 26.5 15.2 27.8a1.1 1.1 0 001.6 0C18 42.5 32 27.5 32 16c0-8.837-7.163-16-16-16z" fill="url(#${gradId})"/>
+                            <circle cx="16" cy="15" r="7.5" fill="#ffffff"/>
+                            <path d="M13 11v8l7-4-7-4z" fill="${pinColor}"/>
+                        </svg>
+                        ${isPlaying ? '<div class="poi-pin-pulse"></div>' : ''}
+                    </div>
+                `,
+                iconSize: [32, 44],
+                iconAnchor: [16, 44],
+                popupAnchor: [0, -44]
             });
         }
 
         function popupHtml(poi) {
-            return '<div class="poi-popup"><strong>' + escapeHtml(poi.name) + "</strong><span>" +
-                escapeHtml(poi.address || "") + "</span></div>";
+            const isPlaying = state.currentPlayingPoi && String(state.currentPlayingPoi.id) === String(poi.id);
+            const statusBadge = isPlaying ? '<span style="color:#34d399;font-weight:700;">● Đang phát</span> · ' : '';
+            return '<div class="poi-popup">' +
+                '<strong>' + statusBadge + escapeHtml(poi.name) + '</strong>' +
+                '<span>' + escapeHtml(poi.address || "") + '</span>' +
+                '<div style="margin-top:8px;"><button type="button" onclick="window.__triggerPoi(' + poi.id + ')" style="background:#38bdf8;border:none;color:#041527;font-weight:700;padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">🎧 Nghe thuyết minh</button></div>' +
+                '</div>';
         }
 
         // highlightIds = tập id POI thuộc tour đang lọc (null = không lọc).
@@ -1344,21 +1939,45 @@
             state.markersById.forEach(marker => marker.remove());
             state.markersById.clear();
 
+            if (!state.geofenceCirclesById) state.geofenceCirclesById = new Map();
+            state.geofenceCirclesById.forEach(circle => circle.remove());
+            state.geofenceCirclesById.clear();
+
             const bounds = L.latLngBounds([]);
             const tourBounds = L.latLngBounds([]);
             pois.forEach(poi => {
                 const position = readCoordinates(poi);
                 if (!position) return; // POI thiếu tọa độ: vẫn có trong danh sách, không vẽ marker
                 const inTour = highlightIds ? highlightIds.has(String(poi.id)) : false;
+                const isPlaying = state.currentPlayingPoi && String(state.currentPlayingPoi.id) === String(poi.id);
+
                 const marker = L.marker(position, {
-                    icon: createPoiIcon(highlightIds ? (inTour ? "poi-marker--tour" : "poi-marker--dim") : ""),
+                    icon: createPoiIcon(highlightIds ? (inTour ? "poi-marker--tour" : "poi-marker--dim") : "", isPlaying),
                     title: poi.name,
-                    alt: poi.name
+                    alt: poi.name,
+                    zIndexOffset: isPlaying ? 1000 : 0
                 });
                 marker.bindPopup(popupHtml(poi));
-                marker.on("click", () => openPoiSheet(poi, marker.getElement()));
+                marker.on("click", () => {
+                    startAudio(poi, "MANUAL");
+                    openPoiSheet(poi, marker.getElement());
+                });
                 marker.addTo(state.map);
                 state.markersById.set(String(poi.id), marker);
+
+                // Vòng tròn minh họa bán kính Geofence GPS của địa điểm (mặc định 30m)
+                const radius = Number(poi.radiusInMeters) || 30;
+                const geofenceCircle = L.circle(position, {
+                    radius: radius,
+                    color: isPlaying ? "#10b981" : "#38bdf8",
+                    weight: isPlaying ? 2 : 1,
+                    dashArray: "4, 4",
+                    opacity: isPlaying ? 0.8 : 0.45,
+                    fillColor: isPlaying ? "#10b981" : "#38bdf8",
+                    fillOpacity: isPlaying ? 0.16 : 0.05
+                }).addTo(state.map);
+                state.geofenceCirclesById.set(String(poi.id), geofenceCircle);
+
                 bounds.extend(position);
                 if (inTour) tourBounds.extend(position);
             });
@@ -1366,9 +1985,12 @@
             const target = tourBounds.isValid() ? tourBounds : bounds;
             if (target.isValid()) {
                 dom.mapHint.hidden = true;
-                state.map.fitBounds(target, { padding: [40, 40] });
+                // Chỉ fitBounds lần đầu hoặc khi đổi tour lọc, không giật màn hình khi đang phát
+                if (!state.mapFittedOnce || highlightIds) {
+                    state.mapFittedOnce = true;
+                    state.map.fitBounds(target, { padding: [40, 40] });
+                }
                 if (state.userLocation) {
-                    // Người dùng đã bấm "Gần tôi" trước khi dữ liệu POI tải xong: giữ bản đồ ở vị trí của họ
                     state.map.panTo([state.userLocation.lat, state.userLocation.lng]);
                 }
             } else {
@@ -1549,39 +2171,133 @@
             dom.poiSheetDistance.hidden = false;
         }
 
-        // Marker vị trí hiện tại + vòng tròn bán kính độ chính xác (đơn vị mét)
-        function renderUserMarker(latlng, accuracy) {
+        // ===== HÌNH NGƯỜI DU KHÁCH TRÊN BẢN ĐỒ =====
+        function createUserPersonIcon(isRealGps = false) {
+            const badgeText = isRealGps ? "🚶 Bạn ở đây" : "🎯 Vị trí giả lập";
+            const mainColor = isRealGps ? "#0284c7" : "#8b5cf6";
+            const pulseColor = isRealGps ? "rgba(2, 132, 199, 0.45)" : "rgba(139, 92, 246, 0.45)";
+            const gradId = isRealGps ? "bodyGradReal" : "bodyGradSim";
+            return L.divIcon({
+                className: "user-person-icon-wrap",
+                html: `
+                    <div class="user-person-container">
+                        <div class="user-person-radar" style="background:${pulseColor};"></div>
+                        <div class="user-person-tag" style="background:${mainColor};">${badgeText}</div>
+                        <svg class="user-person-svg" viewBox="0 0 38 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="bodyGradReal" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#38bdf8"/>
+                                    <stop offset="100%" stop-color="#0284c7"/>
+                                </linearGradient>
+                                <linearGradient id="bodyGradSim" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#c084fc"/>
+                                    <stop offset="100%" stop-color="#7c3aed"/>
+                                </linearGradient>
+                            </defs>
+                            <!-- Đầu người -->
+                            <circle cx="19" cy="11" r="7" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+                            <!-- Mũ/tóc -->
+                            <path d="M12 10c0-3.87 3.13-7 7-7s7 3.13 7 7c-2.5-1-6.5-1-14 0z" fill="${mainColor}"/>
+                            <!-- Thân áo khoác du khách -->
+                            <path d="M11 23c0-4 3.5-6 8-6s8 2 8 6v12H11V23z" fill="url(#${gradId})" stroke="#ffffff" stroke-width="1.5"/>
+                            <!-- Dây đeo ba lô -->
+                            <rect x="8" y="21" width="3" height="10" rx="1.5" fill="#475569"/>
+                            <!-- Hai chân bước đi -->
+                            <path d="M15 35v11a2 2 0 004 0v-11M19 35v11a2 2 0 004 0v-11" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+                            <!-- Bàn chân giày -->
+                            <ellipse cx="16" cy="48" rx="3" ry="1.5" fill="#0f172a"/>
+                            <ellipse cx="22" cy="48" rx="3" ry="1.5" fill="#0f172a"/>
+                        </svg>
+                    </div>
+                `,
+                iconSize: [44, 58],
+                iconAnchor: [22, 54],
+                popupAnchor: [0, -56]
+            });
+        }
+
+        // Marker vị trí hiện tại bằng hình người + vòng tròn bán kính độ chính xác
+        function renderUserMarker(latlng, accuracy, isRealGps = false) {
             if (!state.map || typeof L === "undefined") return;
             if (state.userAccuracyCircle) state.map.removeLayer(state.userAccuracyCircle);
             if (state.userMarker) state.map.removeLayer(state.userMarker);
 
             state.userAccuracyCircle = L.circle(latlng, {
-                radius: Math.max(20, Math.round(accuracy || 0)),
-                color: "#10b981",
-                weight: 1,
+                radius: Math.max(15, Math.round(accuracy || 0)),
+                color: isRealGps ? "#0284c7" : "#8b5cf6",
+                weight: 1.5,
                 opacity: 0.6,
-                fillColor: "#10b981",
-                fillOpacity: 0.12
+                fillColor: isRealGps ? "#0284c7" : "#8b5cf6",
+                fillOpacity: 0.12,
+                dashArray: "4, 4"
             }).addTo(state.map);
 
-            state.userMarker = L.circleMarker(latlng, {
-                radius: 8,
-                color: "#ffffff",
-                weight: 3,
-                fillColor: "#10b981",
-                fillOpacity: 1
+            state.userMarker = L.marker(latlng, {
+                icon: createUserPersonIcon(isRealGps),
+                zIndexOffset: 2500,
+                title: "Vị trí của bạn"
             }).addTo(state.map);
+
+            const typeLabel = isRealGps ? "📍 Vị trí GPS ngoài đời thực" : "🎯 Vị trí giả lập (Test GPS)";
+            const popupContent = `
+                <div style="font-family:inherit;font-size:0.85rem;line-height:1.5;">
+                    <strong style="display:block;color:#0284c7;font-size:0.95rem;margin-bottom:4px;">🚶 Vị trí của bạn</strong>
+                    <div>${typeLabel}</div>
+                    <div style="color:var(--text-muted);font-size:0.78rem;margin-top:2px;">Tọa độ: ${latlng[0].toFixed(5)}, ${latlng[1].toFixed(5)}</div>
+                    <div style="color:var(--text-muted);font-size:0.78rem;">Độ chính xác: ±${Math.round(accuracy || 0)}m</div>
+                    <div style="margin-top:6px;"><button type="button" onclick="window.__fitAllMarkers()" style="background:#0284c7;border:none;color:#ffffff;font-size:0.75rem;padding:3px 8px;border-radius:6px;cursor:pointer;">🗺️ Xem toàn cảnh bản đồ</button></div>
+                </div>
+            `;
+            state.userMarker.bindPopup(popupContent);
+
+            if (dom.centerUserBtn) dom.centerUserBtn.hidden = false;
+        }
+
+        window.__fitAllMarkers = function() {
+            if (!state.map) return;
+            const bounds = L.latLngBounds([]);
+            if (state.userLocation) bounds.extend([state.userLocation.lat, state.userLocation.lng]);
+            state.pois.forEach(poi => {
+                const pos = readCoordinates(poi);
+                if (pos) bounds.extend(pos);
+            });
+            if (bounds.isValid()) {
+                state.map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        };
+
+        // Lấy vị trí mạng dự phòng qua IP khi máy tính không có phần cứng GPS
+        async function fetchIpLocation() {
+            try {
+                const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(4000) });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const data = await res.json();
+                if (data && data.latitude && data.longitude) {
+                    return { lat: Number(data.latitude), lng: Number(data.longitude), city: data.city || "TP.HCM" };
+                }
+            } catch (e) {
+                try {
+                    const res2 = await fetch("https://get.geojs.io/v1/ip/geo.json", { signal: AbortSignal.timeout(3000) });
+                    const data2 = await res2.json();
+                    if (data2 && data2.latitude && data2.longitude) {
+                        return { lat: Number(data2.latitude), lng: Number(data2.longitude), city: data2.city || "TP.HCM" };
+                    }
+                } catch (e2) {}
+            }
+            return null;
         }
 
         function geoErrorMessage(error) {
             if (error && error.code === 1) {
-                return "Không lấy được vị trí: bạn đã từ chối quyền truy cập vị trí. " +
-                    "Bạn vẫn có thể xem danh sách POI bình thường.";
+                return "Trình duyệt đang chặn vị trí. Hãy bấm vào biểu tượng 🔒 trên thanh địa chỉ URL -> Cho phép 'Vị trí' (Allow Location).";
+            }
+            if (error && error.code === 2) {
+                return "Thiết bị chưa bật Windows Location Services hoặc không có chip GPS. Đang chuyển sang định vị mạng IP/Wi-Fi.";
             }
             if (error && error.code === 3) {
-                return "Lấy vị trí quá thời gian cho phép. Bạn vẫn có thể xem danh sách POI bình thường.";
+                return "Tìm GPS vệ tinh quá thời gian. Đang chuyển sang định vị mạng IP/Wi-Fi.";
             }
-            return "Không lấy được vị trí. Bạn vẫn có thể xem danh sách POI bình thường.";
+            return "Không lấy được vị trí GPS. Hãy kiểm tra cài đặt trình duyệt hoặc dùng nút '🎯 Test GPS' để chọn điểm thử nghiệm!";
         }
 
         function setNearMeBusy(busy) {
@@ -1600,27 +2316,34 @@
 
             hideGeoNotice();
             setNearMeBusy(true);
-            try {
-                navigator.geolocation.getCurrentPosition(position => {
-                    setNearMeBusy(false);
-                    state.userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    state.geoAccuracy = Number(position.coords.accuracy) || null;
-                    renderUserMarker([state.userLocation.lat, state.userLocation.lng], position.coords.accuracy);
-                    if (state.map) state.map.panTo([state.userLocation.lat, state.userLocation.lng]);
-                    applyDistanceSort();
-                    updateVenueSuggestion();
-                    showGeoNotice("Đã sắp xếp POI theo khoảng cách từ vị trí hiện tại của bạn.");
-                }, error => {
-                    setNearMeBusy(false);
-                    showGeoNotice(geoErrorMessage(error));
-                }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
-            } catch (error) {
+
+            const onLocationFound = (lat, lng, accuracy, source) => {
                 setNearMeBusy(false);
-                showGeoNotice("Không lấy được vị trí. Bạn vẫn có thể xem danh sách POI bình thường.");
-            }
+                setUserPosition(lat, lng, accuracy, false, true);
+                applyDistanceSort();
+                updateVenueSuggestion();
+                showGeoNotice(`Đã xác định vị trí (${source}) · Độ chính xác ±${Math.round(accuracy)}m.`);
+            };
+
+            // Thử high accuracy trước
+            navigator.geolocation.getCurrentPosition(position => {
+                onLocationFound(position.coords.latitude, position.coords.longitude, position.coords.accuracy, "GPS");
+            }, error => {
+                console.warn("Lỗi High Accuracy GPS:", error);
+                // Thử low accuracy (IP/Cell/WiFi)
+                navigator.geolocation.getCurrentPosition(lowPos => {
+                    onLocationFound(lowPos.coords.latitude, lowPos.coords.longitude, lowPos.coords.accuracy, "Định vị Mạng");
+                }, async lowErr => {
+                    console.warn("Lỗi Low Accuracy Geolocation:", lowErr);
+                    const ipLoc = await fetchIpLocation();
+                    if (ipLoc) {
+                        onLocationFound(ipLoc.lat, ipLoc.lng, 500, "Định vị IP (" + ipLoc.city + ")");
+                    } else {
+                        setNearMeBusy(false);
+                        showGeoNotice(geoErrorMessage(lowErr));
+                    }
+                }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 });
+            }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 });
         }
 
         // Chỉ bật nút "Gần tôi" khi trang chạy trong secure context (HTTPS hoặc localhost)
@@ -1794,14 +2517,396 @@
             marker.openPopup();
         }
 
-        // Mở trang thuyết minh (được gọi từ nút "Nghe" của card và từ bottom sheet)
+        // ===== Trình phát Audio Thuyết Minh Tích Hợp & Heartbeat (Cách 1 & Cách 2) =====
+
+        function getOrCreateDeviceId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mock = urlParams.get("mockId");
+            if (mock) return mock;
+            let id = localStorage.getItem("audiotour_device_id");
+            if (!id) {
+                id = "Khach-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+                localStorage.setItem("audiotour_device_id", id);
+            }
+            return id;
+        }
+
+        const deviceId = getOrCreateDeviceId();
+        let heartbeatTimer = null;
+
+        async function sendHeartbeat(action = "PING") {
+            const payload = {
+                deviceId: deviceId,
+                locationId: state.currentPlayingPoi ? state.currentPlayingPoi.id : (state.venue ? state.venue.id : null),
+                languageCode: state.selectedLanguage || "vi",
+                action: action,
+                listenDurationSeconds: state.listenSeconds || 0,
+                triggerType: state.currentTriggerType || "QR_CODE"
+            };
+
+            try {
+                await fetch("/api/analytics/heartbeat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                });
+            } catch (err) {
+                console.warn("Heartbeat error:", err);
+            }
+        }
+
+        function sendLeaveBeacon() {
+            const payload = JSON.stringify({
+                deviceId: deviceId,
+                locationId: state.currentPlayingPoi ? state.currentPlayingPoi.id : (state.venue ? state.venue.id : null),
+                languageCode: state.selectedLanguage || "vi",
+                action: "LEAVE",
+                listenDurationSeconds: state.listenSeconds || 0,
+                triggerType: state.currentTriggerType || "QR_CODE"
+            });
+
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon("/api/analytics/heartbeat", new Blob([payload], { type: "application/json" }));
+            } else {
+                fetch("/api/analytics/heartbeat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: payload,
+                    keepalive: true
+                });
+            }
+        }
+
+        function formatAudioTime(seconds) {
+            const total = Math.max(0, Math.round(Number(seconds) || 0));
+            const m = Math.floor(total / 60);
+            const s = total % 60;
+            return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+        }
+
+        function startAudio(poi, triggerType = "MANUAL") {
+            if (!poi) return;
+            state.currentPlayingPoi = poi;
+            state.currentTriggerType = triggerType;
+            state.listenSeconds = 0;
+
+            // Hiển thị thanh trình phát
+            dom.audioPlayerBar.hidden = false;
+            dom.playerPoiTitle.textContent = poi.name;
+            if (poi.imageUrl) {
+                dom.playerPoiImg.src = poi.imageUrl;
+                dom.playerPoiImg.style.display = "block";
+            } else {
+                dom.playerPoiImg.style.display = "none";
+            }
+
+            // Cập nhật badge
+            if (triggerType === "GEOFENCE") {
+                dom.playerTriggerBadge.textContent = "⚡ GPS TỰ ĐỘNG";
+                dom.playerTriggerBadge.className = "player-trigger-badge player-trigger-badge--geo";
+            } else {
+                dom.playerTriggerBadge.textContent = "👆 DU KHÁCH CHỌN";
+                dom.playerTriggerBadge.className = "player-trigger-badge player-trigger-badge--manual";
+            }
+
+            dom.playerLangBadge.textContent = (state.selectedLanguage || "vi").toUpperCase();
+
+            const dist = state.distanceById.get(String(poi.id));
+            if (dist !== undefined) {
+                dom.playerDistanceBadge.textContent = "Cách " + formatDistance(dist);
+                dom.playerDistanceBadge.hidden = false;
+            } else {
+                dom.playerDistanceBadge.hidden = true;
+            }
+
+            // Tải audio stream
+            dom.mainAudio.src = `/api/packages/stream?locationId=${poi.id}&languageCode=${state.selectedLanguage}`;
+            dom.mainAudio.currentTime = 0;
+            dom.playerCurrentTime.textContent = "00:00";
+            dom.playerDuration.textContent = "00:00";
+            dom.playerSeek.value = 0;
+
+            dom.mainAudio.play().then(() => {
+                dom.playerPlayIcon.textContent = "⏸";
+            }).catch(e => {
+                console.warn("Autoplay cần tương tác:", e);
+                dom.playerPlayIcon.textContent = "▶";
+            });
+
+            // Tải kịch bản văn bản
+            loadNarrationScript(poi.id, state.selectedLanguage);
+
+            // Cập nhật marker trên map (icon ghim đang phát sáng lên)
+            renderMarkers(state.pois, state.activeTour ? state.tourPoiIds : null);
+
+            // Gửi heartbeat ngay để Admin Dashboard cập nhật địa điểm đang nghe
+            sendHeartbeat("PING");
+        }
+
+        function togglePlayPause() {
+            if (!dom.mainAudio.src) return;
+            if (dom.mainAudio.paused) {
+                dom.mainAudio.play().then(() => {
+                    dom.playerPlayIcon.textContent = "⏸";
+                }).catch(e => console.warn(e));
+            } else {
+                dom.mainAudio.pause();
+                dom.playerPlayIcon.textContent = "▶";
+            }
+        }
+
+        function stopAudio() {
+            if (state.currentPlayingPoi) {
+                sendHeartbeat("LEAVE");
+            }
+            dom.mainAudio.pause();
+            dom.mainAudio.removeAttribute("src");
+            dom.audioPlayerBar.hidden = true;
+            dom.playerScriptDrawer.hidden = true;
+            state.currentPlayingPoi = null;
+            state.listenSeconds = 0;
+            dom.playerPlayIcon.textContent = "▶";
+            renderMarkers(state.pois, state.activeTour ? state.tourPoiIds : null);
+            sendHeartbeat("PING");
+        }
+
+        function switchLanguageForActivePlayback(code) {
+            if (!state.currentPlayingPoi) return;
+            sendHeartbeat("LEAVE");
+            state.listenSeconds = 0;
+
+            dom.playerLangBadge.textContent = code.toUpperCase();
+            dom.mainAudio.src = `/api/packages/stream?locationId=${state.currentPlayingPoi.id}&languageCode=${code}`;
+            dom.mainAudio.currentTime = 0;
+            dom.mainAudio.play().then(() => {
+                dom.playerPlayIcon.textContent = "⏸";
+            }).catch(e => console.warn(e));
+
+            loadNarrationScript(state.currentPlayingPoi.id, code);
+            sendHeartbeat("PING");
+        }
+
+        async function loadNarrationScript(locationId, langCode) {
+            const langObj = (state.languages || []).find(l => l.code === langCode);
+            dom.drawerLangText.textContent = langObj ? langObj.name : langCode.toUpperCase();
+            dom.drawerScriptText.textContent = "Đang tải kịch bản thuyết minh...";
+            try {
+                const res = await fetch(`/api/narrations?locationId=${locationId}&languageCode=${langCode}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    dom.drawerScriptText.textContent = data.textContent || "Chưa có nội dung thuyết minh cho ngôn ngữ này.";
+                } else {
+                    dom.drawerScriptText.textContent = "Chưa có bản thuyết minh cho ngôn ngữ này tại địa điểm này.";
+                }
+            } catch (e) {
+                dom.drawerScriptText.textContent = "Không tải được kịch bản từ máy chủ.";
+            }
+        }
+
+        function showGpsToast(title, desc) {
+            if (!dom.gpsToast) return;
+            dom.gpsToastTitle.textContent = title;
+            dom.gpsToastDesc.textContent = desc;
+            dom.gpsToast.hidden = false;
+            if (state.toastTimeout) clearTimeout(state.toastTimeout);
+            state.toastTimeout = setTimeout(() => {
+                dom.gpsToast.hidden = true;
+            }, 7000);
+        }
+
+        function hideGpsToast() {
+            if (dom.gpsToast) dom.gpsToast.hidden = true;
+            if (state.toastTimeout) clearTimeout(state.toastTimeout);
+        }
+
+        function checkGeofencing(lat, lng) {
+            if (!state.pois || !state.pois.length) return;
+            let closestPoi = null;
+            let minDistance = Infinity;
+
+            for (const poi of state.pois) {
+                const pos = readCoordinates(poi);
+                if (!pos) continue;
+                const dist = haversineDistanceMeters(lat, lng, pos[0], pos[1]);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closestPoi = poi;
+                }
+
+                const radius = Number(poi.radiusInMeters) || 30;
+                if (dist <= radius) {
+                    // Đang ở trong bán kính GPS!
+                    if (!state.currentPlayingPoi || String(state.currentPlayingPoi.id) !== String(poi.id)) {
+                        startAudio(poi, "GEOFENCE");
+                        showGpsToast(
+                            `⚡ Đã vào vùng GPS: ${poi.name}`,
+                            `Khoảng cách ${Math.round(dist)}m (bán kính ${radius}m). Đang tự động phát thuyết minh [${(state.selectedLanguage||"vi").toUpperCase()}].`
+                        );
+                    }
+                    return;
+                }
+            }
+
+            if (closestPoi && state.simGpsActive) {
+                showGpsToast(
+                    `🎯 [Test GPS] Vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+                    `Gần nhất: ${closestPoi.name} (cách ${Math.round(minDistance)}m). Hãy click vào trong vòng tròn 30m để tự động phát!`
+                );
+            }
+        }
+
+        function setUserPosition(lat, lng, accuracy = 15, fromSimulator = false, shouldPan = false) {
+            state.userLocation = { lat, lng };
+            state.geoAccuracy = accuracy;
+
+            // Hiển thị hình người du khách trên bản đồ
+            renderUserMarker([lat, lng], accuracy, !fromSimulator);
+            computeDistances();
+            updateSheetDistance();
+
+            // Tự động di chuyển khung nhìn bản đồ về vị trí người dùng
+            if (shouldPan && state.map) {
+                state.map.setView([lat, lng], Math.max(16, state.map.getZoom()), { animate: true });
+            }
+
+            if (state.currentPlayingPoi) {
+                const d = state.distanceById.get(String(state.currentPlayingPoi.id));
+                if (d !== undefined) {
+                    dom.playerDistanceBadge.textContent = "Cách " + formatDistance(d);
+                    dom.playerDistanceBadge.hidden = false;
+                }
+            }
+
+            // Kiểm tra Geofencing (Cách 1)
+            checkGeofencing(lat, lng);
+        }
+
+        function toggleSimGps() {
+            state.simGpsActive = !state.simGpsActive;
+            dom.simGpsBtn.classList.toggle("floating-tool-btn--active", state.simGpsActive);
+            dom.simGpsText.textContent = state.simGpsActive ? "Test GPS: BẬT" : "Test GPS: TẮT";
+
+            if (state.simGpsActive) {
+                showGpsToast(
+                    "🎯 Chế độ Test GPS đã BẬT!",
+                    "Hãy click vào bất kỳ điểm nào trên bản đồ để di chuyển hình người 🚶. Click gần ghim (dưới 30m) sẽ tự động phát!"
+                );
+                if (!state.mapSimClickListenerAdded && state.map) {
+                    state.mapSimClickListenerAdded = true;
+                    state.map.on("click", (e) => {
+                        if (!state.simGpsActive) return;
+                        setUserPosition(e.latlng.lat, e.latlng.lng, 10, true, false);
+                    });
+                }
+            } else {
+                showGpsToast("🎯 Chế độ Test GPS đã TẮT", "Đã quay về chế độ bình thường.");
+            }
+        }
+
+        function toggleLiveGps() {
+            if (state.gpsWatching) {
+                stopLiveGps();
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                showGpsToast("⚠️ Không hỗ trợ", "Trình duyệt không hỗ trợ Geolocation.");
+                return;
+            }
+
+            state.gpsWatching = true;
+            dom.liveGpsBtn.classList.add("floating-tool-btn--active");
+            dom.liveGpsText.textContent = "GPS Đang Bật";
+            showGpsToast("📍 Đang tìm GPS thực tế...", "Bấm 'Cho phép' (Allow) nếu trình duyệt hỏi quyền vị trí.");
+
+            const onGpsSuccess = (pos, source = "GPS Vệ tinh") => {
+                const { latitude, longitude, accuracy } = pos.coords;
+                // Di chuyển bản đồ và vẽ hình người tại vị trí thật
+                setUserPosition(latitude, longitude, accuracy, false, true);
+
+                // Tính khoảng cách tới POI gần nhất
+                let nearestDist = Infinity;
+                let nearestName = "";
+                (state.pois || []).forEach(p => {
+                    const c = readCoordinates(p);
+                    if (c) {
+                        const dist = haversineDistanceMeters(latitude, longitude, c[0], c[1]);
+                        if (dist < nearestDist) {
+                            nearestDist = dist;
+                            nearestName = p.name;
+                        }
+                    }
+                });
+
+                if (nearestDist > 3000 && Number.isFinite(nearestDist)) {
+                    showGpsToast(
+                        `🚶 Đã hiện vị trí thực (${source})`,
+                        `Bạn đang cách ${nearestName} khoảng ${formatDistance(nearestDist)}. Hãy dùng nút 'Test GPS' để click thử nghiệm gần điểm tham quan!`
+                    );
+                } else {
+                    showGpsToast(
+                        `🚶 Đã định vị thành công (${source})`,
+                        `Tọa độ: ${latitude.toFixed(5)}, ${longitude.toFixed(5)} (±${Math.round(accuracy)}m). Nhìn hình người 🚶 trên bản đồ!`
+                    );
+                }
+
+                showGeoNotice(`Đang định vị thực (${source}) · Độ chính xác ±${Math.round(accuracy)}m.`);
+            };
+
+            // Chiến lược định vị 3 tầng (3-tier resilient geolocation):
+            // Tầng 1: High Accuracy (GPS chip/Wi-Fi chính xác cao)
+            state.gpsWatchId = navigator.geolocation.watchPosition(
+                (pos) => onGpsSuccess(pos, "GPS Vệ tinh"),
+                (err) => {
+                    console.warn("Lỗi High Accuracy GPS (thử lại tầng 2):", err);
+                    // Tầng 2: Low Accuracy (Định vị nhanh qua mạng Wi-Fi/Cell của Windows/Browser)
+                    navigator.geolocation.getCurrentPosition(
+                        (lowPos) => onGpsSuccess(lowPos, "Định vị Mạng"),
+                        async (lowErr) => {
+                            console.warn("Lỗi Geolocation phần cứng (thử lại tầng 3 IP):", lowErr);
+                            // Tầng 3: Định vị qua IP công cộng (bảo đảm luôn có vị trí ngay cả khi Windows tắt Location)
+                            const ipLoc = await fetchIpLocation();
+                            if (ipLoc) {
+                                onGpsSuccess({
+                                    coords: { latitude: ipLoc.lat, longitude: ipLoc.lng, accuracy: 500 }
+                                }, "Định vị IP (" + ipLoc.city + ")");
+                            } else {
+                                showGeoNotice(geoErrorMessage(lowErr));
+                                showGpsToast(
+                                    "⚠️ Không lấy được GPS máy",
+                                    geoErrorMessage(lowErr) + " Hãy bật nút '🎯 Test GPS' để chọn điểm thử nghiệm!"
+                                );
+                                stopLiveGps();
+                            }
+                        },
+                        { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 }
+                    );
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 }
+            );
+        }
+
+        function stopLiveGps() {
+            if (state.gpsWatchId !== null && navigator.geolocation) {
+                navigator.geolocation.clearWatch(state.gpsWatchId);
+                state.gpsWatchId = null;
+            }
+            state.gpsWatching = false;
+            dom.liveGpsBtn.classList.remove("floating-tool-btn--active");
+            dom.liveGpsText.textContent = "Bật GPS Thật";
+            showGpsToast("📍 Đã dừng GPS", "Đã dừng theo dõi vị trí GPS.");
+        }
+
+        window.__triggerPoi = function(id) {
+            const poi = state.poisById.get(String(id));
+            if (poi) startAudio(poi, "MANUAL");
+        };
+
+        // Mở phát thuyết minh trực tiếp trên bản đồ (Cách 2)
         function openPlayer(poi, languageCode) {
-            // Vào từ QR của toà -> QR_CODE; tự vào trang rồi chọn -> MANUAL
-            const trigger = state.venue ? "QR_CODE" : "MANUAL";
-            // Giữ toà để player quay về đúng trang chọn của toà đó
-            const venueParam = state.venue ? "&venue=" + encodeURIComponent(state.venue.id) : "";
-            window.location.href = "player.html?locationId=" + encodeURIComponent(poi.id) +
-                "&lang=" + encodeURIComponent(languageCode) + "&trigger=" + trigger + venueParam;
+            startAudio(poi, "MANUAL");
+            closePoiSheet();
         }
 
         // ===== Bottom sheet chi tiết POI =====
@@ -1877,6 +2982,11 @@
             if (state.sheetPoi) {
                 renderSheetLanguages();
                 checkNarrationAvailability(state.sheetPoi, state.selectedLanguage);
+            }
+            if (state.currentPlayingPoi) {
+                switchLanguageForActivePlayback(code);
+            } else {
+                sendHeartbeat("PING");
             }
         }
 
@@ -2156,6 +3266,82 @@
             loadPois();
         }
 
+        // Lắng nghe sự kiện audio player & GPS tools
+        function initPlayerAndGpsEvents() {
+            dom.playerPlayBtn.addEventListener("click", togglePlayPause);
+            dom.playerCloseBtn.addEventListener("click", stopAudio);
+            dom.playerScriptToggleBtn.addEventListener("click", () => {
+                dom.playerScriptDrawer.hidden = !dom.playerScriptDrawer.hidden;
+            });
+            dom.closeDrawerBtn.addEventListener("click", () => {
+                dom.playerScriptDrawer.hidden = true;
+            });
+
+            dom.mainAudio.addEventListener("timeupdate", () => {
+                const current = dom.mainAudio.currentTime || 0;
+                const duration = dom.mainAudio.duration || 0;
+                state.listenSeconds = Math.round(current);
+                dom.playerCurrentTime.textContent = formatAudioTime(current);
+                if (duration > 0 && !isNaN(duration)) {
+                    dom.playerDuration.textContent = formatAudioTime(duration);
+                    dom.playerSeek.value = Math.round((current / duration) * 100);
+                }
+            });
+
+            dom.mainAudio.addEventListener("loadedmetadata", () => {
+                const duration = dom.mainAudio.duration || 0;
+                if (duration > 0 && !isNaN(duration)) {
+                    dom.playerDuration.textContent = formatAudioTime(duration);
+                }
+            });
+
+            dom.mainAudio.addEventListener("ended", () => {
+                dom.playerPlayIcon.textContent = "▶";
+                sendHeartbeat("LEAVE");
+            });
+
+            dom.mainAudio.addEventListener("error", () => {
+                console.warn("Lỗi phát audio stream.");
+                dom.playerPlayIcon.textContent = "▶";
+            });
+
+            dom.playerSeek.addEventListener("input", () => {
+                const duration = dom.mainAudio.duration || 0;
+                if (duration > 0) {
+                    dom.mainAudio.currentTime = (dom.playerSeek.value / 100) * duration;
+                }
+            });
+
+            dom.simGpsBtn.addEventListener("click", toggleSimGps);
+            dom.liveGpsBtn.addEventListener("click", toggleLiveGps);
+            if (dom.centerUserBtn) {
+                dom.centerUserBtn.addEventListener("click", () => {
+                    if (state.userLocation && state.map) {
+                        state.map.setView([state.userLocation.lat, state.userLocation.lng], 17, { animate: true });
+                        if (state.userMarker) state.userMarker.openPopup();
+                    } else {
+                        toggleLiveGps();
+                    }
+                });
+            }
+            dom.gpsToastClose.addEventListener("click", hideGpsToast);
+
+            // Gửi Heartbeat chu kỳ 3 giây để Admin Dashboard đếm thời gian thực
+            sendHeartbeat("JOIN");
+            heartbeatTimer = setInterval(() => sendHeartbeat("PING"), 3000);
+
+            // Khi thoát trang: gửi LEAVE lưu log và cập nhật số lượng
+            window.addEventListener("beforeunload", () => sendLeaveBeacon());
+            window.addEventListener("pagehide", () => sendLeaveBeacon());
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "hidden") {
+                    sendLeaveBeacon();
+                } else {
+                    sendHeartbeat("PING");
+                }
+            });
+        }
+
         // ===== Khởi động =====
 
         window.addEventListener("offline", handleOffline);
@@ -2164,6 +3350,7 @@
         renderHeaderLanguages();
         initMap();
         initGeoSupport();
+        initPlayerAndGpsEvents();
         loadPois();
         loadTours();
         loadLanguages();

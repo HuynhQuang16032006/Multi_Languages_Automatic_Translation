@@ -156,21 +156,115 @@ public class DataInitializer implements CommandLineRunner {
             recordSampleLog(tramVinhHoi, "vi", 75, TriggerType.GEOFENCE, 10.7585, 106.7012);
         }
 
-        seedChineseNarration();
+        seedMultilingualNarrations();
     }
 
-    // Bản dịch mẫu tiếng Trung cho Dinh Độc Lập (idempotent) để thử voice zh trên DB đã seed vi/en
-    private void seedChineseNarration() {
-        Location dinhDocLap = locationRepository.findByQrCode("QR-DINH-DOC-LAP-01").orElse(null);
-        if (dinhDocLap == null
-                || narrationRepository.findByLocationIdAndLanguageCode(dinhDocLap.getId(), "zh").isPresent()) {
-            return;
-        }
+    // Khởi tạo các bản thuyết minh đa ngôn ngữ (en, zh, ja) dựa trên bản tiếng Việt làm chuẩn (idempotent)
+    private void seedMultilingualNarrations() {
+        Language en = languageRepository.findByCode("en")
+                .orElseGet(() -> languageRepository.save(new Language(null, "en", "English")));
         Language zh = languageRepository.findByCode("zh")
                 .orElseGet(() -> languageRepository.save(new Language(null, "zh", "中文")));
-        createNarration(dinhDocLap, zh,
-                "独立宫位于胡志明市第一郡南圻起义街135号，1962年在诺罗敦宫旧址上建成，由建筑师吴曰树设计。1975年4月30日中午，这里见证了越南南北统一的历史时刻。",
-                "dinh-doc-lap-zh.mp3", 6);
+        Language ja = languageRepository.findByCode("ja")
+                .orElseGet(() -> languageRepository.save(new Language(null, "ja", "日本語")));
+
+        Location tramKhanhHoi = locationRepository.findByQrCode("QR-KHANH-HOI-01").orElse(null);
+        Location tramVinhHoi = locationRepository.findByQrCode("QR-VINH-HOI-01").orElse(null);
+        Location tramXomChieu = locationRepository.findByQrCode("QR-XOM-CHIEU-01").orElse(null);
+        Location dinhDocLap = locationRepository.findByQrCode("QR-DINH-DOC-LAP-01").orElse(null);
+        Location phongKhanhTiet = locationRepository.findByQrCode("QR-PHONG-KHANH-TIET").orElse(null);
+        Location phongDaiYen = locationRepository.findByQrCode("QR-PHONG-DAI-YEN").orElse(null);
+
+        // 1. Tiếng Anh (English) cho các điểm còn thiếu
+        if (tramKhanhHoi != null && narrationRepository.findByLocationIdAndLanguageCode(tramKhanhHoi.getId(), "en").isEmpty()) {
+            createNarration(tramKhanhHoi, en,
+                    "Welcome to Khanh Hoi bus stop in District 4. Khanh Hoi was historically a fertile islet along Ben Nghe canal, closely associated with the bustling Saigon commercial port and the rich cultural exchange of Southern Vietnamese settlers since the pioneering era.",
+                    "tram-khanh-hoi-en.mp3", 90);
+        }
+        if (tramVinhHoi != null && narrationRepository.findByLocationIdAndLanguageCode(tramVinhHoi.getId(), "en").isEmpty()) {
+            createNarration(tramVinhHoi, en,
+                    "Vinh Hoi bus stop takes you to the bustling trading hub of District 4. Once a lively waterway freight transport terminal, it is now a dynamic developing area famous for its distinctive and vibrant street food culture.",
+                    "tram-vinh-hoi-en.mp3", 85);
+        }
+        if (tramXomChieu != null && narrationRepository.findByLocationIdAndLanguageCode(tramXomChieu.getId(), "en").isEmpty()) {
+            createNarration(tramXomChieu, en,
+                    "Xom Chieu bus stop preserves the traditional handicraft village culture renowned since the last century. Once a famous center for woven sedge mats in the South, today it has transformed into one of the most vibrant street food paradises in Ho Chi Minh City.",
+                    "tram-xom-chieu-en.mp3", 95);
+        }
+        if (dinhDocLap != null && narrationRepository.findByLocationIdAndLanguageCode(dinhDocLap.getId(), "en").isEmpty()) {
+            createNarration(dinhDocLap, en,
+                    "The Independence Palace, now the Independence Palace Historical Relic, is located at 135 Nam Ky Khoi Nghia Street, District 1, Ho Chi Minh City. Construction commenced in 1962 on the site of the former Norodom Palace, designed by the talented architect Ngo Viet Thu. This landmark stands as a historical witness marking the momentous era of peace and national reunification at noon on April 30, 1975.",
+                    "dinh-doc-lap-en.mp3", 150);
+        }
+        if (phongDaiYen != null && narrationRepository.findByLocationIdAndLanguageCode(phongDaiYen.getId(), "en").isEmpty()) {
+            createNarration(phongDaiYen, en,
+                    "The Banquet Chamber is situated on the first floor of the Independence Palace. This hall previously hosted state banquets accommodating over one hundred distinguished guests, distinguished by an architectural design that harmoniously blends Eastern traditions with Western modern styles.",
+                    "phong-dai-yen-en.mp3", 100);
+        }
+
+        // 2. Tiếng Trung (中文) cho các điểm
+        if (tramKhanhHoi != null && narrationRepository.findByLocationIdAndLanguageCode(tramKhanhHoi.getId(), "zh").isEmpty()) {
+            createNarration(tramKhanhHoi, zh,
+                    "欢迎来到第四郡庆会社交巴士站。昔日的庆会地区是滨艺运河畔一块肥沃的岛屿，自拓荒时期起便与繁华的西贡商港以及南部居民的多元文化交流紧密相连。",
+                    "tram-khanh-hoi-zh.mp3", 80);
+        }
+        if (tramVinhHoi != null && narrationRepository.findByLocationIdAndLanguageCode(tramVinhHoi.getId(), "zh").isEmpty()) {
+            createNarration(tramVinhHoi, zh,
+                    "永会社交巴士站带您走进第四郡繁华热闹的商贸天地。这里曾是水运货物集散的重要枢纽，如今已发展成为充满活力、汇聚丰富地道街头美食的特色街区。",
+                    "tram-vinh-hoi-zh.mp3", 80);
+        }
+        if (tramXomChieu != null && narrationRepository.findByLocationIdAndLanguageCode(tramXomChieu.getId(), "zh").isEmpty()) {
+            createNarration(tramXomChieu, zh,
+                    "照村巴士站承载着上世纪闻名遐迩的传统手工艺村文化。这里曾是越南南方著名的草席编织中心，如今已蜕变成为胡志明市最繁华热闹的街头美食天堂之一。",
+                    "tram-xom-chieu-zh.mp3", 85);
+        }
+        if (dinhDocLap != null && narrationRepository.findByLocationIdAndLanguageCode(dinhDocLap.getId(), "zh").isEmpty()) {
+            createNarration(dinhDocLap, zh,
+                    "独立宫位于胡志明市第一郡南圻起义街135号，1962年在诺罗敦宫旧址上建成，由建筑师吴曰树设计。1975年4月30日中午，这里见证了越南南北统一的历史时刻。",
+                    "dinh-doc-lap-zh.mp3", 140);
+        }
+        if (phongKhanhTiet != null && narrationRepository.findByLocationIdAndLanguageCode(phongKhanhTiet.getId(), "zh").isEmpty()) {
+            createNarration(phongKhanhTiet, zh,
+                    "欢迎光临独立宫庆节厅。这是整座宫殿中面积最大的厅堂，设计典雅庄重，可容纳五百余人。在1975年4月30日之前，这里曾是举行重要内阁会议、接待各国元首以及重大历史外交活动的重要场所。",
+                    "phong-khanh-tiet-zh.mp3", 115);
+        }
+        if (phongDaiYen != null && narrationRepository.findByLocationIdAndLanguageCode(phongDaiYen.getId(), "zh").isEmpty()) {
+            createNarration(phongDaiYen, zh,
+                    "大宴厅位于独立宫二楼。这里曾是举办容纳百余位贵宾的国家级盛大晚宴的场所，其建筑风格巧妙融合了东方传统韵味与西方现代美学。",
+                    "phong-dai-yen-zh.mp3", 95);
+        }
+
+        // 3. Tiếng Nhật (日本語) cho các điểm (sử dụng các file audio 1-ja.mp3 đến 6-ja.mp3 đã tích hợp)
+        if (tramKhanhHoi != null && narrationRepository.findByLocationIdAndLanguageCode(tramKhanhHoi.getId(), "ja").isEmpty()) {
+            createNarration(tramKhanhHoi, ja,
+                    "カインホイ（Khanh Hoi）バス停へようこそ。かつてのカインホイ地域は、ベンゲー運河沿いの肥沃な中州であり、サイゴンの活気ある商業港や開拓時代からの南部住民の豊かな文化交流と深く結びついていました。",
+                    "1-ja.mp3", 85);
+        }
+        if (tramVinhHoi != null && narrationRepository.findByLocationIdAndLanguageCode(tramVinhHoi.getId(), "ja").isEmpty()) {
+            createNarration(tramVinhHoi, ja,
+                    "ヴィンホイ（Vinh Hoi）バス停は、第4区の活気ある交易空間へと皆様をご案内します。ここはかつて水上貨物輸送の賑やかな拠点であり、現在は特色豊かな屋台グルメが楽しめる活気あふれるエリアとなっています。",
+                    "2-ja.mp3", 85);
+        }
+        if (tramXomChieu != null && narrationRepository.findByLocationIdAndLanguageCode(tramXomChieu.getId(), "ja").isEmpty()) {
+            createNarration(tramXomChieu, ja,
+                    "ソムチエウ（Xom Chieu）バス停は、前世紀から続く伝統工芸村の文化を今に伝えています。かつては南部で名高いイグサのゴザ織りの中心地であり、現在はホーチミン市で最も賑やかなストリートフードの天国となっています。",
+                    "3-ja.mp3", 90);
+        }
+        if (dinhDocLap != null && narrationRepository.findByLocationIdAndLanguageCode(dinhDocLap.getId(), "ja").isEmpty()) {
+            createNarration(dinhDocLap, ja,
+                    "統一会堂（旧独立宮殿）は、ホーチミン市第1区ナムキーコイギア通り135番地に位置しています。才能ある建築家ゴー・ヴィエット・トゥ（Ngo Viet Thu）の設計により、1962年に旧ノロドム宮殿の跡地に建設が開始されました。ここは1975年4月30日正午の平和と国家統一の瞬間を刻んだ歴史の証人です。",
+                    "4-ja.mp3", 145);
+        }
+        if (phongKhanhTiet != null && narrationRepository.findByLocationIdAndLanguageCode(phongKhanhTiet.getId(), "ja").isEmpty()) {
+            createNarration(phongKhanhTiet, ja,
+                    "統一会堂の慶節の間（カンティエット・ルーム）へようこそ。宮殿内で最も広い面積を誇るこの部屋は、500人以上を収容できる格式高い造りとなっています。1975年4月30日以前は、重要な閣僚会議や国家元首の歓迎式典、歴史的な外交行事の場として使われていました。",
+                    "5-ja.mp3", 120);
+        }
+        if (phongDaiYen != null && narrationRepository.findByLocationIdAndLanguageCode(phongDaiYen.getId(), "ja").isEmpty()) {
+            createNarration(phongDaiYen, ja,
+                    "大宴会場は統一会堂の2階に位置しています。ここは100名以上の賓客をもてなす国家的な晩餐会が開催された場所で、東洋の伝統と西洋の現代性が調和した素晴らしい建築美が特徴です。",
+                    "6-ja.mp3", 100);
+        }
     }
 
     private void createNarration(Location loc, Language lang, String text, String audio, int duration) {

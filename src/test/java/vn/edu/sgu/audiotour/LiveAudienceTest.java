@@ -65,12 +65,12 @@ class LiveAudienceTest {
     }
 
     @Test
-    void heartbeatWithoutLocationIsRejected() {
+    void heartbeatWithoutLocationIsAcceptedAsBrowsing() {
         DeviceHeartbeatRequest request = heartbeat("device-a", "JOIN");
         request.setLocationId(null);
 
-        assertThrows(IllegalArgumentException.class, () -> liveAudience.record(request));
-        assertTrue(liveAudience.snapshot().isEmpty());
+        assertEquals(1, liveAudience.record(request).activeUsers());
+        assertEquals("Đang xem bản đồ", liveAudience.snapshot().get(0).locationName());
     }
 
     @Test

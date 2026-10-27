@@ -62,14 +62,20 @@ public class LiveAudience {
     }
 
     private HeartbeatResult joinOrPing(String deviceId, DeviceHeartbeatRequest request, long now) {
-        Long locationId = requireLocationId(request);
+        Long locationId = request.getLocationId();
         String languageCode = requireLanguage(request);
 
         Session session = sessions.get(deviceId);
         boolean joined = session == null;
-        boolean locationChanged = joined || !locationId.equals(session.locationId);
-        // Chỉ tra DB khi phiên mới hoặc đổi POI: PING 3 giây/lần không cần query
-        String locationName = locationChanged ? lookupLocationName(locationId) : session.locationName;
+        boolean locationChanged = joined || (locationId != null && !locationId.equals(session.locationId));
+        String locationName;
+        if (locationId != null) {
+            locationName = locationChanged ? lookupLocationName(locationId) : session.locationName;
+        } else {
+            locationName = (session != null && session.locationName != null && !joined)
+                    ? session.locationName
+                    : "Đang xem bản đồ";
+        }
         TriggerType triggerType = request.getTriggerType() != null ? request.getTriggerType() : TriggerType.QR_CODE;
 
         int listenSeconds = request.getListenDurationSeconds() != null
@@ -81,7 +87,7 @@ public class LiveAudience {
                     new Session(deviceId, locationId, locationName, languageCode, triggerType, now, listenSeconds));
         } else {
             session.lastHeartbeatAt = now;
-            session.locationId = locationId;
+            session.locationId = locationId != null ? locationId : session.locationId;
             session.locationName = locationName;
             session.languageCode = languageCode;
             session.triggerType = triggerType;
@@ -101,7 +107,9 @@ public class LiveAudience {
             String languageCode = request.getLanguageCode() != null && !request.getLanguageCode().isBlank()
                     ? request.getLanguageCode()
                     : removed.languageCode;
-            writeLog(removed.locationId, languageCode, duration, deviceId, removed.triggerType);
+            if (removed.locationId != null && duration > 0) {
+                writeLog(removed.locationId, languageCode, duration, deviceId, removed.triggerType);
+            }
         }
         return new HeartbeatResult(HeartbeatResponse.Status.LEFT, deviceId, sessions.size());
     }
@@ -115,7 +123,7 @@ public class LiveAudience {
             if (!sessions.remove(deviceId, session)) {
                 return;
             }
-            if (session.listenSeconds > 0) {
+            if (session.locationId != null && session.listenSeconds > 0) {
                 writeLog(session.locationId, session.languageCode, session.listenSeconds, deviceId, session.triggerType);
             }
         });
@@ -154,13 +162,6 @@ public class LiveAudience {
                     "Action không hợp lệ: '" + requested + "'. Chỉ nhận JOIN, PING hoặc LEAVE.");
         }
         return value;
-    }
-
-    private static Long requireLocationId(DeviceHeartbeatRequest request) {
-        if (request.getLocationId() == null) {
-            throw new IllegalArgumentException("Thiếu locationId: heartbeat phải gắn với một địa điểm (POI).");
-        }
-        return request.getLocationId();
     }
 
     private static String requireLanguage(DeviceHeartbeatRequest request) {

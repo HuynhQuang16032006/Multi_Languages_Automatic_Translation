@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "public": true,
+  "cleanUrls": true,
+  "routes": [
+    {
+      "src": "/uploads/audio/(.*)",
+      "dest": "/uploads/audio/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/src/main/resources/static/index.html"
+    },
+    {
+      "src": "/index.html",
+      "dest": "/src/main/resources/static/index.html"
+    },
+    {
+      "src": "/dashboard.html",
+      "dest": "/src/main/resources/static/dashboard.html"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/src/main/resources/static/dashboard.html"
+    },
+    {
+      "src": "/player.html",
+      "dest": "/src/main/resources/static/player.html"
+    },
+    {
+      "src": "/demo.html",
+      "dest": "/src/main/resources/static/demo.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/src/main/resources/static/$1"
+    }
+  ]
+}

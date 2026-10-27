@@ -664,15 +664,20 @@
                 // Cập nhật bảng thiết bị ĐANG ONLINE
                 const activeTbody = document.getElementById("activeDevicesTable");
                 if (data.activeSessions && data.activeSessions.length > 0) {
-                    activeTbody.innerHTML = data.activeSessions.map(s => `
+                    activeTbody.innerHTML = data.activeSessions.map(s => {
+                        const isListening = (s.listenDurationSeconds || 0) > 0;
+                        const badgeClass = isListening ? "badge-live" : "badge-geo";
+                        const statusText = isListening ? "● ĐANG NGHE" : "● ĐANG XEM BẢN ĐỒ";
+                        const locationText = s.locationName || (isListening ? "Điểm tham quan" : "Đang xem bản đồ");
+                        return `
                         <tr>
                             <td style="font-weight: 700; color: #ffffff;">📱 ${escapeHtml(s.deviceId)}</td>
-                            <td>${escapeHtml(s.locationName || 'Phòng Khánh Tiết')}</td>
-                            <td><span class="badge-qr">${escapeHtml(s.languageCode).toUpperCase()}</span></td>
+                            <td>${escapeHtml(locationText)}</td>
+                            <td><span class="badge-qr">${escapeHtml(s.languageCode || 'VI').toUpperCase()}</span></td>
                             <td>${s.listenDurationSeconds || s.connectedDurationSeconds || 0}s</td>
-                            <td><span class="badge-live">● ĐANG NGHE</span></td>
+                            <td><span class="${badgeClass}">${statusText}</span></td>
                         </tr>
-                    `).join("");
+                    `;}).join("");
                 } else {
                     activeTbody.innerHTML = `<tr><td colspan="5" class="empty-row">Chưa có thiết bị nào quét mã QR... Hãy quét mã bên trên!</td></tr>`;
                 }
