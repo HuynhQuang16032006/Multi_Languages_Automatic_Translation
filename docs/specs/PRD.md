@@ -6,8 +6,8 @@
 
 * **Tên sản phẩm:** Hệ thống Thuyết minh Audio Tour Tự Động Đa Ngôn Ngữ (*Smart Multi-Languages Automatic Audio Tour System*)
 * **Môn học:** Công nghệ Phần mềm (Software Engineering) – Khoa Công nghệ Thông tin, Trường Đại học Sài Gòn (SGU)
-* **Phiên bản tài liệu:** v2.0 (Cập nhật chuẩn logic hệ thống thực tế & Cơ sở dữ liệu hoàn chỉnh)
-* **Trạng thái:** Hoàn thiện Backend 3 lớp, CSDL quan hệ chuẩn hóa, Web Du khách bản đồ số và Web Quản trị Dashboard thời gian thực
+* **Phiên bản tài liệu:** v2.1 (Đã tinh gọn: Loại bỏ hoàn toàn mục Tuyến tham quan - Tour; Tập trung tối đa vào 2 chế độ nghe POI & Real-time Dashboard)
+* **Trạng thái:** Hoàn thiện Backend 3 lớp, CSDL 4 bảng quan hệ chuẩn hóa, Web Du khách bản đồ số và Web Quản trị Dashboard thời gian thực
 
 ---
 
@@ -19,7 +19,7 @@ Xây dựng một nền tảng du lịch thông minh thế hệ mới, biến m�
 ### 1.2. Mục tiêu chiến lược (Product Goals)
 1. **Tiếp cận không rào cản (Zero-Friction Access):** Du khách chỉ cần quét mã QR hoặc truy cập đường link trang web là có thể trải nghiệm ngay lập tức mà không cần tải hay cài đặt ứng dụng phức tạp từ kho ứng dụng (App Store/Google Play), không bắt buộc đăng ký tài khoản.
 2. **Kích hoạt thuyết minh kép thông minh (Dual Narration Modes):**
-   - **Chế độ 1 (Tự động GPS Geofencing):** Khi du khách di chuyển đến khu vực trong phạm vi GPS đã xác định ở ngoài đời thực (bán kính cấu hình theo từng địa điểm), hệ thống tự động nhận diện và phát bài thuyết minh tương ứng.
+   - **Chế độ 1 (Tự động GPS Geofencing):** Khi du khách di chuyển đến khu vực trong phạm vi GPS đã xác định ở ngoài đời thực (bán kính cấu hình theo từng địa điểm `radius_in_meters`), hệ thống tự động nhận diện và phát bài thuyết minh tương ứng.
    - **Chế độ 2 (Tương tác Thủ công):** Du khách có thể bấm trực tiếp vào icon ghim địa điểm trên bản đồ minh họa để nghe thuyết minh bất cứ lúc nào.
 3. **Đa ngôn ngữ chuẩn hóa (Standardized Multilingual Audio):** Hỗ trợ chuyển đổi tức thì giữa các ngôn ngữ (`vi` - Tiếng Việt, `en` - Tiếng Anh, `zh` - Tiếng Trung, `ja` - Tiếng Nhật,...). Mọi bài thuyết minh của các ngôn ngữ đều chuẩn hóa nội dung bám sát bản Tiếng Việt chuẩn.
 4. **Định vị bền bỉ (Resilient 3-Tier Geolocation):** Định vị vị trí thực của du khách và hiển thị trực quan bằng hình người đi bộ (🚶) kèm sóng radar, tích hợp cơ chế dự phòng 3 tầng (GPS phần cứng -> Triangulation Wifi/Cell mạng -> IP Geolocation) để luôn xác định được vị trí ngay cả trên máy tính hoặc môi trường GPS yếu.
@@ -99,7 +99,7 @@ Hệ thống được thiết kế thành 2 phân hệ Web độc lập phục v
 
 ## 🗄️ 4. THIẾT KẾ CƠ SỞ DỮ LIỆU CHI TIẾT (DATABASE SCHEMA)
 
-Cơ sở dữ liệu của dự án sử dụng hệ quản trị **MySQL 8.0+ / 9.x**, Database name: `audiotour_db`, chuẩn mã hóa ký tự `utf8mb4` và collation `utf8mb4_unicode_ci`.
+Cơ sở dữ liệu của dự án sử dụng hệ quản trị **MySQL 8.0+ / 9.x**, Database name: `audiotour_db`, chuẩn mã hóa ký tự `utf8mb4` và collation `utf8mb4_unicode_ci`. Toàn bộ hệ thống được xây dựng trên **4 bảng cốt lõi** tinh gọn, không dư thừa.
 
 ### 4.1. Sơ đồ Quan hệ Thực thể (Entity Relationship Diagram - ERD)
 
@@ -109,8 +109,6 @@ erDiagram
     LOCATIONS ||--o{ NARRATIONS : "provides"
     LOCATIONS ||--o{ PLAYBACK_LOGS : "logs"
     LOCATIONS ||--o{ LOCATIONS : "parent_of"
-    TOURS ||--|{ TOUR_LOCATIONS : "contains"
-    LOCATIONS ||--|{ TOUR_LOCATIONS : "belongs_to"
 
     LANGUAGES {
         BIGINT id PK "Tự tăng (Auto Increment)"
@@ -129,19 +127,6 @@ erDiagram
         VARCHAR qr_code UK "Mã định danh QR Code độc nhất"
         VARCHAR image_url "Đường dẫn ảnh minh họa địa điểm"
         BIGINT parent_id FK "Khóa ngoại trỏ đến locations(id) - Cấu trúc cha-con"
-    }
-
-    TOURS {
-        BIGINT id PK "Khóa chính tự tăng"
-        VARCHAR name "Tên tuyến tham quan"
-        TEXT description "Mô tả chi tiết lịch trình tour"
-        INTEGER estimated_duration_minutes "Thời gian tham quan ước tính (phút)"
-        VARCHAR image_url "Đường dẫn ảnh đại diện tour"
-    }
-
-    TOUR_LOCATIONS {
-        BIGINT tour_id PK,FK "Mã tuyến tour"
-        BIGINT location_id PK,FK "Mã địa điểm thuộc tour"
     }
 
     NARRATIONS {
@@ -168,7 +153,7 @@ erDiagram
 
 ---
 
-### 4.2. Bảng đặc tả chi tiết từng Table & Thuộc tính (Data Dictionary)
+### 4.2. Bảng đặc tả chi tiết 4 Bảng CSDL & Toàn bộ Thuộc tính (Data Dictionary)
 
 #### 📋 Bảng 1: `languages` (Danh mục Ngôn ngữ Hỗ trợ)
 * **Mục đích:** Lưu trữ danh sách các ngôn ngữ mà hệ thống hỗ trợ thuyết minh.
@@ -201,32 +186,7 @@ erDiagram
 
 ---
 
-#### 📋 Bảng 3: `tours` (Tuyến Tham Quan Định Tuyến)
-* **Mục đích:** Quản lý các lộ trình tham quan trọn gói kết hợp nhiều địa điểm theo chủ đề.
-
-| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Khóa | Mô Tả Chi Tiết & Giá Trị Mẫu |
-| :--- | :--- | :--- | :---: | :--- |
-| `id` | `BIGINT` | `NOT NULL AUTO_INCREMENT` | **PK** | Khóa chính của tuyến tham quan. |
-| `name` | `VARCHAR(100)` | `NOT NULL` | | Tên lộ trình (ví dụ: *Tour Tuyến Xe Buýt Lịch Sử Quận 4*). |
-| `description` | `TEXT` | `NULL` | | Mô tả chi tiết hành trình và ý nghĩa lịch sử. |
-| `estimated_duration_minutes` | `INTEGER` | `NULL` | | Thời gian dự kiến hoàn thành tour (tính bằng phút, ví dụ: `60`). |
-| `image_url` | `VARCHAR(255)` | `NULL` | | Đường dẫn ảnh bìa của tour du lịch. |
-
----
-
-#### 📋 Bảng 4: `tour_locations` (Liên Kết N-N Giữa Tour và Location)
-* **Mục đích:** Bảng liên kết trung gian xác định các địa điểm thuộc về tuyến tour nào.
-
-| Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Khóa | Mô Tả Chi Tiết |
-| :--- | :--- | :--- | :---: | :--- |
-| `tour_id` | `BIGINT` | `NOT NULL` | **PK, FK** | Khóa ngoại trỏ đến bảng `tours(id)`. |
-| `location_id` | `BIGINT` | `NOT NULL` | **PK, FK** | Khóa ngoại trỏ đến bảng `locations(id)`. |
-
-> **Ràng buộc:** Khóa chính phức hợp `PRIMARY KEY (tour_id, location_id)`, `CONSTRAINT fk_tour_locations_tour FOREIGN KEY (tour_id) REFERENCES tours(id)`, `CONSTRAINT fk_tour_locations_location FOREIGN KEY (location_id) REFERENCES locations(id)`.
-
----
-
-#### 📋 Bảng 5: `narrations` (Nội Dung Bài Thuyết Minh Đa Ngôn Ngữ)
+#### 📋 Bảng 3: `narrations` (Nội Dung Bài Thuyết Minh Đa Ngôn Ngữ)
 * **Mục đích:** Lưu trữ kịch bản văn bản và file âm thanh thuyết minh cho từng địa điểm theo từng ngôn ngữ tương ứng.
 
 | Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Khóa | Mô Tả Chi Tiết & Giá Trị Mẫu |
@@ -242,7 +202,7 @@ erDiagram
 
 ---
 
-#### 📋 Bảng 6: `playback_logs` (Nhật Ký Nghe Thuyết Minh & Giám Sát Thời Gian Thực)
+#### 📋 Bảng 4: `playback_logs` (Nhật Ký Nghe Thuyết Minh & Giám Sát Thời Gian Thực)
 * **Mục đích:** Ghi nhận toàn bộ hành vi nghe của du khách ngoài hiện trường phục vụ thống kê BI và theo dõi số lượng khách đang truy cập trong thời gian thực.
 
 | Tên Cột | Kiểu Dữ Liệu | Ràng Buộc | Khóa | Mô Tả Chi Tiết & Giá Trị Mẫu |
@@ -316,9 +276,9 @@ erDiagram
 
 ---
 
-### 📌 Nhóm FR-6: Quản lý Tuyến Tour & Phân cấp Địa danh (Tours & Hierarchy)
+### 📌 Nhóm FR-6: Phân cấp Địa danh Cha - Con (Location Hierarchy)
 * **FR-6.1 (Phân cấp Địa điểm Cha - Con):** Hỗ trợ mô hình địa danh phân cấp nhiều tầng (Dinh Độc Lập chứa các phòng ban con: Phòng Khánh Tiết, Phòng Đại Yến) thông qua khóa ngoại `parent_id` tự trỏ trong bảng `locations`.
-* **FR-6.2 (Quản lý Tuyến Tour):** Cung cấp danh sách các tuyến tham quan (`GET /api/tours`) kèm danh sách các điểm dừng theo lộ trình (`tour_locations`).
+* **FR-6.2 (Tra cứu phòng ban con):** Cung cấp API `GET /api/locations/{id}/sub-locations` để Mobile/Web truy xuất danh sách các khu vực trực thuộc một quần thể di tích.
 
 ---
 
@@ -336,7 +296,7 @@ erDiagram
 | **Độ tin cậy (Reliability)** | - Tỷ lệ hoạt động sẵn sàng (Uptime): $\ge 99.9\%$.<br>- Cơ chế GPS dự phòng 3 tầng đảm bảo không bao giờ bị đứt đoạn định vị. | Kiểm thử thực địa khi ngắt GPS phần cứng hoặc chuyển mạng. |
 | **Khả năng chịu tải (Scalability)** | - Chịu tải đồng thời tối thiểu 200 kết nối truy cập cùng lúc.<br>- HikariCP Connection Pool duy trì 10–20 kết nối MySQL ổn định. | Script kiểm thử đồng thời `test_4_users.ps1` vượt qua 100%. |
 | **Tính toàn vẹn Dữ liệu (Integrity)**| - Quản lý phiên bản CSDL bằng Flyway Migration.<br>- Ràng buộc toàn vẹn khóa ngoại (FK constraints) và luật kiểm tra Cascade xóa dữ liệu an toàn. | `ddl-auto: validate`, toàn bộ ràng buộc FK trên InnoDB. |
-| **Chất lượng Kiểm thử (QA)** | - Tỷ lệ pass kiểm thử tự động đạt 100% (136/136 test case pass).<br>- Tự động kiểm thử liên tục qua GitHub Actions CI/CD. | Maven Test Runner (`mvn test`) báo cáo BUILD SUCCESS. |
+| **Chất lượng Kiểm thử (QA)** | - Tỷ lệ pass kiểm thử tự động đạt 100% (130/130 test case pass).<br>- Tự động kiểm thử liên tục qua GitHub Actions CI/CD. | Maven Test Runner (`mvn test`) báo cáo BUILD SUCCESS. |
 | **Tính tương thích (Compatibility)** | - Hoạt động mượt mà trên mọi trình duyệt hiện đại (Chrome, Safari, Edge, Firefox).<br>- Giao diện Responsive thích ứng từ màn hình Smartphone 375px đến Desktop 4K. | Kiểm thử trên thiết bị di động thật và trình giả lập Responsive. |
 
 ---
@@ -345,10 +305,10 @@ erDiagram
 
 ```mermaid
 pie title Phân Bổ Trọng Số Đánh Giá Thành Công Của Dự Án
-    "Trải nghiệm Nghe 2 Chế độ (GPS & Ghim bản đồ)": 30
+    "Trải nghiệm Nghe 2 Chế độ (GPS & Ghim bản đồ)": 35
     "Chất lượng Thuyết minh Đa ngôn ngữ (vi, en, zh, ja)": 25
     "Tính chính xác Dashboard & Giám sát Thời gian thực": 25
-    "Độ ổn định Backend & Độ bao phủ Test 100%": 20
+    "Độ ổn định Backend & Độ bao phủ Test 100%": 15
 ```
 
 1. **Tỷ lệ kích hoạt thành công:** Đạt $\ge 98\%$ đối với cả 2 chế độ (Tự động khi đến vùng GPS và Thủ công khi bấm ghim bản đồ).

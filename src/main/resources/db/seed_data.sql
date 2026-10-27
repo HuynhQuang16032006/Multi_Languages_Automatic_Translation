@@ -19,18 +19,7 @@ INSERT INTO locations (id, name, address, latitude, longitude, radius_in_meters,
 (6, 'Phòng Đại Yến', 'Tầng 1, Dinh Độc Lập', 10.7772, 106.6955, 15.0, 2, 'QR-PHONG-DAI-YEN', 'https://images.unsplash.com/photo-1541971875076-8f970d573be6?w=600', 4)
 ON DUPLICATE KEY UPDATE name=VALUES(name), address=VALUES(address), latitude=VALUES(latitude), longitude=VALUES(longitude);
 
--- 3. Tours
-INSERT INTO tours (id, name, description, estimated_duration_minutes, image_url) VALUES
-(1, 'Tour Tuyến Xe Buýt Lịch Sử Quận 4', 'Hành trình qua các trạm dừng lịch sử Khánh Hội, Vĩnh Hội và Xóm Chiếu', 60, 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600'),
-(2, 'Tour Khám phá Dinh Độc Lập', 'Hành trình tham quan di tích lịch sử đặc biệt cấp quốc gia', 90, 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=600')
-ON DUPLICATE KEY UPDATE name=VALUES(name);
-
--- 4. Tour Locations
-INSERT IGNORE INTO tour_locations (tour_id, location_id) VALUES
-(1, 1), (1, 2), (1, 3),
-(2, 4), (2, 5), (2, 6);
-
--- 5. Narrations (24 bản thuyết minh: 6 địa điểm x 4 ngôn ngữ)
+-- 3. Narrations (24 bản thuyết minh: 6 địa điểm x 4 ngôn ngữ)
 INSERT INTO narrations (id, location_id, language_id, text_content, audio_url, duration_in_seconds) VALUES
 -- Trạm Khánh Hội (loc 1)
 (1, 1, 1, 'Chào mừng quý khách đến với trạm dừng xe buýt Khánh Hội, Quận 4. Vùng đất Khánh Hội xưa vốn là một cù lao trù phú bên dòng kênh Bến Nghé, gắn liền với thương cảng Sài Gòn sầm uất và sự giao lưu văn hóa của cư dân Nam Bộ từ thời khẩn hoang.', 'tram-khanh-hoi-vi.mp3', 90),

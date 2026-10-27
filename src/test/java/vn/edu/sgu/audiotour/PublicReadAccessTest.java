@@ -37,11 +37,6 @@ class PublicReadAccessTest {
                 .andExpect(jsonPath("$[0].latitude").exists());
     }
 
-    @Test
-    void testGetToursWithoutTokenReturns200() throws Exception {
-        mockMvc.perform(get("/api/tours"))
-                .andExpect(status().isOk());
-    }
 
     @Test
     void testGetLanguagesWithoutTokenReturns200() throws Exception {

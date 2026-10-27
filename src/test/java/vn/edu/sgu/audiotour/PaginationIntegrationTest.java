@@ -42,14 +42,6 @@ class PaginationIntegrationTest {
     }
 
     @Test
-    void testLegacyToursStillReturnsPlainArray() throws Exception {
-        mockMvc.perform(get("/api/tours").header("Authorization", bearer))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].id").exists());
-    }
-
-    @Test
     void testV1LocationsIsPaged() throws Exception {
         mockMvc.perform(get("/api/v1/locations").header("Authorization", bearer)
                         .param("page", "0").param("size", "2"))
@@ -67,17 +59,6 @@ class PaginationIntegrationTest {
         Long firstIdOnPage1 = firstContentId("/api/v1/locations", 1);
 
         assertNotEquals(firstIdOnPage0, firstIdOnPage1);
-    }
-
-    @Test
-    void testV1ToursIsPaged() throws Exception {
-        mockMvc.perform(get("/api/v1/tours").header("Authorization", bearer)
-                        .param("page", "0").param("size", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.totalElements").isNumber())
-                .andExpect(jsonPath("$.totalPages").isNumber());
     }
 
     @Test

@@ -6,8 +6,8 @@
 
 * **Hệ thống:** Hệ thống Thuyết minh Audio Tour Tự Động Đa Ngôn Ngữ (*Smart Multi-Languages Automatic Audio Tour System*)
 * **Môn học:** Công nghệ Phần mềm (Software Engineering) – Khoa Công nghệ Thông tin, Trường Đại học Sài Gòn (SGU)
-* **Phiên bản tài liệu:** v2.0 (Khớp hoàn toàn với logic đồ án thực tế và cơ sở dữ liệu 6 bảng hiện hành)
-* **Quy chuẩn đặc tả:** Chuẩn RUP (Rational Unified Process) kết hợp UML 2.5 với biểu đồ tuần tự (Sequence Diagram), luồng sự kiện chi tiết và ma trận truy xuất dữ liệu.
+* **Phiên bản tài liệu:** v2.1 (Đã tinh gọn: Loại bỏ hoàn toàn mục Tuyến tham quan - Tour; Tập trung tối đa vào 2 chế độ nghe POI & Real-time Dashboard)
+* **Quy chuẩn đặc tả:** Chuẩn RUP (Rational Unified Process) kết hợp UML 2.5 với biểu đồ tuần tự (Sequence Diagram), luồng sự kiện chi tiết và ma trận truy xuất dữ liệu trên 4 bảng CSDL.
 
 ---
 
@@ -29,8 +29,7 @@ graph LR
         UC07(UC-07: Giám sát du khách & máy đang nghe thời gian thực)
         UC08(UC-08: Xem thống kê Dashboard & Bản đồ nhiệt Heatmap)
         UC09(UC-09: Thêm ngôn ngữ & Tự động sinh audio AI TTS)
-        UC10(UC-10: Quản lý Tuyến Tour & Phân cấp Địa danh cha-con)
-        UC11(UC-11: Tự động ghi nhận nhật ký nghe)
+        UC10(UC-10: Tự động ghi nhận nhật ký nghe)
     end
 
     actorTourist --> UC01
@@ -44,13 +43,12 @@ graph LR
     actorAdmin --> UC07
     actorAdmin --> UC08
     actorAdmin --> UC09
-    actorAdmin --> UC10
 
-    UC03 -.->|<<include>>| UC11
-    UC04 -.->|<<include>>| UC11
-    UC05 -.->|<<include>>| UC11
-    UC07 -.->|<<reads>>| UC11
-    UC08 -.->|<<reads>>| UC11
+    UC03 -.->|<<include>>| UC10
+    UC04 -.->|<<include>>| UC10
+    UC05 -.->|<<include>>| UC10
+    UC07 -.->|<<reads>>| UC10
+    UC08 -.->|<<reads>>| UC10
 ```
 
 ---
@@ -78,8 +76,7 @@ graph LR
 | **UC-07** | Giám sát du khách & máy đang nghe thời gian thực | Web Quản trị | Ban Quản Lý | `playback_logs`, `locations` |
 | **UC-08** | Xem thống kê Dashboard & Bản đồ nhiệt Heatmap | Web Quản trị | Ban Quản Lý | `playback_logs`, `locations` |
 | **UC-09** | Thêm ngôn ngữ & Tự động sinh audio AI TTS | Web Quản trị | Ban Quản Lý | `languages`, `narrations`, `locations` |
-| **UC-10** | Quản lý Tuyến Tour & Phân cấp Địa danh cha-con | Web Quản trị | Ban Quản Lý | `tours`, `tour_locations`, `locations` |
-| **UC-11** | Tự động ghi nhận nhật ký nghe thuyết minh | Hệ thống | Hệ thống ngầm | `playback_logs` |
+| **UC-10** | Tự động ghi nhận nhật ký nghe thuyết minh | Hệ thống | Hệ thống ngầm | `playback_logs` |
 
 ---
 
@@ -363,14 +360,7 @@ sequenceDiagram
 
 ---
 
-### 📌 UC-10: Quản Lý Tuyến Tour & Phân Cấp Địa Danh Cha - Con
-* **Mô tả:** Hệ thống hỗ trợ xem danh sách các tuyến tour tham quan có sẵn (Tour xe buýt lịch sử Quận 4, Tour Dinh Độc Lập) và tra cứu các khu vực con bên trong di tích lớn (Phòng Khánh Tiết, Phòng Đại Yến bên trong Dinh Độc Lập).
-* **Tác nhân:** Du khách / Ban Quản Lý.
-* **Tương tác CSDL:** Bảng `tours`, `tour_locations` và `locations` (thông qua cột `parent_id`).
-
----
-
-### 📌 UC-11: Tự Động Ghi Nhận Nhật Ký Nghe Thuyết Minh
+### 📌 UC-10: Tự Động Ghi Nhận Nhật Ký Nghe Thuyết Minh
 * **Mô tả:** Mỗi khi du khách kích hoạt nghe thuyết minh (qua GPS Geofence, bấm ghim thủ công hoặc quét mã QR), hệ thống âm thầm gửi gói tin telemetry ghi nhận thông tin vào CSDL.
 * **Tác nhân:** Hệ thống ngầm.
 * **Tương tác CSDL:** `INSERT INTO playback_logs (location_id, language_code, listen_duration_seconds, trigger_type, latitude, longitude, device_id, created_at)`.
@@ -390,5 +380,4 @@ sequenceDiagram
 | **UC-07** | `playback_logs`, `locations` | `GET /api/analytics/dashboard` | Giám sát du khách và máy đang nghe ở thời gian thực (Polling 3s) |
 | **UC-08** | `playback_logs`, `locations` | `GET /api/analytics/dashboard` | Thống kê số liệu BI, biểu đồ phân tích và bản đồ nhiệt Heatmap |
 | **UC-09** | `languages`, `narrations`, `locations` | `POST /api/languages/{code}/translate` | Thêm ngôn ngữ mới và tự động dịch, sinh giọng đọc TTS |
-| **UC-10** | `tours`, `tour_locations`, `locations` | `GET /api/tours`<br>`GET /api/locations/{id}/sub-locations` | Quản lý tuyến tour tham quan và cấu trúc địa danh cha - con |
-| **UC-11** | `playback_logs` | `POST /api/analytics/logs` | Tự động ghi nhật ký lượt nghe (Audit Log ngầm) |
+| **UC-10** | `playback_logs` | `POST /api/analytics/logs` | Tự động ghi nhật ký lượt nghe (Audit Log ngầm) |

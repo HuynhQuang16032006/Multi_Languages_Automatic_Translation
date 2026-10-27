@@ -26,15 +26,6 @@ CREATE TABLE IF NOT EXISTS locations (
     CONSTRAINT fk_locations_parent FOREIGN KEY (parent_id) REFERENCES locations (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS tours (
-    id                         BIGINT       NOT NULL AUTO_INCREMENT,
-    name                       VARCHAR(100) NOT NULL,
-    description                TEXT,
-    estimated_duration_minutes INTEGER,
-    image_url                  VARCHAR(255),
-    PRIMARY KEY (id)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS narrations (
     id                  BIGINT NOT NULL AUTO_INCREMENT,
     location_id         BIGINT NOT NULL,
@@ -59,12 +50,4 @@ CREATE TABLE IF NOT EXISTS playback_logs (
     created_at              DATETIME(6) NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT fk_playback_logs_location FOREIGN KEY (location_id) REFERENCES locations (id)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS tour_locations (
-    tour_id     BIGINT NOT NULL,
-    location_id BIGINT NOT NULL,
-    PRIMARY KEY (tour_id, location_id),
-    CONSTRAINT fk_tour_locations_tour FOREIGN KEY (tour_id) REFERENCES tours (id),
-    CONSTRAINT fk_tour_locations_location FOREIGN KEY (location_id) REFERENCES locations (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;

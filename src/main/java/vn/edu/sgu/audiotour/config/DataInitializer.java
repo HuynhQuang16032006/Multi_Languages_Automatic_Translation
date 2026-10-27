@@ -16,7 +16,6 @@ public class DataInitializer implements CommandLineRunner {
     private final LanguageRepository languageRepository;
     private final LocationRepository locationRepository;
     private final NarrationRepository narrationRepository;
-    private final TourRepository tourRepository;
     private final PlaybackLogRepository playbackLogRepository;
 
     @Override
@@ -129,24 +128,7 @@ public class DataInitializer implements CommandLineRunner {
                     "Trạm dừng Xóm Chiếu là nơi lưu giữ nét văn hóa làng nghề truyền thống nổi tiếng từ thế kỷ trước. Nơi đây từng là trung tâm dệt chiếu cói nức tiếng phương Nam, nay trở thành thiên đường ẩm thực đường phố sầm uất bậc nhất của Thành phố Hồ Chí Minh.",
                     "tram-xom-chieu-vi.mp3", 95);
 
-            // 4. Tuyến tham quan (Tours)
-            Tour tourQuan4 = new Tour();
-            tourQuan4.setName("Tour Tuyến Xe Buýt Lịch Sử Quận 4");
-            tourQuan4.setDescription("Hành trình qua các trạm dừng lịch sử Khánh Hội, Vĩnh Hội và Xóm Chiếu");
-            tourQuan4.setEstimatedDurationMinutes(60);
-            tourQuan4.setImageUrl("https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600");
-            tourQuan4.setLocations(List.of(tramKhanhHoi, tramVinhHoi, tramXomChieu));
-            tourRepository.save(tourQuan4);
-
-            Tour tourDinhDocLap = new Tour();
-            tourDinhDocLap.setName("Tour Khám phá Dinh Độc Lập");
-            tourDinhDocLap.setDescription("Hành trình tham quan di tích lịch sử đặc biệt cấp quốc gia");
-            tourDinhDocLap.setEstimatedDurationMinutes(90);
-            tourDinhDocLap.setImageUrl("https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=600");
-            tourDinhDocLap.setLocations(List.of(dinhDocLap, phongKhanhTiet, phongDaiYen));
-            tourRepository.save(tourDinhDocLap);
-
-            // 5. Nhật ký nghe mẫu (Playback Logs cho Dashboard)
+            // 4. Nhật ký nghe mẫu (Playback Logs cho Dashboard)
             recordSampleLog(tramKhanhHoi, "vi", 85, TriggerType.QR_CODE, 10.7602, 106.7031);
             recordSampleLog(tramKhanhHoi, "en", 80, TriggerType.QR_CODE, 10.7602, 106.7031);
             recordSampleLog(tramXomChieu, "vi", 90, TriggerType.GEOFENCE, 10.7631, 106.7075);

@@ -41,7 +41,7 @@ public class SecurityConfig {
                         // Chỉ health là public; metrics/info và các actuator khác phải có token
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         // API đọc cho du khách ẩn danh: chỉ mở phương thức GET, API ghi vẫn cần token admin
-                        .requestMatchers(HttpMethod.GET, "/api/locations/**", "/api/tours/**", "/api/languages/**", "/api/narrations/**", "/api/v1/locations/**", "/api/v1/tours/**", "/api/v1/languages/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/locations/**", "/api/languages/**", "/api/narrations/**", "/api/v1/locations/**", "/api/v1/languages/**").permitAll()
                         .requestMatchers("/api/**", "/api/v1/**", "/actuator/**").authenticated()
                         .anyRequest().denyAll())
                 // Thiếu/sai token trả 401 thay vì 403 mặc định

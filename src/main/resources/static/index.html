@@ -1452,22 +1452,7 @@
             <span id="poiCount" class="section-count"></span>
         </div>
         <!-- Thông báo đang lọc theo tour, kèm nút bỏ lọc (Task 7) -->
-        <p id="tourFilterNotice" class="tour-filter" hidden>
-            <span id="tourFilterText"></span>
-            <button type="button" id="clearTourFilter" class="tour-filter__btn">Xem tất cả</button>
-        </p>
         <ul id="poiList" class="poi-list"></ul>
-
-        <!-- Danh sách tuyến tham quan (Task 7) -->
-        <section id="tourSection" aria-labelledby="tourSectionTitle">
-            <div class="section-head">
-                <h2 id="tourSectionTitle">Tuyến tham quan</h2>
-                <span id="tourCount" class="section-count"></span>
-            </div>
-            <!-- Ghi chú riêng cho lỗi tải tour, không dùng #errorBanner (lỗi API chính) -->
-            <p id="tourNotice" class="tour-note" hidden></p>
-            <ul id="tourList" class="tour-list"></ul>
-        </section>
     </main>
 
     <footer class="app-footer">
@@ -1504,7 +1489,6 @@
         'use strict';
 
         const POIS_API = "/api/locations/pois";
-        const TOURS_API = "/api/tours";
         const LANGUAGES_API = "/api/languages";
         const NARRATIONS_API = "/api/narrations";
         // Một nguồn tile duy nhất: Esri World Street Map, không cần API key.
@@ -1545,10 +1529,6 @@
             userMarker: null,
             userAccuracyCircle: null,
             geoPending: false,
-            // Task 7: danh sách tour + lọc POI theo tour + kiểu sắp xếp đang dùng
-            tours: [],
-            activeTour: null,
-            tourPoiIds: new Set(),
             sortMode: "default",
             // Task 9: mốc thời gian cache POI lưu cục bộ lần gần nhất
             cacheSavedAt: null,
@@ -1599,13 +1579,6 @@
             venueName: document.getElementById("venueName"),
             venueSuggestion: document.getElementById("venueSuggestion"),
             venueListen: document.getElementById("venueListen"),
-            tourSection: document.getElementById("tourSection"),
-            tourList: document.getElementById("tourList"),
-            tourCount: document.getElementById("tourCount"),
-            tourNotice: document.getElementById("tourNotice"),
-            tourFilterNotice: document.getElementById("tourFilterNotice"),
-            tourFilterText: document.getElementById("tourFilterText"),
-            clearTourFilter: document.getElementById("clearTourFilter"),
             // Audio player elements
             audioPlayerBar: document.getElementById("audioPlayerBar"),
             mainAudio: document.getElementById("mainAudio"),
@@ -2369,98 +2342,8 @@
             return hours + " giờ " + rest + " phút";
         }
 
-        async function loadTours() {
-            try {
-                const response = await fetch(TOURS_API, { headers: { "Accept": "application/json" } });
-                if (!response.ok) throw new Error("HTTP " + response.status);
-                const data = await response.json();
-                if (!Array.isArray(data)) throw new Error("Dữ liệu trả về không phải danh sách");
-                state.tours = data;
-                dom.tourNotice.hidden = true;
-                renderTourList(data);
-            } catch (error) {
-                // Lỗi tải tour không được làm hỏng bản đồ / danh sách POI, chỉ ghi chú trong section tour
-                console.warn("Không tải được danh sách tour:", error);
-                state.tours = [];
-                dom.tourList.textContent = "";
-                dom.tourCount.textContent = "";
-                dom.tourNotice.textContent = "Không tải được danh sách tour";
-                dom.tourNotice.hidden = false;
-            }
-        }
-
-        function renderTourList(tours) {
-            dom.tourList.textContent = "";
-            dom.tourCount.textContent = tours.length ? tours.length + " tuyến" : "";
-            if (!tours.length) {
-                const item = document.createElement("li");
-                item.className = "tour-list__status";
-                item.textContent = "Chưa có tuyến tham quan nào.";
-                dom.tourList.appendChild(item);
-                return;
-            }
-            const fragment = document.createDocumentFragment();
-            tours.forEach(tour => fragment.appendChild(createTourCard(tour)));
-            dom.tourList.appendChild(fragment);
-            updateTourActiveState();
-        }
-
-        function createTourCard(tour) {
-            const item = document.createElement("li");
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "tour-card";
-            button.dataset.tourId = tour.id;
-            button.setAttribute("aria-pressed", "false");
-
-            if (tour.imageUrl) {
-                const image = document.createElement("img");
-                image.className = "tour-card__img";
-                image.src = tour.imageUrl;
-                image.alt = "";
-                image.loading = "lazy";
-                image.addEventListener("error", () => image.remove());
-                button.appendChild(image);
-            }
-
-            const body = document.createElement("span");
-            body.className = "tour-card__body";
-
-            const name = document.createElement("span");
-            name.className = "tour-card__name";
-            name.textContent = tour.name || "";
-            body.appendChild(name);
-
-            if (tour.description) {
-                const description = document.createElement("span");
-                description.className = "tour-card__desc";
-                description.textContent = tour.description;
-                body.appendChild(description);
-            }
-
-            const meta = document.createElement("span");
-            meta.className = "tour-card__meta";
-            meta.textContent = formatTourDuration(tour.estimatedDurationMinutes) +
-                " · " + (tour.locations || []).length + " điểm dừng";
-            body.appendChild(meta);
-
-            button.appendChild(body);
-            item.appendChild(button);
-            return item;
-        }
-
-        function updateTourActiveState() {
-            dom.tourList.querySelectorAll("button[data-tour-id]").forEach(button => {
-                const active = Boolean(state.activeTour) &&
-                    String(state.activeTour.id) === button.dataset.tourId;
-                button.setAttribute("aria-pressed", String(active));
-            });
-        }
-
-        // Tập POI đang hiển thị: khi lọc theo tour chỉ còn POI thuộc tour đó
         function currentPois() {
-            if (!state.activeTour) return state.pois.slice();
-            return state.pois.filter(poi => state.tourPoiIds.has(String(poi.id)));
+            return state.pois.slice();
         }
 
         function updatePoiCount() {
@@ -2480,31 +2363,6 @@
             } else {
                 renderPoiList(pois);
             }
-        }
-
-        function applyTourFilter(tour) {
-            state.activeTour = tour;
-            state.tourPoiIds = new Set((tour.locations || []).map(location => String(location.id)));
-
-            renderVisiblePois();
-            updatePoiCount();
-            renderMarkers(state.pois, state.tourPoiIds);
-
-            dom.tourFilterText.textContent = "Đang xem tour: " + (tour.name || "");
-            dom.tourFilterNotice.hidden = false;
-            updateTourActiveState();
-        }
-
-        function clearTourFilter() {
-            state.activeTour = null;
-            state.tourPoiIds = new Set();
-
-            dom.tourFilterNotice.hidden = true;
-            dom.tourFilterText.textContent = "";
-            renderVisiblePois();
-            updatePoiCount();
-            renderMarkers(state.pois, null);
-            updateTourActiveState();
         }
 
         // ===== Hành động =====
@@ -3159,16 +3017,6 @@
             if (state.venueSuggestedPoi) openPlayer(state.venueSuggestedPoi, state.selectedLanguage);
         });
 
-        // Bấm 1 tour -> lọc danh sách POI theo các điểm dừng của tour đó
-        dom.tourList.addEventListener("click", (event) => {
-            const button = event.target.closest("button[data-tour-id]");
-            if (!button) return;
-            const tour = state.tours.find(item => String(item.id) === button.dataset.tourId);
-            if (!tour) return;
-            applyTourFilter(tour);
-        });
-
-        dom.clearTourFilter.addEventListener("click", () => clearTourFilter());
 
         dom.poiList.addEventListener("click", (event) => {
             const button = event.target.closest("button[data-poi-id]");
@@ -3352,7 +3200,6 @@
         initGeoSupport();
         initPlayerAndGpsEvents();
         loadPois();
-        loadTours();
         loadLanguages();
     </script>
 </body>
