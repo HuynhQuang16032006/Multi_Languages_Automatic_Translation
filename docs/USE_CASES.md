@@ -1,75 +1,56 @@
-# TÀI LIỆU ĐẶC TẢ CA SỬ DỤNG KÈM BIỂU ĐỒ CHI TIẾT (USE CASE SPECIFICATIONS & DIAGRAMS)
+# TÀI LIỆU ĐẶC TẢ CA SỬ DỤNG (USE CASE SPECIFICATIONS & DIAGRAMS)
 
 ---
 
 ## 🏛️ THÔNG TIN TỔNG QUAN
 
-* **Hệ thống:** Hệ thống Thuyết minh Audio Tour Tự Động Đa Ngôn Ngữ (*Multi Languages Automatic Translation*)
-* **Môn học:** Công nghệ Phần mềm (Software Engineering) – Khoa CNTT, Trường Đại học Sài Gòn (SGU)
-* **Quy chuẩn đặc tả:** Chuẩn RUP (Rational Unified Process) kết hợp UML 2.5 với **biểu đồ tuần tự (Sequence Diagram) và biểu đồ hoạt động (Activity Diagram) chi tiết cho từng Use Case**.
+* **Hệ thống:** Hệ thống Thuyết minh Audio Tour Tự Động Đa Ngôn Ngữ (*Smart Multi-Languages Automatic Audio Tour System*)
+* **Môn học:** Công nghệ Phần mềm (Software Engineering) – Khoa Công nghệ Thông tin, Trường Đại học Sài Gòn (SGU)
+* **Phiên bản tài liệu:** v2.0 (Khớp hoàn toàn với logic đồ án thực tế và cơ sở dữ liệu 6 bảng hiện hành)
+* **Quy chuẩn đặc tả:** Chuẩn RUP (Rational Unified Process) kết hợp UML 2.5 với biểu đồ tuần tự (Sequence Diagram), luồng sự kiện chi tiết và ma trận truy xuất dữ liệu.
 
 ---
 
-## 📐 1. SƠ ĐỒ CA SỬ DỤNG TỔNG THỂ & PHÂN RÃ PHÂN HỆ
-
-### 1.1. Sơ đồ Ca Sử Dụng Tổng Thể (System Use Case Diagram)
+## 📐 1. SƠ ĐỒ CA SỬ DỤNG TỔNG THỂ (SYSTEM USE CASE DIAGRAM)
 
 ```mermaid
 graph LR
     actorTourist((Du khách))
-    actorAdmin((Ban Quản Lý))
-    actorDevice((Thiết bị / GPS))
+    actorSensor((Cảm biến Vị trí / GPS))
+    actorAdmin((Ban Quản Lý / Admin))
 
-    subgraph AudioTourSystem [Hệ thống Audio Tour Thông Minh]
-        UC01(UC-01: Đồng bộ danh sách POI Geofencing)
-        UC02(UC-02: Tự động phát thuyết minh GPS ngoài trời)
-        UC03(UC-03: Quét mã QR nhận thông tin địa điểm)
-        UC04(UC-04: Tải trọn gói âm thanh Offline ZIP)
-        UC05(UC-05: Ghi nhận nhật ký nghe thuyết minh)
-        UC06(UC-06: Xem báo cáo thống kê Dashboard & Heatmap)
-        UC07(UC-07: Xem lộ trình tuyến Tour tham quan)
-        UC08(UC-08: Tra cứu khu vực con bên trong di tích)
+    subgraph AudioTourSystem [Hệ Thống Audio Tour Thông Minh]
+        UC01(UC-01: Truy cập Web & Chọn ngôn ngữ thuyết minh)
+        UC02(UC-02: Định vị & Hiển thị vị trí thực hình người 🚶)
+        UC03(UC-03: Tự động phát thuyết minh qua GPS Geofence - Chế độ 1)
+        UC04(UC-04: Bấm ghim bản đồ nghe thuyết minh thủ công - Chế độ 2)
+        UC05(UC-05: Quét mã QR code tại địa điểm)
+        UC06(UC-06: Tải trọn gói âm thanh Offline ZIP)
+        UC07(UC-07: Giám sát du khách & máy đang nghe thời gian thực)
+        UC08(UC-08: Xem thống kê Dashboard & Bản đồ nhiệt Heatmap)
+        UC09(UC-09: Thêm ngôn ngữ & Tự động sinh audio AI TTS)
+        UC10(UC-10: Quản lý Tuyến Tour & Phân cấp Địa danh cha-con)
+        UC11(UC-11: Tự động ghi nhận nhật ký nghe)
     end
 
     actorTourist --> UC01
-    actorTourist --> UC03
     actorTourist --> UC04
-    actorTourist --> UC07
-    actorTourist --> UC08
+    actorTourist --> UC05
+    actorTourist --> UC06
 
-    actorDevice --> UC02
-    actorDevice --> UC05
+    actorSensor --> UC02
+    actorSensor --> UC03
 
-    actorAdmin --> UC06
     actorAdmin --> UC07
+    actorAdmin --> UC08
+    actorAdmin --> UC09
+    actorAdmin --> UC10
 
-    UC02 -.->|<<include>>| UC05
-    UC03 -.->|<<extend>>| UC04
-    UC03 -.->|<<extend>>| UC08
-```
-
----
-
-### 1.2. Phân rã theo 3 Phân hệ Chức năng (Sub-systems)
-
-```mermaid
-graph TD
-    subgraph Sub1 [Phân hệ 1: Quản lý Vị trí & Định vị Geofencing]
-        UC01_sub[UC-01: Đồng bộ POI Geofencing]
-        UC02_sub[UC-02: Tự động phát GPS ngoài trời]
-        UC08_sub[UC-08: Tra cứu phòng ban con]
-    end
-
-    subgraph Sub2 [Phân hệ 2: Kích hoạt QR Code & Tải Offline]
-        UC03_sub[UC-03: Quét mã QR địa điểm]
-        UC04_sub[UC-04: Đóng gói ZIP âm thanh Offline]
-    end
-
-    subgraph Sub3 [Phân hệ 3: Phân tích Dữ liệu & Tuyến Tour]
-        UC05_sub[UC-05: Ghi nhận nhật ký nghe]
-        UC06_sub[UC-06: Báo cáo Dashboard & Heatmap]
-        UC07_sub[UC-07: Xem lộ trình tuyến Tour]
-    end
+    UC03 -.->|<<include>>| UC11
+    UC04 -.->|<<include>>| UC11
+    UC05 -.->|<<include>>| UC11
+    UC07 -.->|<<reads>>| UC11
+    UC08 -.->|<<reads>>| UC11
 ```
 
 ---
@@ -78,438 +59,336 @@ graph TD
 
 | Tác nhân | Loại tác nhân | Vai trò và Trách nhiệm trong hệ thống |
 | :--- | :---: | :--- |
-| **Du khách (Tourist)** | Primary Actor | Người dùng cuối trực tiếp tương tác với ứng dụng di động: quét mã QR, chọn ngôn ngữ nghe, tải gói offline và trải nghiệm tham quan. |
-| **Thiết bị / Cảm biến GPS (Mobile Sensor)** | System Actor | Hệ thống cảm biến vị trí trên thiết bị di động, tự động đối chiếu tọa độ người dùng với các POI và phát tín hiệu kích hoạt âm thanh ngầm. |
-| **Ban Quản Lý (Admin / Tour Operator)** | Primary Actor | Người quản trị truy cập Web CMS để theo dõi mật độ du khách, bản đồ nhiệt Heatmap, báo cáo số liệu và thiết lập các tuyến Tour. |
+| **Du khách (Tourist)** | Primary Actor | Người dùng truy cập Web Du khách (`index.html`) trên điện thoại di động: chọn ngôn ngữ nghe, quan sát bản đồ, bấm vào các điểm ghim hoặc di chuyển để nghe thuyết minh tự động, quét mã QR và tải gói offline. |
+| **Cảm biến Vị trí / GPS (Sensor)** | System Actor | Dịch vụ định vị 3 tầng trên thiết bị người dùng (GPS phần cứng, Triangulation sóng Wifi/Cell, IP Geolocation), liên tục cung cấp tọa độ địa lý thực tế để vẽ icon hình người 🚶 và kích hoạt geofence tự động. |
+| **Ban Quản Lý (Admin / Operator)** | Primary Actor | Người quản trị truy cập Web Quản trị (`dashboard.html`): giám sát số lượng khách đang truy cập trong thời gian thực, xem các máy đang nghe, phân tích Heatmap và bổ sung ngôn ngữ thuyết minh mới. |
 
 ---
 
-## 📋 3. DANH MỤC TỔNG HỢP CA SỬ DỤNG
+## 📋 3. DANH MỤC TỔNG HỢP CA SỬ DỤNG (USE CASE CATALOG)
 
-| Mã UC | Tên Ca Sử Dụng | Tác nhân chính | Mức độ ưu tiên | Endpoint API Backend |
+| Mã UC | Tên Ca Sử Dụng | Phân hệ | Tác nhân chính | Bảng Dữ liệu Tương tác |
 | :---: | :--- | :---: | :---: | :--- |
-| **UC-01** | Đồng bộ danh sách POI Geofencing | Du khách / Mobile App | **Cao (High)** | `GET /api/locations/pois` |
-| **UC-02** | Tự động phát thuyết minh GPS ngoài trời | Thiết bị / GPS Sensor | **Cao (High)** | Logic Mobile + `POST /api/analytics/logs` |
-| **UC-03** | Quét mã QR nhận thông tin địa điểm | Du khách | **Cao (High)** | `GET /api/locations/by-qr/{qrCode}` |
-| **UC-04** | Tải trọn gói âm thanh Offline dạng ZIP | Du khách | **Cao (High)** | `GET /api/packages/offline` |
-| **UC-05** | Ghi nhận nhật ký nghe thuyết minh | Thiết bị Mobile App | **Trung bình (Medium)** | `POST /api/analytics/logs` |
-| **UC-06** | Xem thống kê Dashboard & Heatmap | Ban Quản Lý | **Trung bình (Medium)** | `GET /api/analytics/dashboard` |
-| **UC-07** | Xem danh sách và lộ trình tuyến Tour | Du khách / Ban Quản Lý | **Thấp (Low)** | `GET /api/tours`, `GET /api/tours/{id}` |
-| **UC-08** | Tra cứu khu vực con bên trong di tích | Du khách | **Thấp (Low)** | `GET /api/locations/{id}/sub-locations` |
+| **UC-01** | Truy cập Web & Chọn ngôn ngữ thuyết minh | Web Du khách | Du khách | `languages`, `locations` |
+| **UC-02** | Định vị & Hiển thị vị trí thực hình người 🚶 | Web Du khách | Cảm biến GPS | Không lưu DB (Client State) |
+| **UC-03** | Tự động phát thuyết minh GPS Geofence (Chế độ 1) | Web Du khách | Cảm biến GPS | `locations`, `narrations`, `playback_logs` |
+| **UC-04** | Bấm ghim bản đồ nghe thuyết minh thủ công (Chế độ 2) | Web Du khách | Du khách | `locations`, `narrations`, `playback_logs` |
+| **UC-05** | Quét mã QR code nhận thông tin & nghe âm thanh | Web Du khách | Du khách | `locations`, `narrations`, `playback_logs` |
+| **UC-06** | Tải trọn gói âm thanh Offline dạng ZIP | Web Du khách | Du khách | `locations`, `narrations` |
+| **UC-07** | Giám sát du khách & máy đang nghe thời gian thực | Web Quản trị | Ban Quản Lý | `playback_logs`, `locations` |
+| **UC-08** | Xem thống kê Dashboard & Bản đồ nhiệt Heatmap | Web Quản trị | Ban Quản Lý | `playback_logs`, `locations` |
+| **UC-09** | Thêm ngôn ngữ & Tự động sinh audio AI TTS | Web Quản trị | Ban Quản Lý | `languages`, `narrations`, `locations` |
+| **UC-10** | Quản lý Tuyến Tour & Phân cấp Địa danh cha-con | Web Quản trị | Ban Quản Lý | `tours`, `tour_locations`, `locations` |
+| **UC-11** | Tự động ghi nhận nhật ký nghe thuyết minh | Hệ thống | Hệ thống ngầm | `playback_logs` |
 
 ---
 
-## 📝 4. ĐẶC TẢ CHI TIẾT TỪNG USE CASE KÈM BIỂU ĐỒ
+## 🔍 4. ĐẶC TẢ CHI TIẾT TỪNG CA SỬ DỤNG (USE CASE SPECIFICATIONS)
 
 ---
 
-### 🔹 UC-01: Đồng bộ danh sách POI Geofencing
-
-#### 1. Mục đích
-Cung cấp toàn bộ danh sách điểm quan tâm (POI) gồm tọa độ GPS, bán kính kích hoạt và độ ưu tiên về ứng dụng di động để hỗ trợ phát hiện vị trí ngoại tuyến.
-
-#### 2. Thông tin chung
-* **Tác nhân:** Du khách (thực thi tự động qua ứng dụng di động khi khởi động).
-* **Tiền điều kiện:** Ứng dụng di động có kết nối Internet khi mở lần đầu.
-* **Hậu điều kiện:** Dữ liệu POI được lưu trữ cục bộ trong bộ nhớ cache hoặc SQLite của điện thoại.
-
-#### 3. Biểu đồ Tuần tự (Sequence Diagram - UC-01)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Tourist as Du khách (Mobile App)
-    participant LC as LocationController
-    participant LS as LocationService
-    participant LR as LocationRepository
-    participant DB as MySQL Database
-
-    Tourist->>LC: GET /api/locations/pois
-    activate LC
-    LC->>LS: getAllLocations()
-    activate LS
-    LS->>LR: findAll()
-    activate LR
-    LR->>DB: SELECT * FROM locations
-    activate DB
-    DB-->>LR: Danh sách tất cả POI (lat, lng, radius, priority)
-    deactivate DB
-    LR-->>LS: List<Location>
-    deactivate LR
-    LS-->>LC: List<Location>
-    deactivate LS
-    LC-->>Tourist: HTTP 200 OK (JSON List POI)
-    deactivate LC
-    Note over Tourist: Mobile lưu danh sách vào SQLite phục vụ Geofencing Offline
-```
-
-#### 4. Luồng sự kiện
-* **Luồng chính:**
-  1. Ứng dụng khởi động, tự động gửi `GET /api/locations/pois`.
-  2. `LocationController` gọi `LocationService.getAllLocations()`.
-  3. `LocationRepository` truy vấn CSDL MySQL nạp danh sách địa điểm.
-  4. Hệ thống trả về mảng JSON chứa các trường `id`, `name`, `latitude`, `longitude`, `radiusInMeters`, `priority`.
-  5. Ứng dụng nạp dữ liệu vào Geofencing Service chạy nền.
-* **Luồng ngoại lệ:** Nếu mất mạng, ứng dụng sử dụng dữ liệu đã lưu từ phiên trước trong SQLite.
-
----
-
-### 🔹 UC-02: Tự động phát thuyết minh GPS ngoài trời (Geofence Trigger)
-
-#### 1. Mục đích
-Tự động kích hoạt bài thuyết minh khi du khách bước vào bán kính vùng phủ sóng định vị của một địa điểm (ví dụ: xe buýt tới trạm Khánh Hội).
-
-#### 2. Thông tin chung
-* **Tác nhân:** Thiết bị di động / Cảm biến GPS.
-* **Tiền điều kiện:** Đã hoàn thành UC-01; thiết bị đã cấp quyền vị trí (Location Permission).
-* **Hậu điều kiện:** Âm thanh thuyết minh tự động phát; gọi tự động **UC-05** ghi nhận log.
-
-#### 3. Biểu đồ Hoạt động (Activity Diagram - UC-02)
-
-```mermaid
-flowchart TD
-    Start([Bắt đầu di chuyển]) --> ReadGPS[Đọc tọa độ GPS hiện tại từ thiết bị]
-    ReadGPS --> CalcDist[Tính khoảng cách Haversine tới các POI]
-    CalcDist --> CheckRadius{Khoảng cách <= Bán kính radiusInMeters?}
-    
-    CheckRadius -- Không --> Wait[Chờ chu kỳ quét GPS tiếp theo]
-    Wait --> ReadGPS
-    
-    CheckRadius -- Có --> CheckConflict{Có nhiều hơn 1 POI thỏa mãn?}
-    CheckConflict -- Có --> SelectPriority[Chọn POI có thuộc tính priority cao nhất]
-    CheckConflict -- Không --> TargetPOI[Xác định POI kích hoạt]
-    SelectPriority --> TargetPOI
-    
-    TargetPOI --> PlayAudio[Tự động phát âm thanh thuyết minh]
-    PlayAudio --> ListenFinish[Du khách nghe xong bài thuyết minh]
-    ListenFinish --> TriggerLog[Gọi UC-05: Gửi log phát về máy chủ]
-    TriggerLog --> End([Kết thúc chu trình])
-```
-
-#### 4. Biểu đồ Tuần tự (Sequence Diagram - UC-02)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor GPS as Cảm biến GPS
-    participant App as Mobile App Logic
-    participant Storage as SQLite / Audio Local
-    participant AC as AnalyticsController
-    participant DB as MySQL Database
-
-    loop Mỗi chu kỳ định vị (5 giây)
-        GPS->>App: Cung cấp tọa độ (lat, lng)
-        App->>App: Tính khoảng cách tới POIs
-    end
-    Note over App: Khoảng cách <= radiusInMeters & Priority cao nhất!
-    App->>Storage: Lấy file âm thanh bài thuyết minh
-    Storage-->>App: Stream âm thanh MP3
-    App->>App: Tự động phát âm thanh ra loa/tai nghe
-    Note over App: Du khách nghe hết bài thuyết minh
-    App->>AC: POST /api/analytics/logs (triggerType = GEOFENCE)
-    activate AC
-    AC->>DB: Lưu nhật ký nghe vào playback_logs
-    AC-->>App: HTTP 200 OK
-    deactivate AC
-```
-
----
-
-### 🔹 UC-03: Quét mã QR nhận thông tin địa điểm
-
-#### 1. Mục đích
-Cho phép du khách quét mã QR dán cố định tại trạm dừng hoặc phòng ban di tích để lấy thông tin chi tiết và danh sách bài thuyết minh.
-
-#### 2. Thông tin chung
+### 📌 UC-01: Truy cập Web & Chọn Ngôn Ngữ Thuyết Minh
+* **Mô tả:** Du khách mở trang web du khách (`index.html`) trên trình duyệt di động hoặc máy tính. Hệ thống hiển thị thanh công cụ với danh sách các ngôn ngữ được hỗ trợ (`vi`, `en`, `zh`, `ja`), tải danh sách POI lên bản đồ và ghi nhớ ngôn ngữ đã chọn.
 * **Tác nhân:** Du khách.
-* **Tiền điều kiện:** Du khách đứng trước mã QR và cấp quyền Camera.
-* **Hậu điều kiện:** Thông tin địa điểm hiển thị trên màn hình.
-
-#### 3. Biểu đồ Tuần tự (Sequence Diagram - UC-03)
+* **Điều kiện tiên quyết:** Thiết bị có kết nối mạng và trình duyệt web hiện đại.
+* **Điều kiện sau:** Giao diện bản đồ hiển thị với ngôn ngữ được chọn; ngôn ngữ được lưu vào `localStorage`.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Tourist as Du khách
-    participant Camera as Camera Mobile
-    participant App as Mobile App
-    participant LC as LocationController
-    participant LS as LocationService
-    participant LR as LocationRepository
+    actor T as Du khách
+    participant UI as Web Du Khách (index.html)
+    participant API as Backend REST Controller
     participant DB as MySQL Database
 
-    Tourist->>Camera: Quét mã QR tại điểm tham quan (ví dụ: QR-DINH-DOC-LAP-01)
-    Camera-->>App: Trả về chuỗi mã "QR-DINH-DOC-LAP-01"
-    App->>LC: GET /api/locations/by-qr/QR-DINH-DOC-LAP-01
-    activate LC
-    LC->>LS: getLocationByQrCode("QR-DINH-DOC-LAP-01")
-    activate LS
-    LS->>LR: findByQrCode("QR-DINH-DOC-LAP-01")
-    activate LR
-    LR->>DB: SELECT * FROM locations WHERE qr_code = ?
-    activate DB
-    DB-->>LR: Bản ghi Location (kèm subLocations)
-    deactivate DB
-    LR-->>LS: Optional<Location>
-    deactivate LR
-    
-    alt Tìm thấy mã QR
-        LS-->>LC: Đối tượng Location
-        LC-->>App: HTTP 200 OK (Chi tiết địa danh, ảnh, phòng con)
-        App-->>Tourist: Hiển thị giao diện di tích & nút chọn ngôn ngữ
-    else Không tìm thấy mã QR
-        LS-->>LC: Ném ngoại lệ 404 Not Found
-        LC-->>App: HTTP 404 (Mã QR không tồn tại)
-        App-->>Tourist: Báo lỗi "Mã QR không hợp lệ"
-    end
-    deactivate LS
-    deactivate LC
+    T->>UI: Truy cập URL trang web (hoặc quét mã QR chung)
+    UI->>UI: Đọc ngôn ngữ đã lưu từ localStorage (mặc định 'vi')
+    UI->>API: GET /api/locations/pois
+    API->>DB: SELECT * FROM locations
+    DB-->>API: Trả về danh sách 6 địa điểm POI
+    API-->>UI: HTTP 200 JSON danh sách POI
+    UI->>UI: Vẽ các điểm ghim POI lên bản đồ Leaflet
+    T->>UI: Chọn ngôn ngữ khác (ví dụ: 'en' hoặc 'ja')
+    UI->>UI: Lưu ngôn ngữ vào localStorage ('guest_audio_language')
+    UI->>UI: Cập nhật giao diện và danh mục bài thuyết minh
 ```
+
+* **Luồng sự kiện chính:**
+  1. Du khách truy cập địa chỉ `http://localhost:8080/index.html`.
+  2. Giao diện kiểm tra `localStorage` để lấy ngôn ngữ người dùng đã chọn trước đó (nếu chưa có, mặc định là `vi` - Tiếng Việt).
+  3. Trình duyệt gửi yêu cầu `GET /api/locations/pois` để lấy toàn bộ 6 địa điểm tham quan.
+  4. Hệ thống tải nền bản đồ Esri và vẽ các điểm ghim POI kèm bán kính vòng tròn địa lý.
+  5. Du khách nhấn vào hộp chọn ngôn ngữ trên thanh công cụ và chọn ngôn ngữ mong muốn (`en` - English, `zh` - 中文, `ja` - 日本語).
+  6. Hệ thống cập nhật trạng thái ngôn ngữ toàn cục và lưu vào `localStorage`.
+* **Luồng sự kiện rẽ nhánh:**
+  - *Mất kết nối mạng tới Backend:* Giao diện hiển thị thông báo toast lỗi và kích hoạt chế độ nạp POI dự phòng cục bộ.
 
 ---
 
-### 🔹 UC-04: Tải trọn gói âm thanh Offline dạng ZIP
+### 📌 UC-02: Định vị & Hiển Thị Vị Trí Thực Bằng Hình Người (🚶)
+* **Mô tả:** Hệ thống thu thập tọa độ thực tế của du khách thông qua cơ chế định vị 3 tầng (3-Tier Fallback) và vẽ một biểu tượng hình người đi bộ (🚶) kèm sóng radar phát liên tục tại vị trí thực tế trên bản đồ.
+* **Tác nhân:** Cảm biến Vị trí / GPS.
+* **Điều kiện tiên quyết:** Du khách bấm nút bật GPS hoặc cấp quyền truy cập vị trí trên trình duyệt.
+* **Điều kiện sau:** Marker hình người 🚶 xuất hiện tại tọa độ thực của du khách trên bản đồ Leaflet; tâm bản đồ tự động di chuyển về vị trí du khách.
 
-#### 1. Mục đích
-Nén động file âm thanh MP3 thực tế và file văn bản kịch bản `content.txt` thành gói `tour-offline.zip` để du khách lưu về máy và nghe ngoại tuyến khi không có mạng.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor T as Du khách
+    participant UI as Web Du Khách (index.html)
+    participant GPS as Trình duyệt / Geolocation API
+    participant IP as Dịch vụ IP Geolocation ngoài
 
-#### 2. Thông tin chung
+    T->>UI: Bấm nút "Bật GPS" hoặc nút "🚶 Vị trí của tôi"
+    UI->>GPS: Tầng 1: getCurrentPosition(enableHighAccuracy: true, timeout: 8s)
+    alt Tầng 1 thành công (Có chip GPS phần cứng)
+        GPS-->>UI: Trả về {latitude, longitude, accuracy}
+    else Tầng 1 thất bại / Timeout (Máy tính không có GPS)
+        UI->>GPS: Tầng 2: getCurrentPosition(enableHighAccuracy: false)
+        alt Tầng 2 thành công (Định vị qua Wifi/Cell)
+            GPS-->>UI: Trả về {latitude, longitude}
+        else Tầng 2 thất bại (Bị từ chối hoặc tắt vị trí)
+            UI->>IP: Tầng 3: GET https://ipapi.co/json/
+            IP-->>UI: Trả về {latitude, longitude} theo IP công cộng
+        end
+    end
+    UI->>UI: Tạo/Cập nhật marker hình người 🚶 kèm hiệu ứng radar
+    UI->>UI: Tự động lia tâm bản đồ (panTo) về vị trí du khách
+```
+
+* **Luồng sự kiện chính:**
+  1. Người dùng nhấn nút kích hoạt định vị trên thanh công cụ.
+  2. Hệ thống gọi định vị Tầng 1 với độ chính xác cao (`enableHighAccuracy: true`).
+  3. Nếu thành công, nhận tọa độ GPS phần cứng chính xác.
+  4. Nếu Tầng 1 quá 8 giây không có kết quả (thường gặp trên Laptop/PC), hệ thống tự động kích hoạt Tầng 2 (định vị qua mạng Wifi/tháp sóng di động).
+  5. Nếu Tầng 2 vẫn không có phản hồi, hệ thống gọi Tầng 3 qua API IP Geolocation (`ipapi.co` / `geojs.io`) để lấy tọa độ xấp xỉ thành phố hiện tại.
+  6. Hệ thống khởi tạo icon `user-person-container` với SVG hình người đi bộ (🚶), vòng tròn radar phát sóng màu xanh dương và nhãn nổi `"🚶 Bạn ở đây"`.
+  7. Bản đồ tự động lia tâm mượt mà về vị trí người dùng.
+
+---
+
+### 📌 UC-03: Tự Động Phát Thuyết Minh Qua GPS Geofence (Chế độ 1)
+* **Mô tả:** Khi du khách di chuyển đến khu vực có khoảng cách thực tế $\le$ bán kính geofence (`radiusInMeters`) của địa điểm ngoài đời thực, hệ thống tự động phát bài thuyết minh tương ứng theo ngôn ngữ du khách đã chọn mà không cần bấm nút.
+* **Tác nhân:** Cảm biến Vị trí / GPS.
+* **Điều kiện tiên quyết:** Du khách đang bật định vị GPS và đang di chuyển ngoài hiện trường.
+* **Điều kiện sau:** Bài thuyết minh MP3 được phát ra loa/tai nghe; nhật ký nghe với `trigger_type = 'GEOFENCE'` được ghi vào CSDL.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor T as Du khách
+    participant UI as Web Du Khách (index.html)
+    participant SVR as Backend Server
+    participant DB as MySQL Database
+
+    loop Mỗi khi vị trí thay đổi (watchPosition / Interval)
+        UI->>UI: Tính khoảng cách Haversine tới 6 POI
+        UI->>UI: So sánh khoảng cách với radiusInMeters
+    end
+    Note over UI: Du khách bước vào bán kính 35m của Trạm Khánh Hội
+    UI->>UI: Kiểm tra Cooldown chống phát lặp lại
+    UI->>SVR: GET /api/packages/stream?locationId=1&languageCode=vi
+    SVR-->>UI: Luồng âm thanh audio/mpeg
+    UI->>T: Tự động phát âm thanh thuyết minh rảnh tay
+    UI->>UI: Hiển thị thanh Player nổi với huy hiệu [🛰️ GPS Tự động]
+    UI->>SVR: POST /api/analytics/logs (triggerType: 'GEOFENCE', deviceId: '...')
+    SVR->>DB: INSERT INTO playback_logs (...)
+```
+
+* **Luồng sự kiện chính:**
+  1. Trình duyệt liên tục theo dõi vị trí du khách và tính khoảng cách Haversine tới tất cả các POI.
+  2. Khi khoảng cách tới một POI nhỏ hơn hoặc bằng `radiusInMeters` của địa điểm đó:
+     - Hệ thống kiểm tra cờ trạng thái để tránh phát lặp lại nếu du khách vẫn đang đứng trong vùng bán kính đó.
+     - Xác định ngôn ngữ hiện hành mà du khách đã chọn (ví dụ: `vi`, `en`, `zh`, `ja`).
+     - Gọi luồng âm thanh `GET /api/packages/stream?locationId={id}&languageCode={code}`.
+     - Trình phát âm thanh nổi bật lên, tự động chạy và hiển thị nhãn `🛰️ Kích hoạt qua: GPS GEOFENCE`.
+  3. Giao diện tự động gửi gói tin ghi nhận nhật ký nghe `POST /api/analytics/logs` với `triggerType = 'GEOFENCE'`.
+  4. Máy chủ lưu trữ bản ghi vào bảng `playback_logs` trong MySQL.
+
+---
+
+### 📌 UC-04: Bấm Ghim Bản Đồ Nghe Thuyết Minh Thủ Công (Chế độ 2)
+* **Mô tả:** Du khách nhấp chuột hoặc chạm tay trực tiếp vào icon ghim của một địa điểm bất kỳ trên bản đồ để nghe thuyết minh ngay lập tức theo ngôn ngữ đã chọn.
 * **Tác nhân:** Du khách.
-* **Tiền điều kiện:** Du khách đang ở trang chi tiết địa danh (hoàn thành UC-03).
-* **Hậu điều kiện:** File ZIP được tải về và giải nén trong máy khách.
-
-#### 3. Biểu đồ Hoạt động Nén Luồng I/O (Activity Diagram - UC-04)
-
-```mermaid
-flowchart TD
-    Start([Du khách bấm Tải Offline]) --> CheckParam{Kiểm tra locationId và languageCode}
-    CheckParam -- Thiếu/Sai --> Return404[Trả về lỗi 404 Not Found]
-    
-    CheckParam -- Hợp lệ --> QueryDB[Truy vấn Narration & File MP3 tương ứng]
-    QueryDB --> OpenStream[Khởi tạo ByteArrayOutputStream & ZipOutputStream]
-    
-    OpenStream --> AddText[Tạo entry content.txt: Ghi nội dung kịch bản văn bản]
-    AddText --> FindMP3{File MP3 có tồn tại trong uploads/audio?}
-    
-    FindMP3 -- Có --> AddMP3[Tạo entry audio.mp3: Đọc file vật lý nạp vào ZipEntry]
-    FindMP3 -- Không --> FallbackAudio[Bỏ qua hoặc nén file văn bản cảnh báo]
-    
-    AddMP3 --> CloseZip[Đóng ZipOutputStream và xuất mảng byte]
-    FallbackAudio --> CloseZip
-    CloseZip --> SetHeaders[Thiết lập Header: application/zip, Content-Disposition: attachment]
-    SetHeaders --> SendResponse[Trả về luồng byte ZIP cho Client]
-    SendResponse --> End([Mobile giải nén và lưu trữ Offline])
-```
-
-#### 4. Biểu đồ Tuần tự (Sequence Diagram - UC-04)
+* **Điều kiện tiên quyết:** Bản đồ đã tải xong danh sách các điểm ghim POI.
+* **Điều kiện sau:** Trình phát phát âm thanh của địa điểm được chọn; nhật ký nghe với `trigger_type = 'MANUAL'` được ghi nhận.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Tourist as Du khách (Mobile App)
-    participant APC as AudioPackageController
-    participant APS as AudioPackageService
-    participant NR as NarrationRepository
-    participant FS as Local File Storage (uploads/audio)
+    actor T as Du khách
+    participant UI as Web Du Khách (index.html)
+    participant SVR as Backend Server
+    participant DB as MySQL Database
 
-    Tourist->>APC: GET /api/packages/offline?locationId=4&languageCode=vi
-    activate APC
-    APC->>APS: createOfflinePackage(4L, "vi")
-    activate APS
-    APS->>NR: findByLocationIdAndLanguageCode(4L, "vi")
-    activate NR
-    NR-->>APS: Đối tượng Narration (text, audio_url = "dinh-doc-lap-vi.mp3")
-    deactivate NR
-    APS->>FS: Đọc file âm thanh "uploads/audio/dinh-doc-lap-vi.mp3"
-    FS-->>APS: Binary stream của file MP3
-    APS->>APS: Khởi tạo ZipOutputStream đóng gói content.txt + MP3
-    APS-->>APC: byte[] (Mảng byte nén định dạng ZIP chuẩn 0x50 0x4B)
-    deactivate APS
-    APC-->>Tourist: HTTP 200 OK (Content-Type: application/zip, filename="tour-offline.zip")
-    deactivate APC
-    Note over Tourist: Du khách giải nén cục bộ và có thể nghe khi mất mạng hoàn toàn
+    T->>UI: Nhấp chuột/chạm vào icon ghim "Dinh Độc Lập" trên bản đồ
+    UI->>UI: Mở Popup chi tiết địa điểm (ảnh, tên, địa chỉ)
+    UI->>SVR: GET /api/packages/stream?locationId=4&languageCode={selectedLang}
+    SVR-->>UI: Luồng âm thanh MP3 tương ứng
+    UI->>T: Phát âm thanh qua Audio Player
+    UI->>UI: Hiển thị nhãn huy hiệu [👆 Chọn thủ công]
+    UI->>SVR: POST /api/analytics/logs (triggerType: 'MANUAL', deviceId: '...')
+    SVR->>DB: INSERT INTO playback_logs (...)
 ```
+
+* **Luồng sự kiện chính:**
+  1. Du khách quan sát các điểm ghim trên bản đồ và nhấn chọn vào một địa điểm (ví dụ: *Dinh Độc Lập*).
+  2. Bản đồ mở Popup hiển thị hình ảnh địa điểm, địa chỉ và nút thao tác nhanh.
+  3. Hệ thống nạp bài thuyết minh của địa điểm đó theo đúng ngôn ngữ du khách đang chọn trên thanh công cụ.
+  4. Trình phát âm thanh nổi ở góc màn hình bắt đầu phát bài nghe, nhãn phương thức hiển thị `👆 Kích hoạt qua: BẤM THỦ CÔNG`.
+  5. Trình duyệt gửi thông tin nhật ký nghe `POST /api/analytics/logs` với `triggerType = 'MANUAL'`.
+  6. Bản ghi được lưu trữ vào bảng `playback_logs`.
 
 ---
 
-### 🔹 UC-05: Ghi nhận nhật ký nghe thuyết minh
-
-#### 1. Mục đích
-Ghi nhận ẩn danh các lượt nghe từ ứng dụng di động để đánh giá mức độ hấp dẫn của nội dung và vẽ bản đồ nhiệt Heatmap.
-
-#### 2. Biểu đồ Tuần tự (Sequence Diagram - UC-05)
+### 📌 UC-05: Quét Mã QR Code Nhận Thông Tin & Nghe Thuyết Minh
+* **Mô tả:** Du khách dùng camera điện thoại quét mã QR dán tại biển báo hiện trường (ví dụ: `QR-KHANH-HOI-01`, `QR-DINH-DOC-LAP-01`) để nghe bài thuyết minh trực tiếp mà không cần tìm kiếm trên bản đồ.
+* **Tác nhân:** Du khách.
+* **Điều kiện tiên quyết:** Du khách đứng trước biển báo có dán mã QR của đồ án.
+* **Điều kiện sau:** Web tự động mở đúng địa điểm quét được và phát bài thuyết minh với `trigger_type = 'QR_CODE'`.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor App as Mobile App
-    participant AC as AnalyticsController
-    participant AS as AnalyticsService
-    participant LR as LocationRepository
-    participant PLR as PlaybackLogRepository
+    actor T as Du khách
+    participant UI as Web Du Khách (index.html?qr=QR-KHANH-HOI-01)
+    participant SVR as Backend Server
     participant DB as MySQL Database
 
-    Note over App: Du khách nghe thuyết minh xong (hoặc đạt ngưỡng nghe tối thiểu)
-    App->>AC: POST /api/analytics/logs (PlaybackLogRequest JSON)
-    activate AC
-    AC->>AS: recordPlaybackLog(request)
-    activate AS
-    AS->>LR: findById(request.locationId)
-    activate LR
-    LR-->>AS: Location
-    deactivate LR
-    AS->>AS: Tạo thực thể PlaybackLog (gán location, deviceId, triggerType, lat, lng)
-    AS->>PLR: save(playbackLog)
-    activate PLR
-    PLR->>DB: INSERT INTO playback_logs VALUES (...)
-    activate DB
-    DB-->>PLR: Saved PlaybackLog
-    deactivate DB
-    PLR-->>AS: PlaybackLog entity
-    deactivate PLR
-    AS-->>AC: PlaybackLog entity
-    deactivate AS
-    AC-->>App: HTTP 200 OK (Chi tiết Log đã lưu)
-    deactivate AC
+    T->>UI: Quét mã QR bằng Camera điện thoại -> Mở trình duyệt với URL chứa tham số qr
+    UI->>SVR: GET /api/locations/by-qr/QR-KHANH-HOI-01
+    SVR->>DB: SELECT * FROM locations WHERE qr_code = 'QR-KHANH-HOI-01'
+    DB-->>SVR: Trả về thông tin Trạm Khánh Hội
+    SVR-->>UI: HTTP 200 JSON chi tiết Location
+    UI->>UI: Định vị tâm bản đồ về Trạm Khánh Hội và mở Popup
+    UI->>SVR: GET /api/packages/stream?locationId=1&languageCode={selectedLang}
+    SVR-->>UI: Luồng âm thanh MP3
+    UI->>T: Tự động phát thuyết minh [📷 Quét mã QR]
+    UI->>SVR: POST /api/analytics/logs (triggerType: 'QR_CODE')
+    SVR->>DB: INSERT INTO playback_logs (...)
 ```
+
+* **Luồng sự kiện chính:**
+  1. Du khách quét mã QR dán trên tường hoặc trạm dừng.
+  2. Trình duyệt mở đường dẫn web kèm mã QR (ví dụ: `index.html?qr=QR-KHANH-HOI-01`).
+  3. Giao diện gọi API `GET /api/locations/by-qr/{qrCode}`.
+  4. Backend tra cứu trong bảng `locations` theo cột `qr_code` và trả về thông tin chi tiết.
+  5. Bản đồ tự động lia tâm tới vị trí địa điểm đó, hiển thị popup và kích hoạt trình phát âm thanh với `triggerType = 'QR_CODE'`.
+  6. Gửi log ghi nhận vào bảng `playback_logs`.
 
 ---
 
-### 🔹 UC-06: Xem báo cáo thống kê Dashboard & Heatmap
-
-#### 1. Mục đích
-Cung cấp bảng số liệu Business Intelligence tổng thể cho Ban Quản Lý di tích/du lịch (Tổng lượt nghe, thời gian nghe TB, tỷ lệ QR vs GPS, Top 5 POI và tọa độ Heatmap).
-
-#### 2. Biểu đồ Tuần tự (Sequence Diagram - UC-06)
+### 📌 UC-06: Tải Trọn Gói Âm Thanh Offline Dạng ZIP
+* **Mô tả:** Du khách bấm nút tải gói ngoại tuyến để lưu file thuyết minh và kịch bản văn bản về máy, phục vụ việc nghe khi đi vào khu vực không có sóng mạng.
+* **Tác nhân:** Du khách.
+* **Điều kiện tiên quyết:** Du khách đang kết nối Internet tại điểm xuất phát (khách sạn/cổng di tích).
+* **Điều kiện sau:** Tệp `tour-offline.zip` được tải về máy du khách.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as Ban Quản Lý (Web CMS)
-    participant AC as AnalyticsController
-    participant AS as AnalyticsService
-    participant PLR as PlaybackLogRepository
+    actor T as Du khách
+    participant UI as Web Du Khách
+    participant SVR as Backend Controller & ZipOutputStream
+    participant FS as Thư mục uploads/audio/
     participant DB as MySQL Database
 
-    Admin->>AC: GET /api/analytics/dashboard
-    activate AC
-    AC->>AS: getDashboardData()
-    activate AS
-    
-    par Truy vấn tổng lượt nghe
-        AS->>PLR: count()
-        PLR->>DB: SELECT COUNT(*) FROM playback_logs
-        DB-->>PLR: totalListens
-    and Truy vấn thời gian trung bình
-        AS->>PLR: getAverageListenDuration()
-        PLR->>DB: SELECT AVG(duration) FROM playback_logs
-        DB-->>PLR: avgDuration
-    and Phân loại theo hình thức kích hoạt
-        AS->>PLR: countListensByTriggerType()
-        PLR->>DB: SELECT trigger_type, COUNT(*) GROUP BY trigger_type
-        DB-->>PLR: List<TriggerCount>
-    and Xếp hạng Top 5 POI
-        AS->>PLR: getTopListenedLocations(PageRequest.of(0, 5))
-        PLR->>DB: SELECT loc_id, loc_name, COUNT(*) GROUP BY loc_id ORDER BY COUNT(*) DESC LIMIT 5
-        DB-->>PLR: List<TopLocation>
-    and Gom nhóm tọa độ Heatmap
-        AS->>PLR: getHeatmapPoints()
-        PLR->>DB: SELECT lat, lng, COUNT(*) GROUP BY lat, lng
-        DB-->>PLR: List<HeatmapPoint>
+    T->>UI: Nhấn nút "Tải Offline (ZIP)" trên thẻ địa điểm
+    UI->>SVR: GET /api/packages/offline?locationId=1&languageCode=vi
+    SVR->>DB: Tra cứu Location & Narration (text_content, audio_url)
+    DB-->>SVR: Trả về thông tin văn bản & tên file MP3
+    SVR->>FS: Đọc file âm thanh tram-khanh-hoi-vi.mp3
+    SVR->>SVR: Nén luồng động ZipOutputStream: content.txt + audio.mp3
+    SVR-->>UI: Trả về file application/zip (tour-offline.zip)
+    UI->>T: Trình duyệt tải tệp ZIP về bộ nhớ thiết bị
+```
+
+* **Luồng sự kiện chính:**
+  1. Du khách bấm nút **Tải gói Offline** trên giao diện chi tiết địa điểm.
+  2. Trình duyệt gọi API `GET /api/packages/offline?locationId={id}&languageCode={code}`.
+  3. Máy chủ đọc nội dung kịch bản văn bản từ bảng `narrations` và nạp file MP3 từ `uploads/audio/`.
+  4. Máy chủ nén luồng I/O độc lập bằng `ZipOutputStream` đóng gói thành 1 file ZIP duy nhất.
+  5. Trả về cho trình duyệt tải xuống với tên file `tour-offline.zip`.
+
+---
+
+### 📌 UC-07: Giám Sát Du Khách & Máy Đang Nghe Thời Gian Thực
+* **Mô tả:** Ban Quản lý mở trang web Quản trị (`dashboard.html`) để giám sát số lượng du khách đang truy cập trong thời gian thực (Active Visitors) và danh sách thiết bị/máy đang nghe bài gì, ngôn ngữ gì, thời lượng nghe ở thời gian thực.
+* **Tác nhân:** Ban Quản Lý (Admin).
+* **Điều kiện tiên quyết:** Ban quản lý đã đăng nhập hoặc truy cập vào trang `dashboard.html`.
+* **Điều kiện sau:** Màn hình Dashboard hiển thị số khách trực tuyến cập nhật liên tục mỗi 3 giây.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Ban Quản Lý
+    participant DASH as Web Quản Trị (dashboard.html)
+    participant API as Analytics API
+    participant DB as MySQL Database
+
+    A->>DASH: Mở giao diện Quản Trị (dashboard.html)
+    loop Polling chu kỳ mỗi 3 giây
+        DASH->>API: GET /api/analytics/dashboard
+        API->>DB: COUNT(DISTINCT device_id) WHERE created_at >= NOW() - 5 MINUTE
+        API->>DB: SELECT * FROM playback_logs ORDER BY created_at DESC LIMIT 10
+        API->>DB: Tính toán Top POI, Tỷ lệ phương thức, Thời gian nghe TB
+        DB-->>API: Trả về các tập kết quả thống kê
+        API-->>DASH: HTTP 200 JSON Dashboard Analytics
+        DASH->>DASH: Cập nhật thẻ "Đang truy cập thời gian thực" (Active Visitors)
+        DASH->>DASH: Cập nhật bảng "Máy đang nghe trực tiếp" (Mã máy, bài nghe, ngôn ngữ, giây)
     end
-
-    AS->>AS: Đóng gói thành DashboardResponse DTO
-    AS-->>AC: DashboardResponse
-    deactivate AS
-    AC-->>Admin: HTTP 200 OK (JSON Dashboard Data)
-    deactivate AC
-    Note over Admin: Web CMS vẽ biểu đồ tròn, bảng xếp hạng và bản đồ nhiệt Google Maps
 ```
+
+* **Luồng sự kiện chính:**
+  1. Ban quản lý truy cập đường dẫn `http://localhost:8080/dashboard.html`.
+  2. Giao diện tự động thiết lập chu kỳ thăm dò (Polling) định kỳ mỗi 3 giây gọi API `GET /api/analytics/dashboard`.
+  3. Máy chủ truy vấn bảng `playback_logs`:
+     - Đếm số lượng thiết bị phân biệt (`DISTINCT device_id`) có tương tác trong vòng 5 phút gần nhất để tính chỉ số **Du khách đang truy cập thời gian thực**.
+     - Lấy danh sách 10 lượt nghe mới nhất để hiển thị vào bảng **Máy đang nghe trực tiếp**.
+  4. Bảng điều khiển cập nhật số lượng khách trực tuyến kèm đèn tín hiệu xanh nhấp nháy, hiển thị chi tiết tên thiết bị, tên bài nghe, cờ ngôn ngữ và thời gian đã nghe.
 
 ---
 
-### 🔹 UC-07: Xem danh sách và lộ trình tuyến Tour tham quan
-
-#### 1. Mục đích
-Cung cấp lộ trình tham quan được quy hoạch sẵn theo thứ tự địa danh cho du khách (ví dụ: Tuyến xe buýt lịch sử Quận 4, Tuyến khám phá Dinh Độc Lập).
-
-#### 2. Biểu đồ Tuần tự (Sequence Diagram - UC-07)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Du khách / Quản trị
-    participant TC as TourController
-    participant TS as TourService
-    participant TR as TourRepository
-    participant DB as MySQL Database
-
-    User->>TC: GET /api/tours/{id} (ví dụ: id = 1)
-    activate TC
-    TC->>TS: getTourById(1L)
-    activate TS
-    TS->>TR: findById(1L)
-    activate TR
-    TR->>DB: SELECT * FROM tours JOIN tour_locations ON ... WHERE id = 1
-    activate DB
-    DB-->>TR: Dữ liệu Tour kèm danh sách điểm dừng (locations)
-    deactivate DB
-    TR-->>TS: Optional<Tour>
-    deactivate TR
-    TS-->>TC: Tour Entity
-    deactivate TS
-    TC-->>User: HTTP 200 OK (Chi tiết tour: tên, mô tả, danh sách điểm dừng theo lộ trình)
-    deactivate TC
-```
+### 📌 UC-08: Xem Báo Cáo Thống Kê Dashboard & Bản Đồ Nhiệt Heatmap
+* **Mô tả:** Ban Quản lý theo dõi các biểu đồ phân tích chuyên sâu: Tổng lượt nghe, Thời gian nghe trung bình, Biểu đồ tròn tỷ lệ kích hoạt (`GEOFENCE` vs `MANUAL` vs `QR_CODE`), Biểu đồ cột Top 5 địa điểm thu hút nhất và Bản đồ nhiệt Heatmap thể hiện mật độ tập trung du khách.
+* **Tác nhân:** Ban Quản Lý.
+* **Điều kiện sau:** Toàn bộ biểu đồ Chart.js và lớp bản đồ nhiệt Leaflet.heat hiển thị dữ liệu trực quan chính xác.
 
 ---
 
-### 🔹 UC-08: Tra cứu khu vực con bên trong di tích (Hierarchical POIs)
-
-#### 1. Mục đích
-Cho phép du khách xem danh sách các phòng ban/khu vực con bên trong một di tích cấp cao (ví dụ: xem Phòng Khánh Tiết, Phòng Đại Yến bên trong Dinh Độc Lập).
-
-#### 2. Biểu đồ Tuần tự (Sequence Diagram - UC-08)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Tourist as Du khách
-    participant LC as LocationController
-    participant LS as LocationService
-    participant LR as LocationRepository
-    participant DB as MySQL Database
-
-    Tourist->>LC: GET /api/locations/4/sub-locations (Dinh Độc Lập ID = 4)
-    activate LC
-    LC->>LS: getSubLocations(4L)
-    activate LS
-    LS->>LR: findByParentLocationId(4L)
-    activate LR
-    LR->>DB: SELECT * FROM locations WHERE parent_id = 4
-    activate DB
-    DB-->>LR: Danh sách các phòng ban con (Phòng Khánh Tiết, Phòng Đại Yến)
-    deactivate DB
-    LR-->>LS: List<Location>
-    deactivate LR
-    LS-->>LC: List<Location>
-    deactivate LS
-    LC-->>Tourist: HTTP 200 OK (Danh sách phòng con)
-    deactivate LC
-    Note over Tourist: Du khách bấm chọn từng phòng để nghe bài thuyết minh riêng của phòng đó
-```
+### 📌 UC-09: Thêm Ngôn Ngữ Mới & Tự Động Sinh Audio AI TTS
+* **Mô tả:** Ban Quản lý chọn một ngôn ngữ mới từ danh sách hỗ trợ quốc tế. Hệ thống tự động dịch thuật văn bản thuyết minh từ tiếng Việt sang ngôn ngữ mới (DeepL API) và sinh file âm thanh đọc tự động (Edge-TTS / ElevenLabs) lưu vào máy chủ.
+* **Tác nhân:** Ban Quản Lý.
+* **Tương tác CSDL:** Thêm bản ghi vào bảng `languages` và nạp các bản ghi thuyết minh mới vào bảng `narrations`.
 
 ---
 
-## 📌 5. MA TRẬN TRUY VẾT YÊU CẦU TOÀN DIỆN (REQUIREMENTS TRACEABILITY MATRIX - RTM)
+### 📌 UC-10: Quản Lý Tuyến Tour & Phân Cấp Địa Danh Cha - Con
+* **Mô tả:** Hệ thống hỗ trợ xem danh sách các tuyến tour tham quan có sẵn (Tour xe buýt lịch sử Quận 4, Tour Dinh Độc Lập) và tra cứu các khu vực con bên trong di tích lớn (Phòng Khánh Tiết, Phòng Đại Yến bên trong Dinh Độc Lập).
+* **Tác nhân:** Du khách / Ban Quản Lý.
+* **Tương tác CSDL:** Bảng `tours`, `tour_locations` và `locations` (thông qua cột `parent_id`).
 
-| Mã UC | Tên Ca Sử Dụng | Loại Biểu Đồ Minh Họa | Lớp Controller | Lớp Service | Lớp Repository | Bảng CSDL |
-| :---: | :--- | :--- | :--- | :--- | :--- | :--- |
-| **UC-01** | Đồng bộ POI Geofencing | Sequence Diagram | `LocationController` | `LocationService` | `LocationRepository` | `locations` |
-| **UC-02** | Thuyết minh GPS tự động | Activity + Sequence Diagram | Mobile App logic | `AnalyticsService` | `PlaybackLogRepository` | `playback_logs` |
-| **UC-03** | Quét mã QR địa điểm | Sequence Diagram | `LocationController` | `LocationService` | `LocationRepository` | `locations` |
-| **UC-04** | Tải trọn gói Offline ZIP | Activity + Sequence Diagram | `AudioPackageController` | `AudioPackageService` | `NarrationRepository` | `narrations`, `languages` |
-| **UC-05** | Ghi nhận log nghe | Sequence Diagram | `AnalyticsController` | `AnalyticsService` | `PlaybackLogRepository` | `playback_logs` |
-| **UC-06** | Dashboard & Heatmap | Sequence Diagram (Parallel) | `AnalyticsController` | `AnalyticsService` | `PlaybackLogRepository` | `playback_logs` |
-| **UC-07** | Lộ trình tuyến Tour | Sequence Diagram | `TourController` | `TourService` | `TourRepository` | `tours`, `tour_locations` |
-| **UC-08** | Tra cứu phòng ban con | Sequence Diagram | `LocationController` | `LocationService` | `LocationRepository` | `locations` |
+---
+
+### 📌 UC-11: Tự Động Ghi Nhận Nhật Ký Nghe Thuyết Minh
+* **Mô tả:** Mỗi khi du khách kích hoạt nghe thuyết minh (qua GPS Geofence, bấm ghim thủ công hoặc quét mã QR), hệ thống âm thầm gửi gói tin telemetry ghi nhận thông tin vào CSDL.
+* **Tác nhân:** Hệ thống ngầm.
+* **Tương tác CSDL:** `INSERT INTO playback_logs (location_id, language_code, listen_duration_seconds, trigger_type, latitude, longitude, device_id, created_at)`.
+
+---
+
+## 📊 5. MA TRẬN TRUY XUẤT YÊU CẦU, CSDL & API ENDPOINTS (TRACEABILITY MATRIX)
+
+| Mã Use Case | Bảng Dữ Liệu Liên Quan | HTTP Method & REST API Endpoint | Vai Trò Nghiệp Vụ Trong Đồ Án |
+| :---: | :--- | :--- | :--- |
+| **UC-01** | `languages`, `locations` | `GET /api/languages`<br>`GET /api/locations/pois` | Khởi tạo trang web du khách, nạp các điểm ghim lên bản đồ và chọn ngôn ngữ |
+| **UC-02** | *Không lưu DB (Client State)* | *Geolocation Browser API* | Định vị 3 tầng và vẽ marker hình người đi bộ (🚶) |
+| **UC-03** | `locations`, `narrations`, `playback_logs` | `GET /api/packages/stream`<br>`POST /api/analytics/logs` | Chế độ 1: Tự động phát âm thanh khi đến vùng GPS Geofence |
+| **UC-04** | `locations`, `narrations`, `playback_logs` | `GET /api/packages/stream`<br>`POST /api/analytics/logs` | Chế độ 2: Phát âm thanh thủ công khi bấm ghim bản đồ |
+| **UC-05** | `locations`, `narrations`, `playback_logs` | `GET /api/locations/by-qr/{qrCode}`<br>`POST /api/analytics/logs` | Quét mã QR code tại địa điểm |
+| **UC-06** | `locations`, `narrations` | `GET /api/packages/offline` | Nén động ZIP tải gói nghe ngoại tuyến không cần mạng |
+| **UC-07** | `playback_logs`, `locations` | `GET /api/analytics/dashboard` | Giám sát du khách và máy đang nghe ở thời gian thực (Polling 3s) |
+| **UC-08** | `playback_logs`, `locations` | `GET /api/analytics/dashboard` | Thống kê số liệu BI, biểu đồ phân tích và bản đồ nhiệt Heatmap |
+| **UC-09** | `languages`, `narrations`, `locations` | `POST /api/languages/{code}/translate` | Thêm ngôn ngữ mới và tự động dịch, sinh giọng đọc TTS |
+| **UC-10** | `tours`, `tour_locations`, `locations` | `GET /api/tours`<br>`GET /api/locations/{id}/sub-locations` | Quản lý tuyến tour tham quan và cấu trúc địa danh cha - con |
+| **UC-11** | `playback_logs` | `POST /api/analytics/logs` | Tự động ghi nhật ký lượt nghe (Audit Log ngầm) |
