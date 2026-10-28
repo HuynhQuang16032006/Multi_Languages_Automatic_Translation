@@ -29,7 +29,7 @@ graph TD
 ```
 
 - **Tầng 1 - Controller (Presentation Tier):** `LocationController`, `NarrationController`, `AudioPackageController`, `AnalyticsController`, `TourController`, `LanguageController`, `AuthController`.
-- **Tầng 2 - Service (Business Logic Tier):** `LocationService`, `NarrationService`, `AudioPackageService`, `AnalyticsService`, `TourService`, `LanguageService`, `AuthService`, cùng `LiveAudience` (giữ các phiên đang nghe) và `ServerAddress` (dò IP LAN cho mã QR).
+- **Tầng 2 - Service (Business Logic Tier):** `LocationService`, `NarrationService` (thuyết minh, phát audio trực tiếp & ZIP offline), `AnalyticsService`, `TourService`, `LanguageService`, `AuthService`, cùng `LiveAudience` (giữ các phiên đang nghe) và `ServerAddress` (dò IP LAN cho mã QR).
 - **Tầng 3 - Repository & Data (Data Access Tier):** `LocationRepository`, `LanguageRepository`, `NarrationRepository`, `PlaybackLogRepository`, `TourRepository`.
 
 ---

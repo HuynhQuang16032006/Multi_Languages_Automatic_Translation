@@ -10,7 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import vn.edu.sgu.audiotour.controller.AudioPackageController;
-import vn.edu.sgu.audiotour.service.AudioPackageService;
+import vn.edu.sgu.audiotour.service.NarrationService;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,7 +22,7 @@ class AudioPackageControllerTest {
     private MockMvc mockMvc;
 
     @Mock
-    private AudioPackageService audioPackageService;
+    private NarrationService narrationService;
 
     @InjectMocks
     private AudioPackageController audioPackageController;
@@ -36,7 +36,7 @@ class AudioPackageControllerTest {
     void testDownloadOfflinePackage_Success() throws Exception {
         byte[] dummyZip = new byte[]{0x50, 0x4B, 0x03, 0x04}; // ZIP magic bytes header
 
-        when(audioPackageService.createOfflinePackage(1L, "vi")).thenReturn(dummyZip);
+        when(narrationService.createOfflinePackage(1L, "vi")).thenReturn(dummyZip);
 
         mockMvc.perform(get("/api/packages/offline")
                         .param("locationId", "1")

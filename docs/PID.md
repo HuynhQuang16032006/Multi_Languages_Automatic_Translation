@@ -44,7 +44,7 @@ Dự án được khởi tạo nhằm giải quyết triệt để các hạn ch
   - `dashboard.html`: Web Quản trị với các thẻ thống kê chỉ số, bảng theo dõi máy đang nghe thời gian thực, đồng hồ đếm số khách đang truy cập trực tiếp, biểu đồ Chart.js và Leaflet Heatmap.
 * **Tầng Nghiệp vụ (Application / Business Tier):**
   - Dịch vụ quản lý địa danh phân cấp (`LocationService`), hỗ trợ cấu trúc cha - con đệ quy (Dinh Độc Lập chứa Phòng Khánh Tiết, Phòng Đại Yến).
-  - Dịch vụ phát âm thanh trực tuyến và nén động ZIP ngoại tuyến (`AudioPackageService`).
+  - Dịch vụ bài thuyết minh (`NarrationService`), phát âm thanh trực tuyến và nén động ZIP ngoại tuyến.
   - Dịch vụ phân tích thống kê BI và ghi nhận nhật ký nghe (`AnalyticsService`).
   - Dịch vụ quản lý ngôn ngữ và tích hợp dịch thuật / TTS (`LanguageService`).
 * **Tầng Dữ liệu (Data Access Tier & MySQL Database):**
