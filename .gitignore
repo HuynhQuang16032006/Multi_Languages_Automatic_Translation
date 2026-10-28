@@ -40,3 +40,5 @@ build/
 ### Agent workspace (local only — do not commit) ###
 docs/agents/
 AGENTS.md
+graphify-out/
+.serena/
