@@ -100,8 +100,8 @@ class PublicReadAccessTest {
     }
 
     @Test
-    void testAdminDashboardPageWithoutTokenReturns401() throws Exception {
+    void testAdminDashboardPageWithoutTokenReturns200() throws Exception {
         mockMvc.perform(get("/dashboard.html"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 }

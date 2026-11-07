@@ -1,6 +1,7 @@
 package vn.edu.sgu.audiotour;
 
 import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,6 +12,7 @@ import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.web.servlet.MockMvc;
 import vn.edu.sgu.audiotour.security.JwtAuthenticationFilter;
+import vn.edu.sgu.audiotour.security.LoginRateLimiter;
 
 import java.util.List;
 
@@ -30,6 +32,14 @@ class AuthIntegrationTest {
 
     @Autowired
     private ApplicationContext applicationContext;
+
+    @Autowired
+    private LoginRateLimiter loginRateLimiter;
+
+    @BeforeEach
+    void setUp() {
+        loginRateLimiter.reset();
+    }
 
     private String login(String username, String password) throws Exception {
         String body = mockMvc.perform(post("/api/auth/login")
@@ -90,6 +100,54 @@ class AuthIntegrationTest {
     void testActuatorMetricsRequiresToken() throws Exception {
         mockMvc.perform(get("/actuator/metrics"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void testChangePasswordWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(post("/api/auth/change-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"oldPassword\":\"admin123\",\"newPassword\":\"newPass123\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void testChangePasswordSuccessAndLoginWithNewPassword() throws Exception {
+        String token = login("admin", "admin123");
+
+        mockMvc.perform(post("/api/auth/change-password")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"oldPassword\":\"admin123\",\"newPassword\":\"newSecret123\"}"))
+                .andExpect(status().isOk());
+
+        // Đăng nhập bằng mật khẩu mới
+        String newToken = login("admin", "newSecret123");
+        assertNotNull(newToken);
+
+        // Đổi lại về mật khẩu cũ để không ảnh hưởng test khác
+        mockMvc.perform(post("/api/auth/change-password")
+                        .header("Authorization", "Bearer " + newToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"oldPassword\":\"newSecret123\",\"newPassword\":\"admin123\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testRateLimitReturns429AfterFiveFailedLogins() throws Exception {
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .header("X-Forwarded-For", "192.168.1.100")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"username\":\"admin\",\"password\":\"sai\"}"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        // Lần thứ 6 trả 429 Too Many Requests
+        mockMvc.perform(post("/api/auth/login")
+                        .header("X-Forwarded-For", "192.168.1.100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
+                .andExpect(status().isTooManyRequests());
     }
 
     @Test

@@ -40,6 +40,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<Map<String, Object>> handleTooManyRequests(TooManyRequestsException ex, WebRequest request) {
+        return build(HttpStatus.TOO_MANY_REQUESTS, "Too Many Requests", ex.getMessage(), request);
+    }
+
     // TTS/ dịch vụ ngoài không dùng được (thiếu API key, upstream lỗi): 503, không phải lỗi dữ liệu client
     @ExceptionHandler(ServiceUnavailableException.class)
     public ResponseEntity<Map<String, Object>> handleServiceUnavailable(ServiceUnavailableException ex, WebRequest request) {
