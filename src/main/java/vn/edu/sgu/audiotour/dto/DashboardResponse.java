@@ -43,6 +43,18 @@ public class DashboardResponse {
     @Schema(description = "Địa chỉ IP LAN của máy chủ phục vụ thiết bị di động quét mã QR", example = "172.20.10.8")
     private String serverIp;
 
+    private Long uniqueDevices;
+    private Long offlineDownloads;
+    private List<TimeSeriesPoint> listensByDay;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TimeSeriesPoint {
+        private String date;
+        private Long listenCount;
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

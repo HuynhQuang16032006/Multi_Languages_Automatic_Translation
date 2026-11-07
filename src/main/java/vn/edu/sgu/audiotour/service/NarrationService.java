@@ -9,6 +9,7 @@ import vn.edu.sgu.audiotour.dto.NarrationResponse;
 import vn.edu.sgu.audiotour.entity.Narration;
 import vn.edu.sgu.audiotour.exception.NotFoundException;
 import vn.edu.sgu.audiotour.repository.NarrationRepository;
+import vn.edu.sgu.audiotour.repository.PackageDownloadRepository;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -31,6 +32,7 @@ public class NarrationService {
     private static final Path AUDIO_DIR = Paths.get("uploads", "audio");
 
     private final NarrationRepository narrationRepository;
+    private final PackageDownloadRepository packageDownloadRepository;
 
     // Lấy bài thuyết minh của 1 địa điểm theo mã ngôn ngữ
     public NarrationResponse getNarration(Long locationId, String languageCode) {
@@ -53,8 +55,11 @@ public class NarrationService {
     }
 
     // Tạo file ZIP chứa textContent (content.txt) và file âm thanh MP3 thật phục vụ nghe Offline
-    public byte[] createOfflinePackage(Long locationId, String languageCode) {
+    @Transactional
+    public byte[] createOfflinePackage(Long locationId, String languageCode, String deviceId) {
         Narration narration = findNarration(locationId, languageCode);
+        packageDownloadRepository.save(new vn.edu.sgu.audiotour.entity.PackageDownload(
+                narration.getLocation(), languageCode, deviceId));
         Path audioPath = resolveAudioPath(narration);
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -81,6 +86,10 @@ public class NarrationService {
         } catch (IOException e) {
             throw new RuntimeException("Lỗi I/O khi đóng gói file ZIP: " + e.getMessage(), e);
         }
+    }
+
+    public byte[] createOfflinePackage(Long locationId, String languageCode) {
+        return createOfflinePackage(locationId, languageCode, null);
     }
 
     private Narration findNarration(Long locationId, String languageCode) {

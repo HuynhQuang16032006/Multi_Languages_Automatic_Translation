@@ -14,6 +14,8 @@ import vn.edu.sgu.audiotour.entity.PlaybackLog;
 import vn.edu.sgu.audiotour.service.AnalyticsService;
 import vn.edu.sgu.audiotour.service.LiveAudience;
 import vn.edu.sgu.audiotour.service.PlaybackLogRecorder;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/analytics")
@@ -43,7 +45,10 @@ public class AnalyticsController {
 
     @GetMapping("/dashboard")
     @Operation(summary = "Lấy dữ liệu thống kê tổng quan (Dashboard CMS)", description = "Cung cấp tổng số lượt nghe, số lượng online thời gian thực, Top địa điểm nghe nhiều nhất, tỷ lệ QR vs GPS và các điểm tọa độ Heatmap")
-    public ResponseEntity<DashboardResponse> getDashboardData() {
-        return ResponseEntity.ok(analyticsService.getDashboardData());
+    public ResponseEntity<DashboardResponse> getDashboardData(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String languageCode) {
+        return ResponseEntity.ok(analyticsService.getDashboardData(from, to, languageCode));
     }
 }

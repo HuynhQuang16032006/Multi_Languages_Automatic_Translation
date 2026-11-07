@@ -440,6 +440,17 @@
         </div>
     </div>
 
+    <div class="tables-grid" style="margin-bottom: 20px;">
+        <div class="card">
+            <div class="table-header"><h2>Top địa điểm</h2><span style="font-size: 0.8rem; color: var(--text-muted);">Theo lượt nghe</span></div>
+            <div id="topLocationsChart" aria-live="polite"><div class="empty-row">Đang tải...</div></div>
+        </div>
+        <div class="card">
+            <div class="table-header"><h2>Phương thức kích hoạt</h2><span style="font-size: 0.8rem; color: var(--text-muted);">Tổng lượt nghe</span></div>
+            <div id="triggerChart" aria-live="polite"><div class="empty-row">Đang tải...</div></div>
+        </div>
+    </div>
+
     <!-- Tables Grid: Active Devices & Recent Playback History -->
     <div class="tables-grid">
         <!-- Bảng 1: Danh sách thiết bị ĐANG ONLINE -->
@@ -517,7 +528,7 @@
     </div>
 
     <script>
-        // --- Thêm ngôn ngữ mới: endpoint public, dashboard chỉ admin dùng nên không cần đăng nhập ---
+        // Dashboard API và thao tác quản trị yêu cầu JWT admin.
 
         // Ngôn ngữ có thể thêm = whitelist của server trừ những ngôn ngữ đã có
         async function loadSupportedLanguages() {
@@ -659,7 +670,10 @@
                 document.getElementById("avgDuration").innerText = `${data.averageListenDurationSeconds || 0}s`;
                 const qrCount = data.listensByTriggerType?.QR_CODE || 0;
                 const geoCount = data.listensByTriggerType?.GEOFENCE || 0;
-                document.getElementById("triggerRatio").innerText = `${qrCount} QR / ${geoCount} GPS`;
+                 document.getElementById("triggerRatio").innerText = `${qrCount} QR / ${geoCount} GPS`;
+
+                renderBars("topLocationsChart", data.topLocations || [], "locationName", "listenCount", " lượt");
+                renderBars("triggerChart", Object.entries(data.listensByTriggerType || {}).map(([name, value]) => ({ name, value })), "name", "value", " lượt");
 
                 // Cập nhật bảng thiết bị ĐANG ONLINE
                 const activeTbody = document.getElementById("activeDevicesTable");
@@ -701,6 +715,22 @@
             } catch (err) {
                 console.error("Lỗi cập nhật dashboard:", err);
             }
+        }
+
+        function renderBars(elementId, rows, labelKey, valueKey, suffix) {
+            const root = document.getElementById(elementId);
+            const max = Math.max(1, ...rows.map(row => Number(row[valueKey]) || 0));
+            root.innerHTML = rows.length ? rows.map(row => {
+                const value = Number(row[valueKey]) || 0;
+                return `<div style="margin: 12px 0">
+                    <div style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:.85rem;margin-bottom:5px">
+                        <span>${escapeHtml(String(row[labelKey]))}</span><strong>${value}${suffix}</strong>
+                    </div>
+                    <div style="height:9px;background:rgba(148,163,184,.16);border-radius:99px;overflow:hidden">
+                        <div style="height:100%;width:${Math.round(value / max * 100)}%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:99px"></div>
+                    </div>
+                </div>`;
+            }).join("") : `<div class="empty-row">Chưa có dữ liệu.</div>`;
         }
 
         function escapeHtml(str) {

@@ -52,11 +52,9 @@ class PublicReadAccessTest {
     }
 
     @Test
-    void testAddLanguageWithTranslationIsPublic() throws Exception {
-        // Mã ngoài whitelist -> 400 trước khi gọi DeepL: test không tốn credit và không ghi DB
+    void testAddLanguageWithTranslationRequiresAdmin() throws Exception {
         mockMvc.perform(post("/api/languages/zz/translate"))
-                .andExpect(result -> assertNotEquals(HttpServletResponse.SC_UNAUTHORIZED,
-                        result.getResponse().getStatus()));
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -96,8 +94,14 @@ class PublicReadAccessTest {
     }
 
     @Test
-    void testGetAnalyticsDashboardWithoutTokenReturns200() throws Exception {
+    void testGetAnalyticsDashboardWithoutTokenReturns401() throws Exception {
         mockMvc.perform(get("/api/analytics/dashboard"))
-                .andExpect(status().isOk());
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void testAdminDashboardPageWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(get("/dashboard.html"))
+                .andExpect(status().isUnauthorized());
     }
 }

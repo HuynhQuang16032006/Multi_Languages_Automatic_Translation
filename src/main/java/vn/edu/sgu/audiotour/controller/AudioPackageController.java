@@ -46,9 +46,10 @@ public class AudioPackageController {
     )
     public ResponseEntity<byte[]> downloadOfflinePackage(
             @Parameter(description = "ID của địa điểm (POI)", example = "1") @RequestParam Long locationId,
-            @Parameter(description = "Mã ngôn ngữ (ví dụ: 'vi', 'en')", example = "vi") @RequestParam String languageCode) {
+            @Parameter(description = "Mã ngôn ngữ (ví dụ: 'vi', 'en')", example = "vi") @RequestParam String languageCode,
+            @RequestParam(required = false) String deviceId) {
 
-        byte[] zipData = narrationService.createOfflinePackage(locationId, languageCode);
+        byte[] zipData = narrationService.createOfflinePackage(locationId, languageCode, deviceId);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"tour-offline.zip\"")

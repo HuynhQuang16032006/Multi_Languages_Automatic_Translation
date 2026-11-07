@@ -13,6 +13,7 @@ import vn.edu.sgu.audiotour.entity.Location;
 import vn.edu.sgu.audiotour.entity.Narration;
 import vn.edu.sgu.audiotour.exception.NotFoundException;
 import vn.edu.sgu.audiotour.repository.NarrationRepository;
+import vn.edu.sgu.audiotour.repository.PackageDownloadRepository;
 import vn.edu.sgu.audiotour.service.NarrationService;
 
 import java.io.ByteArrayInputStream;
@@ -35,6 +36,9 @@ class NarrationServiceTest {
 
     @Mock
     private NarrationRepository narrationRepository;
+
+    @Mock
+    private PackageDownloadRepository packageDownloadRepository;
 
     @InjectMocks
     private NarrationService narrationService;

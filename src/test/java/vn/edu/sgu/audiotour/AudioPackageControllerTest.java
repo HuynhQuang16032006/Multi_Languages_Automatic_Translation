@@ -36,7 +36,7 @@ class AudioPackageControllerTest {
     void testDownloadOfflinePackage_Success() throws Exception {
         byte[] dummyZip = new byte[]{0x50, 0x4B, 0x03, 0x04}; // ZIP magic bytes header
 
-        when(narrationService.createOfflinePackage(1L, "vi")).thenReturn(dummyZip);
+        when(narrationService.createOfflinePackage(1L, "vi", null)).thenReturn(dummyZip);
 
         mockMvc.perform(get("/api/packages/offline")
                         .param("locationId", "1")

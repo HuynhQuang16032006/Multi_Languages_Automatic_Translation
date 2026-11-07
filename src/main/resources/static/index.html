@@ -1545,6 +1545,7 @@
             mapSimClickListenerAdded: false,
             gpsWatching: false,
             gpsWatchId: null,
+            geofenceInsideById: new Set(),
             toastTimeout: null
         };
 
@@ -2595,7 +2596,9 @@
                 const radius = Number(poi.radiusInMeters) || 30;
                 if (dist <= radius) {
                     // Đang ở trong bán kính GPS!
-                    if (!state.currentPlayingPoi || String(state.currentPlayingPoi.id) !== String(poi.id)) {
+                    const poiId = String(poi.id);
+                    if (!state.geofenceInsideById.has(poiId)) {
+                        state.geofenceInsideById.add(poiId);
                         startAudio(poi, "GEOFENCE");
                         showGpsToast(
                             `⚡ Đã vào vùng GPS: ${poi.name}`,
@@ -2604,6 +2607,7 @@
                     }
                     return;
                 }
+                state.geofenceInsideById.delete(String(poi.id));
             }
 
             if (closestPoi && state.simGpsActive) {
