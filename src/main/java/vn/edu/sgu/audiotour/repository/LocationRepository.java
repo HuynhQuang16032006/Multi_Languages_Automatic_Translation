@@ -14,6 +14,8 @@ import java.util.Optional;
 @Repository
 public interface LocationRepository extends JpaRepository<Location, Long> {
 
+    boolean existsByParentLocationId(Long parentId);
+
     // Lấy danh sách các địa điểm gốc (không có địa điểm cha)
     @EntityGraph(attributePaths = {"subLocations"})
     List<Location> findByParentLocationIsNull();

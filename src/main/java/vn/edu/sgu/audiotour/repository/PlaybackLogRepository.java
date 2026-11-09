@@ -13,6 +13,8 @@ import java.util.Optional;
 @Repository
 public interface PlaybackLogRepository extends JpaRepository<PlaybackLog, Long> {
 
+    boolean existsByLocationId(Long locationId);
+
     @Query("SELECT AVG(p.listenDurationSeconds) FROM PlaybackLog p WHERE p.listenDurationSeconds IS NOT NULL")
     Double getAverageListenDuration();
 

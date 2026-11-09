@@ -72,7 +72,7 @@ public class Location {
         return parentLocation != null ? parentLocation.getId() : null;
     }
 
-    @OneToMany(mappedBy = "parentLocation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "parentLocation", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.DETACH}, fetch = FetchType.LAZY)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"parentLocation", "subLocations"})

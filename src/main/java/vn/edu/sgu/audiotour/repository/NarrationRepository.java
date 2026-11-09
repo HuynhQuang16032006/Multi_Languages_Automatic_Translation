@@ -11,6 +11,11 @@ import java.util.Optional;
 @Repository
 public interface NarrationRepository extends JpaRepository<Narration, Long> {
 
+    boolean existsByLocationId(Long locationId);
+
+    @EntityGraph(attributePaths = {"language"})
+    List<Narration> findAllByLocationId(Long locationId);
+
     // Lấy bài thuyết minh của 1 địa điểm cụ thể bằng 1 mã ngôn ngữ cụ thể
     @EntityGraph(attributePaths = {"location", "language"})
     Optional<Narration> findByLocationIdAndLanguageCode(Long locationId, String languageCode);

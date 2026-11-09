@@ -3,13 +3,16 @@ package vn.edu.sgu.audiotour.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.sgu.audiotour.entity.Location;
+import vn.edu.sgu.audiotour.dto.LocationRequest;
 import vn.edu.sgu.audiotour.service.LocationService;
 
 import java.util.List;
@@ -21,6 +24,25 @@ import java.util.List;
 public class LocationController {
 
     private final LocationService locationService;
+
+    @PostMapping("/locations")
+    @Operation(summary = "Tạo địa điểm")
+    public ResponseEntity<Location> createLocation(@Valid @RequestBody LocationRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(locationService.createLocation(request));
+    }
+
+    @PutMapping("/locations/{id}")
+    @Operation(summary = "Cập nhật địa điểm")
+    public ResponseEntity<Location> updateLocation(@PathVariable Long id, @Valid @RequestBody LocationRequest request) {
+        return ResponseEntity.ok(locationService.updateLocation(id, request));
+    }
+
+    @DeleteMapping("/locations/{id}")
+    @Operation(summary = "Xóa địa điểm không có dữ liệu liên quan")
+    public ResponseEntity<Void> deleteLocation(@PathVariable Long id) {
+        locationService.deleteLocation(id);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/locations")
     @Operation(summary = "Lấy danh sách các địa điểm gốc", description = "Trả về danh sách các địa danh lớn cấp cao nhất (không có địa điểm cha) kèm các khu vực con")
