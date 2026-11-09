@@ -10,8 +10,6 @@ import vn.edu.sgu.audiotour.repository.LanguageRepository;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
 import vn.edu.sgu.audiotour.repository.NarrationRepository;
 
-import java.util.Objects;
-
 @Service
 @RequiredArgsConstructor
 public class AdminNarrationService {
@@ -37,11 +35,7 @@ public class AdminNarrationService {
     public Narration update(Long locationId, Long id, String code, String text) {
         Narration narration = find(locationId, id);
         if (!narration.getLanguage().getCode().equals(code)) throw new ConflictException("Không thể đổi ngôn ngữ bài thuyết minh");
-        if (!Objects.equals(narration.getTextContent(), text)) {
-            narration.setTextContent(text);
-            narration.setAudioUrl(null);
-            narration.setDurationInSeconds(null);
-        }
+        narration.setTextContent(text);
         return narration;
     }
 

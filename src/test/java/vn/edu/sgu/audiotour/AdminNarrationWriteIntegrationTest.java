@@ -30,7 +30,7 @@ class AdminNarrationWriteIntegrationTest {
     @Autowired NarrationRepository narrations;
 
     @Test
-    void managesTextAndInvalidatesAudioWithoutDeletingFiles() throws Exception {
+    void managesTextAndPreservesExistingAudio() throws Exception {
         Location location = new Location();
         location.setName("Narration management");
         location = locations.saveAndFlush(location);
@@ -52,8 +52,8 @@ class AdminNarrationWriteIntegrationTest {
                 .andExpect(status().isOk());
         narration = narrations.findById(narration.getId()).orElseThrow();
         assertEquals("Nội dung mới", narration.getTextContent());
-        assertNull(narration.getAudioUrl());
-        assertNull(narration.getDurationInSeconds());
+        assertEquals("shared-audio.mp3", narration.getAudioUrl());
+        assertEquals(30, narration.getDurationInSeconds());
         mvc.perform(delete(base + "/" + narration.getId()).header("Authorization", token)).andExpect(status().isNoContent());
         assertFalse(narrations.existsById(narration.getId()));
     }
