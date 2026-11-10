@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/next", "/next/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/v1/auth/login").permitAll()
                         // Dashboard tự gọi thêm ngôn ngữ không cần đăng nhập (trang chỉ admin dùng).
                         // Ngôn ngữ chỉ thêm được 1 lần nên thiệt hại tối đa = số ngôn ngữ trong whitelist.

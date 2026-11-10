@@ -35,18 +35,38 @@ jobs:
     - name: Grant execute permission for mvnw
       run: chmod +x mvnw
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: npm
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Test and build frontend
+      working-directory: frontend
+      run: |
+        npm ci
+        npm test
+
+    - name: Prepare isolated test databases
+      env:
+        MYSQL_PWD: root
+      run: |
+        mysql -h 127.0.0.1 -u root <<'SQL'
+        CREATE DATABASE audiotour_test;
+        CREATE DATABASE audiotour_prod_profile_test;
+        CREATE USER 'audiotour_test'@'%' IDENTIFIED BY 'ci-test-only-password';
+        GRANT ALL PRIVILEGES ON `audiotour\_test`.* TO 'audiotour_test'@'%';
+        GRANT ALL PRIVILEGES ON `audiotour\_prod\_profile\_test`.* TO 'audiotour_test'@'%';
+        SQL
+
     - name: Run Maven Tests and Verify
       env:
-        SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/audiotour_db?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC
-        SPRING_DATASOURCE_USERNAME: root
-        SPRING_DATASOURCE_PASSWORD: root
+        AUDIOTOUR_TEST_DB_PASSWORD: ci-test-only-password
         JWT_SECRET: ci-only-secret-key-must-be-at-least-32-bytes-long
         APP_ADMIN_USERNAME: admin
         APP_ADMIN_PASSWORD: admin123
       run: ./mvnw clean verify
-
-    - name: Package Executable JAR
-      run: ./mvnw package -DskipTests
 
     - name: Upload Build Artifact (JAR)
       uses: actions/upload-artifact@v4

@@ -92,12 +92,14 @@ public class AnalyticsService {
                 .topLocations(topLocations)
                 .heatmapPoints(heatmapPoints)
                 .activeUsers(activeList.size())
+                .listeningUsers((int) activeList.stream().filter(s -> s.getLocationId() != null).count())
                 .activeSessions(activeList)
                 .recentLogs(recentList)
                 .serverIp(serverAddress.detect())
                 .uniqueDevices(logs.stream().map(PlaybackLog::getDeviceId).filter(Objects::nonNull).distinct().count())
                 .offlineDownloads(packageDownloadRepository.count())
                 .listensByDay(logs.stream().filter(l -> l.getCreatedAt() != null).collect(Collectors.groupingBy(l -> l.getCreatedAt().toLocalDate().toString(), TreeMap::new, Collectors.counting())).entrySet().stream().map(e -> new DashboardResponse.TimeSeriesPoint(e.getKey(), e.getValue())).toList())
+                .listensByLanguage(logs.stream().filter(l -> l.getLanguageCode() != null && !l.getLanguageCode().isBlank()).collect(Collectors.groupingBy(PlaybackLog::getLanguageCode, TreeMap::new, Collectors.counting())))
                 .build();
     }
 }

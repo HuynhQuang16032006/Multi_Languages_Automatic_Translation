@@ -65,6 +65,24 @@ class AnalyticsServiceTest {
         assertEquals(1, response.getHeatmapPoints().size());
     }
 
+    @Test
+    void dashboardGroupsLanguagesAndCountsOnlyListeningSessions() {
+        Location location = new Location();
+        location.setId(1L);
+        PlaybackLog vietnamese = log(location, TriggerType.QR_CODE, 10);
+        PlaybackLog english = log(location, TriggerType.QR_CODE, 10);
+        english.setLanguageCode("en");
+        when(playbackLogRepository.findForDashboard(null, null, null)).thenReturn(List.of(vietnamese, english));
+        when(liveAudience.snapshot()).thenReturn(List.of(
+                new LiveAudience.LiveSession("listener", 1L, "Place", "vi", 10, 5),
+                new LiveAudience.LiveSession("browser", null, "Map", "vi", 10, 0)));
+        DashboardResponse result = analyticsService.getDashboardData();
+        assertEquals(1L, result.getListensByLanguage().get("vi"));
+        assertEquals(1L, result.getListensByLanguage().get("en"));
+        assertEquals(1, result.getListeningUsers());
+        assertEquals(2, result.getActiveUsers());
+    }
+
     private PlaybackLog log(Location location, TriggerType trigger, int duration) {
         PlaybackLog log = new PlaybackLog();
         log.setLocation(location);

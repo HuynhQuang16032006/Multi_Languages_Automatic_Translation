@@ -42,3 +42,5 @@ docs/agents/
 AGENTS.md
 graphify-out/
 .serena/
+frontend/node_modules/
+frontend/dist/

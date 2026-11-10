@@ -46,6 +46,8 @@ public class DashboardResponse {
     private Long uniqueDevices;
     private Long offlineDownloads;
     private List<TimeSeriesPoint> listensByDay;
+    private Map<String, Long> listensByLanguage;
+    private Integer listeningUsers;
 
     @Data
     @AllArgsConstructor
