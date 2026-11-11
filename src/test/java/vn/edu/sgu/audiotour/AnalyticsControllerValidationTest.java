@@ -17,6 +17,7 @@ import vn.edu.sgu.audiotour.exception.GlobalExceptionHandler;
 import vn.edu.sgu.audiotour.service.AnalyticsService;
 import vn.edu.sgu.audiotour.service.LiveAudience;
 import vn.edu.sgu.audiotour.service.PlaybackLogRecorder;
+import vn.edu.sgu.audiotour.service.LocationService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -36,6 +37,9 @@ class AnalyticsControllerValidationTest {
 
     @Mock
     private PlaybackLogRecorder playbackLogRecorder;
+
+    @Mock
+    private LocationService locationService;
 
     @InjectMocks
     private AnalyticsController analyticsController;

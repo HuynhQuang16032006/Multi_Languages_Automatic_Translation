@@ -14,6 +14,7 @@ import vn.edu.sgu.audiotour.repository.LanguageRepository;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
 import vn.edu.sgu.audiotour.repository.NarrationRepository;
 import vn.edu.sgu.audiotour.security.JwtService;
+import vn.edu.sgu.audiotour.repository.AdminAuthRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminNarrationWriteIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JwtService jwt;
+    @Autowired AdminAuthRepository admins;
     @Autowired LocationRepository locations;
     @Autowired LanguageRepository languages;
     @Autowired NarrationRepository narrations;
@@ -36,7 +38,7 @@ class AdminNarrationWriteIntegrationTest {
         location = locations.saveAndFlush(location);
         Language language = languages.saveAndFlush(new Language(null, "qy", "Test"));
         String base = "/api/admin/locations/" + location.getId() + "/narrations";
-        String token = "Bearer " + jwt.generateToken("admin");
+        String token = "Bearer " + jwt.generateToken("admin", admins.findById(1).orElseThrow().getPasswordHash());
         String body = "{\"languageCode\":\"qy\",\"textContent\":\"Nội dung cũ\"}";
         mvc.perform(post(base).contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isUnauthorized());
         mvc.perform(post(base).header("Authorization", token).contentType(MediaType.APPLICATION_JSON).content(body))

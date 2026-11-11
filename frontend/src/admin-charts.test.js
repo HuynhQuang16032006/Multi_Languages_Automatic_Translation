@@ -18,3 +18,17 @@ test('dates are sorted chronologically before formatting across months and years
   const data = { listensByDay: [{ date: '2026-01-02', listenCount: 2 }, { date: '2025-12-31', listenCount: 1 }], listensByLanguage: {} };
   assert.deepEqual(chartRows(data).days, [['31/12/2025', 1], ['02/01/2026', 2]]);
 });
+
+test('empty and malformed chart data are handled explicitly', () => {
+  assert.deepEqual(chartRows({ listensByDay: [], listensByLanguage: {} }), { days: [], languages: [] });
+  for (const data of [
+    { listensByDay: [null], listensByLanguage: {} },
+    { listensByDay: [{ date: '2026-01-01', listenCount: -1 }], listensByLanguage: {} },
+    { listensByDay: [], listensByLanguage: [] },
+    { listensByDay: [], listensByLanguage: { vi: '2' } },
+  ]) assert.throws(() => chartRows(data), /dữ liệu/i);
+});
+
+test('same-day ranges are accepted', () => {
+  assert.equal(chartQuery('2026-01-03', '2026-01-03'), '?from=2026-01-03T00%3A00%3A00&to=2026-01-03T23%3A59%3A59.999999');
+});

@@ -26,3 +26,13 @@ export async function getLanguages(signal, request = fetch) {
   if (!Array.isArray(languages) || languages.some(language => typeof language?.code !== 'string' || typeof language.name !== 'string')) throw new Error('Dữ liệu ngôn ngữ không hợp lệ.');
   return languages;
 }
+
+export function preferredLanguage(languages, urlLanguage) {
+  let saved;
+  try { saved = localStorage.getItem('audiotour_preferred_lang'); } catch { /* Storage may be unavailable. */ }
+  return [urlLanguage, saved, 'vi', languages[0]?.code].find(code => languages.some(language => language.code === code)) || 'vi';
+}
+
+export function savePreferredLanguage(code) {
+  try { localStorage.setItem('audiotour_preferred_lang', code); } catch { /* Storage may be unavailable. */ }
+}

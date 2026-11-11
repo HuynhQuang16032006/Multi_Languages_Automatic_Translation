@@ -3,6 +3,7 @@ import { Link, NavLink, Route, Routes } from 'react-router-dom';
 import { adminRequest, login } from './admin-api.js';
 import { Places, Audio, Qr } from './admin-management.jsx';
 import { Charts } from './admin-charts.jsx';
+import { AdminSettings } from './admin-settings.jsx';
 import { parseAdminDate } from './admin-date.js';
 import './admin.css';
 
@@ -41,5 +42,5 @@ export function Admin() {
     catch (error) { if (error.status === 401) { setToken(null); setSessionError(error.message); } throw error; }
   }, [token]);
   if (!token) return <>{sessionError && <p className="admin-session" role="alert">{sessionError}</p>}<Login onLogin={value => { setSessionError(''); setToken(value); }} /></>;
-  return <div className="admin-shell"><aside><Link to="/admin" className="admin-brand">audio tour<span>.</span><small>STUDIO CONSOLE</small></Link><nav aria-label="Điều hướng quản trị"><NavLink to="/admin" end>Dashboard</NavLink><NavLink to="/admin/charts">Biểu đồ</NavLink><NavLink to="/admin/places">Địa điểm</NavLink><NavLink to="/admin/audio">Thuyết minh</NavLink><NavLink to="/admin/qr">Mã QR</NavLink></nav><a href="/dashboard.html">Quản trị phiên bản cũ ↗</a><button onClick={() => setToken(null)}>Đăng xuất</button></aside><main id="admin-content"><Routes><Route index element={<Dashboard request={request} />} /><Route path="charts" element={<Charts request={request} />} /><Route path="places" element={<Places request={request} />} /><Route path="audio" element={<Audio request={request} />} /><Route path="qr" element={<Qr request={request} />} /><Route path="*" element={<section><h1>Không tìm thấy trang</h1><Link to="/admin">Về Dashboard</Link></section>} /></Routes></main></div>;
+  return <div className="admin-shell"><aside><Link to="/admin" className="admin-brand">audio tour<span>.</span><small>STUDIO CONSOLE</small></Link><nav aria-label="Điều hướng quản trị"><NavLink to="/admin" end>Dashboard</NavLink><NavLink to="/admin/charts">Biểu đồ</NavLink><NavLink to="/admin/places">Địa điểm</NavLink><NavLink to="/admin/audio">Thuyết minh</NavLink><NavLink to="/admin/qr">Mã QR</NavLink><NavLink to="/admin/settings">Cài đặt</NavLink></nav><a href="/dashboard.html">Quản trị phiên bản cũ ↗</a><button onClick={() => setToken(null)}>Đăng xuất</button></aside><main id="admin-content"><Routes><Route index element={<Dashboard request={request} />} /><Route path="charts" element={<Charts request={request} />} /><Route path="places" element={<Places request={request} />} /><Route path="audio" element={<Audio request={request} />} /><Route path="qr" element={<Qr request={request} />} /><Route path="settings" element={<AdminSettings request={request} onPasswordChanged={() => { setToken(null); setSessionError('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.'); }} />} /><Route path="*" element={<section><h1>Không tìm thấy trang</h1><Link to="/admin">Về Dashboard</Link></section>} /></Routes></main></div>;
 }

@@ -47,6 +47,7 @@ class TtsServiceTest {
     private TtsService ttsService;
     private Narration narration;
     private String fileName;
+    private String generatedFileName;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -74,6 +75,7 @@ class TtsServiceTest {
     @AfterEach
     void tearDown() throws IOException {
         Files.deleteIfExists(AUDIO_DIR.resolve(fileName));
+        if (generatedFileName != null) Files.deleteIfExists(AUDIO_DIR.resolve(generatedFileName));
     }
 
     @Test
@@ -85,10 +87,11 @@ class TtsServiceTest {
                 .andRespond(withSuccess(MP3, MediaType.parseMediaType("audio/mpeg")));
 
         NarrationResponse response = ttsService.generateAudio(1L, false);
+        generatedFileName = response.getAudioUrl();
 
         server.verify();
-        assertArrayEquals(MP3, Files.readAllBytes(AUDIO_DIR.resolve(fileName)));
-        assertEquals(fileName, response.getAudioUrl());
+        assertArrayEquals(MP3, Files.readAllBytes(AUDIO_DIR.resolve(generatedFileName)));
+        assertNotEquals(fileName, generatedFileName);
         assertEquals("vi", response.getLanguageCode());
         assertEquals("Dinh Äá»™c Láº­p", response.getLocationName());
         assertEquals((int) Math.round(TEXT.length() / 15.0), response.getDurationInSeconds());
@@ -107,6 +110,35 @@ class TtsServiceTest {
         server.verify();
         assertEquals("FILE_CU", Files.readString(AUDIO_DIR.resolve(fileName), StandardCharsets.UTF_8));
         assertEquals(fileName, response.getAudioUrl());
+    }
+
+    @Test
+    void forceGenerationPreservesExistingFile() throws IOException {
+        Files.createDirectories(AUDIO_DIR);
+        Files.writeString(AUDIO_DIR.resolve(fileName), "old audio", StandardCharsets.UTF_8);
+        when(narrationRepository.findById(1L)).thenReturn(Optional.of(narration));
+        server.expect(requestTo("https://api.elevenlabs.io/v1/text-to-speech/voice-test?output_format=mp3_44100_128"))
+                .andRespond(withSuccess(MP3, MediaType.parseMediaType("audio/mpeg")));
+
+        NarrationResponse response = ttsService.generateAudio(1L, true);
+        generatedFileName = response.getAudioUrl();
+
+        assertNotEquals(fileName, generatedFileName);
+        assertEquals("old audio", Files.readString(AUDIO_DIR.resolve(fileName), StandardCharsets.UTF_8));
+        assertArrayEquals(MP3, Files.readAllBytes(AUDIO_DIR.resolve(generatedFileName)));
+    }
+
+    @Test
+    void failedRegenerationPreservesExistingFileAndReference() throws IOException {
+        Files.createDirectories(AUDIO_DIR);
+        Files.writeString(AUDIO_DIR.resolve(fileName), "old audio", StandardCharsets.UTF_8);
+        when(narrationRepository.findById(1L)).thenReturn(Optional.of(narration));
+        server.expect(requestTo("https://api.elevenlabs.io/v1/text-to-speech/voice-test?output_format=mp3_44100_128"))
+                .andRespond(withServerError());
+
+        assertThrows(ServiceUnavailableException.class, () -> ttsService.generateAudio(1L, true));
+        assertEquals(fileName, narration.getAudioUrl());
+        assertEquals("old audio", Files.readString(AUDIO_DIR.resolve(fileName), StandardCharsets.UTF_8));
     }
 
     @Test

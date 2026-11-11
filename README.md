@@ -208,6 +208,10 @@ java -jar target/audiotour-0.0.1-SNAPSHOT.jar
 
 > ⚠️ Chạy `java -jar` **không** có `SPRING_PROFILES_ACTIVE=prod` (hoặc không có các biến trên) chỉ là **local-dev boot**: app dùng secret dev và `admin123` trong `application.yml`. Không dùng cách này để deploy.
 
+Profile `prod` từ chối JWT secret, mật khẩu admin và mật khẩu DB mặc định của dev; phải dùng giá trị riêng, mạnh. Kiểm tra profile thực tế trước triển khai: cấu hình dev vẫn có credential công khai. Rate limit dùng địa chỉ kết nối, bỏ qua `X-Forwarded-For`; sau reverse proxy mọi client dùng chung hạn mức. Nếu cần hạn mức theo IP gốc, cấu hình rate limit tại proxy tin cậy và chặn truy cập trực tiếp backend. Bộ đếm trong bộ nhớ không được chia sẻ giữa các instance.
+
+JWT phát hành trước thay đổi này hết hiệu lực và cần đăng nhập lại. Sau mỗi lần đổi mật khẩu, mọi JWT cũ bị thu hồi; client đăng nhập lại bằng mật khẩu mới. Mỗi yêu cầu có JWT cần đọc tài khoản admin từ DB.
+
 ### Biến môi trường
 | Biến | Mặc định (dev) | Ghi chú |
 | :--- | :--- | :--- |

@@ -21,6 +21,15 @@ class JwtServiceTest {
     }
 
     @Test
+    void credentialChangeRevokesTokenIncludingLegacyToken() {
+        String token = jwtService.generateToken("admin", "old-hash");
+        assertTrue(jwtService.isTokenValid(token, "admin", "old-hash"));
+        assertFalse(jwtService.isTokenValid(token, "admin", "new-hash"));
+        assertFalse(jwtService.isTokenValid(token, "other", "old-hash"));
+        assertFalse(jwtService.isTokenValid(jwtService.generateToken("admin"), "admin", "old-hash"));
+    }
+
+    @Test
     void testTamperedTokenIsRejected() {
         String token = jwtService.generateToken("admin");
         String[] parts = token.split("\\.");

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { parseQr } from './qr.js';
+import { cameraSession, parseQr } from './qr.js';
 
 export function Scanner() {
   const [input, setInput] = useState('');
@@ -11,9 +11,10 @@ export function Scanner() {
   const stream = useRef(null);
   const frame = useRef(null);
   const alive = useRef(true);
+  const session = useRef(cameraSession());
   const navigate = useNavigate();
-  const stop = () => { if (frame.current) cancelAnimationFrame(frame.current); stream.current?.getTracks().forEach(track => track.stop()); stream.current = null; setScanning(false); };
-  useEffect(() => { alive.current = true; return () => { alive.current = false; if (frame.current) cancelAnimationFrame(frame.current); stream.current?.getTracks().forEach(track => track.stop()); }; }, []);
+  const stop = () => { session.current.stop(); if (frame.current) cancelAnimationFrame(frame.current); stream.current?.getTracks().forEach(track => track.stop()); stream.current = null; setScanning(false); };
+  useEffect(() => { alive.current = true; return () => { alive.current = false; session.current.stop(); if (frame.current) cancelAnimationFrame(frame.current); stream.current?.getTracks().forEach(track => track.stop()); stream.current = null; }; }, []);
 
   async function resolve(value) {
     const parsed = parseQr(value, window.location.origin);
@@ -33,23 +34,28 @@ export function Scanner() {
     setMessage('');
     if (!window.isSecureContext) { setMessage('Camera cần HTTPS hoặc localhost. Bạn vẫn có thể nhập mã thủ công.'); return; }
     if (!navigator.mediaDevices?.getUserMedia || !('BarcodeDetector' in window)) { setMessage('Trình duyệt chưa hỗ trợ quét QR. Vui lòng nhập mã thủ công.'); return; }
+    stop();
+    const attempt = session.current.start();
     try {
       const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
       const acquired = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-      if (!alive.current) { acquired.getTracks().forEach(track => track.stop()); return; }
+      if (!alive.current || !session.current.current(attempt)) { acquired.getTracks().forEach(track => track.stop()); return; }
       stream.current = acquired;
       video.current.srcObject = stream.current;
-      await video.current.play(); setScanning(true);
+      await video.current.play();
+      if (!alive.current || !session.current.current(attempt)) return;
+      setScanning(true);
       const scan = async () => {
-        if (!stream.current) return;
+        if (!session.current.current(attempt)) return;
         try {
           const codes = await detector.detect(video.current);
+          if (!session.current.current(attempt)) return;
           if (codes[0]?.rawValue) { const value = codes[0].rawValue; stop(); setInput(value); await resolve(value); return; }
-        } catch { stop(); setMessage('Không đọc được camera. Hãy thử lại hoặc nhập mã.'); return; }
+        } catch { if (session.current.current(attempt)) { stop(); setMessage('Không đọc được camera. Hãy thử lại hoặc nhập mã.'); } return; }
         frame.current = requestAnimationFrame(scan);
       };
       frame.current = requestAnimationFrame(scan);
-    } catch { stop(); setMessage('Không mở được camera hoặc quyền bị từ chối. Kiểm tra quyền trình duyệt hoặc nhập mã.'); }
+    } catch { if (alive.current && session.current.current(attempt)) { stop(); setMessage('Không mở được camera hoặc quyền bị từ chối. Kiểm tra quyền trình duyệt hoặc nhập mã.'); } }
   }
 
   return <section className="qr-page"><p className="eyebrow">FIELD NOTES / QUÉT MÃ</p><h1>Quét mã địa điểm</h1><p className="intro">Mở camera để nhận mã QR, hoặc nhập mã trên biển chỉ dẫn. Camera chỉ bật sau khi bạn chọn.</p><video ref={video} className="qr-video" playsInline muted hidden={!scanning} aria-label="Hình ảnh camera quét mã QR" />{scanning ? <button className="primary" onClick={stop}>Tắt camera</button> : <button className="primary" onClick={startCamera}>Mở camera quét QR</button>}<form className="qr-form" onSubmit={event => { event.preventDefault(); resolve(input); }}><label>Nhập mã QR hoặc liên kết<input value={input} onChange={event => setInput(event.target.value)} maxLength={2048} placeholder="Ví dụ: QR-KHANH-HOI-01" /></label><button className="primary" disabled={busy}>{busy ? 'Đang tra cứu…' : 'Tìm địa điểm'}</button></form>{message && <p className="notice" role="alert">{message}</p>}<Link to="/explore">Tiếp tục khám phá địa điểm →</Link></section>;

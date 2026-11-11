@@ -111,13 +111,13 @@ class AuthServiceTest {
     }
 
     @Test
-    void testChangePasswordWithWrongOldPasswordThrowsUnauthorized() {
+    void testChangePasswordWithWrongOldPasswordThrowsBadRequest() {
         AdminAuth admin = new AdminAuth(1, "admin", passwordEncoder.encode("admin123"), LocalDateTime.now());
         when(adminAuthRepository.findById(1)).thenReturn(Optional.of(admin));
 
         AuthService authService = new AuthService(jwtService, adminAuthRepository, passwordEncoder, loginRateLimiter, "admin", "admin123");
 
-        assertThrows(UnauthorizedException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> authService.changePassword("admin", new ChangePasswordRequest("wrongOld", "newPassword456")));
     }
 }

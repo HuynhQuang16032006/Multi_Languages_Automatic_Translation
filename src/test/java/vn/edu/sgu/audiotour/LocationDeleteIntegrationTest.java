@@ -24,6 +24,7 @@ class LocationDeleteIntegrationTest {
     @Autowired private LanguageRepository languages;
     @Autowired private PlaybackLogRepository logs;
     @Autowired private JwtService jwt;
+    @Autowired private AdminAuthRepository admins;
 
     private Location location(String name) {
         Location location = new Location();
@@ -32,7 +33,7 @@ class LocationDeleteIntegrationTest {
     }
 
     private String token() {
-        return "Bearer " + jwt.generateToken("admin");
+        return "Bearer " + jwt.generateToken("admin", admins.findById(1).orElseThrow().getPasswordHash());
     }
 
     @Test

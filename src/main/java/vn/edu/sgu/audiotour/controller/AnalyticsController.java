@@ -13,6 +13,7 @@ import vn.edu.sgu.audiotour.dto.PlaybackLogRequest;
 import vn.edu.sgu.audiotour.entity.PlaybackLog;
 import vn.edu.sgu.audiotour.service.AnalyticsService;
 import vn.edu.sgu.audiotour.service.LiveAudience;
+import vn.edu.sgu.audiotour.service.LocationService;
 import vn.edu.sgu.audiotour.service.PlaybackLogRecorder;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
     private final LiveAudience liveAudience;
     private final PlaybackLogRecorder playbackLogRecorder;
+    private final LocationService locationService;
 
     @PostMapping("/heartbeat")
     @Operation(summary = "Gửi nhịp tim (Heartbeat) giám sát thiết bị truy cập thời gian thực", description = "Mobile App gửi định kỳ mỗi 3s (action=JOIN/PING/LEAVE). Khi thiết bị out hoặc ngắt kết nối quá 8s, số lượng online tự động giảm và lưu lịch sử")
@@ -37,6 +39,7 @@ public class AnalyticsController {
     @PostMapping("/logs")
     @Operation(summary = "Ghi log khi du khách nghe xong bài thuyết minh", description = "Mobile App gửi log sau khi phát audio (qua quét mã QR hoặc GPS geofencing) để ghi nhận lượt nghe và vị trí ẩn danh")
     public ResponseEntity<PlaybackLog> recordPlaybackLog(@Valid @RequestBody PlaybackLogRequest request) {
+        locationService.getLocationById(request.getLocationId());
         PlaybackLogRecorder.Entry entry = new PlaybackLogRecorder.Entry(
                 request.getLocationId(), request.getLanguageCode(), request.getListenDurationSeconds(),
                 request.getTriggerType(), request.getDeviceId(), request.getLatitude(), request.getLongitude());

@@ -20,11 +20,18 @@ public class TestDatabaseIsolation implements ApplicationContextInitializer<Conf
         }
         var database = List.of(environment.getActiveProfiles()).contains("prod")
                 ? "audiotour_prod_profile_test" : "audiotour_test";
+        var url = "jdbc:mysql://127.0.0.1:33316/" + database
+                + "?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC";
         environment.getPropertySources().addFirst(new MapPropertySource("isolatedTestDatabase", Map.of(
-                "spring.datasource.url", "jdbc:mysql://localhost:3306/" + database
-                        + "?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC",
+                "spring.datasource.url", url,
+                "spring.datasource.hikari.jdbc-url", url,
                 "spring.datasource.username", "audiotour_test",
-                "spring.datasource.password", password)));
+                "spring.datasource.password", password,
+                "spring.datasource.hikari.username", "audiotour_test",
+                "spring.datasource.hikari.password", password,
+                "spring.flyway.url", url,
+                "spring.flyway.user", "audiotour_test",
+                "spring.flyway.password", password)));
     }
 
     @Override

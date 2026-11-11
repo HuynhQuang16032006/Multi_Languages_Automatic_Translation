@@ -66,8 +66,19 @@ export function ExploreMap({ places, position, locationState, requestLocation })
     markers.current.clearLayers();
     ranked.forEach(item => {
       const marker = L.circleMarker([item.latitude, item.longitude], { radius: selected?.id === item.id ? 11 : 8, color: selected?.id === item.id ? '#a6402d' : '#173b34', weight: 3, fillOpacity: .85 });
-      marker.bindTooltip(item.name).on('click', () => select(item.id));
+      const tooltip = document.createElement('span');
+      tooltip.textContent = item.name;
+      marker.bindTooltip(tooltip).on('click', () => select(item.id));
       marker.addTo(markers.current);
+      const path = marker.getElement();
+      if (path) {
+        path.setAttribute('tabindex', '0');
+        path.setAttribute('role', 'button');
+        path.setAttribute('aria-label', item.name);
+        path.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(item.id); }
+        });
+      }
     });
   }, [ready, places, query, position, selected?.id]);
 

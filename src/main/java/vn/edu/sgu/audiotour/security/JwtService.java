@@ -9,6 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import javax.crypto.Mac;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
@@ -44,6 +48,37 @@ public class JwtService {
                 .expiration(new Date(now.getTime() + expirationMs))
                 .signWith(key, Jwts.SIG.HS256)
                 .compact();
+    }
+
+    public String generateToken(String username, String passwordHash) {
+        Date now = new Date();
+        return Jwts.builder().subject(username).issuedAt(now)
+                .expiration(new Date(now.getTime() + expirationMs))
+                .claim("credential", credentialFingerprint(passwordHash))
+                .signWith(key, Jwts.SIG.HS256).compact();
+    }
+
+    public boolean isTokenValid(String token, String username, String passwordHash) {
+        try {
+            Claims claims = parse(token).getPayload();
+            String credential = claims.get("credential", String.class);
+            return username.equals(claims.getSubject()) && credential != null
+                    && MessageDigest.isEqual(credential.getBytes(StandardCharsets.UTF_8),
+                    credentialFingerprint(passwordHash).getBytes(StandardCharsets.UTF_8));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private String credentialFingerprint(String passwordHash) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(key);
+            return Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(mac.doFinal(passwordHash.getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Cannot compute credential fingerprint", e);
+        }
     }
 
     // Lấy username (subject) từ token

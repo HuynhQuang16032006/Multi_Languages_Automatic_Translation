@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getPlaceDetail, getLanguages } from './detail.js';
+import { getPlaceDetail, getLanguages, preferredLanguage, savePreferredLanguage } from './detail.js';
 
 test('reads real place, children and Vietnamese narration from their public endpoints', async () => {
   const urls = [];
@@ -48,4 +48,25 @@ test('reads available language codes and labels without inventing language choic
   });
   assert.deepEqual(result.map(({ code }) => code), ['vi', 'en']);
   await assert.rejects(getLanguages(undefined, async () => new Response('{}')), /ngôn ngữ không hợp lệ/);
+});
+
+test('resolves URL and saved language safely against supported languages', () => {
+  const original = globalThis.localStorage;
+  let saved = 'en';
+  globalThis.localStorage = { getItem: key => { assert.equal(key, 'audiotour_preferred_lang'); return saved; }, setItem: (key, value) => { assert.equal(key, 'audiotour_preferred_lang'); saved = value; } };
+  const languages = [{ code: 'vi' }, { code: 'en' }, { code: 'fr' }];
+  try {
+    assert.equal(preferredLanguage(languages, 'fr'), 'fr');
+    assert.equal(preferredLanguage(languages, 'unknown'), 'en');
+    savePreferredLanguage('fr');
+    assert.equal(preferredLanguage(languages), 'fr');
+    assert.equal(preferredLanguage([{ code: 'vi' }]), 'vi');
+    assert.equal(preferredLanguage([{ code: 'en' }]), 'en');
+    globalThis.localStorage = { getItem: () => { throw Error('blocked'); }, setItem: () => { throw Error('blocked'); } };
+    assert.equal(preferredLanguage(languages), 'vi');
+    assert.doesNotThrow(() => savePreferredLanguage('en'));
+  } finally {
+    if (original === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = original;
+  }
 });

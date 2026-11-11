@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.sgu.audiotour.entity.Location;
 import vn.edu.sgu.audiotour.dto.LocationRequest;
+import vn.edu.sgu.audiotour.dto.LocationQrRequest;
+import vn.edu.sgu.audiotour.dto.LocationVisibilityRequest;
 import vn.edu.sgu.audiotour.service.LocationService;
 
 import java.util.List;
@@ -37,11 +39,29 @@ public class LocationController {
         return ResponseEntity.ok(locationService.updateLocation(id, request));
     }
 
+    @PatchMapping("/locations/{id}/qr")
+    @Operation(summary = "Cập nhật mã QR địa điểm")
+    public ResponseEntity<Location> updateQrCode(@PathVariable Long id, @Valid @RequestBody LocationQrRequest request) {
+        return ResponseEntity.ok(locationService.updateQrCode(id, request.qrCode(), request.expectedQrCode()));
+    }
+
     @DeleteMapping("/locations/{id}")
     @Operation(summary = "Xóa địa điểm không có dữ liệu liên quan")
     public ResponseEntity<Void> deleteLocation(@PathVariable Long id) {
         locationService.deleteLocation(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/admin/locations")
+    @Operation(summary = "Danh sách địa điểm quản trị, gồm địa điểm ẩn")
+    public ResponseEntity<List<Location>> getAdminLocations() {
+        return ResponseEntity.ok(locationService.getAdminLocations());
+    }
+
+    @PatchMapping("/admin/locations/{id}/visibility")
+    @Operation(summary = "Ẩn hoặc hiện địa điểm mà không xóa lịch sử")
+    public ResponseEntity<Location> setVisibility(@PathVariable Long id, @Valid @RequestBody LocationVisibilityRequest request) {
+        return ResponseEntity.ok(locationService.setVisibility(id, request.visible()));
     }
 
     @GetMapping("/locations")

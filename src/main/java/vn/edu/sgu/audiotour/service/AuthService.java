@@ -101,7 +101,7 @@ public class AuthService {
         }
 
         loginRateLimiter.recordSuccess(clientIp);
-        return new LoginResponse(jwtService.generateToken(username), "Bearer");
+        return new LoginResponse(jwtService.generateToken(username, admin.getPasswordHash()), "Bearer");
     }
 
     @Transactional
@@ -114,7 +114,7 @@ public class AuthService {
         }
 
         if (!passwordEncoder.matches(request.getOldPassword(), admin.getPasswordHash())) {
-            throw new UnauthorizedException("Mật khẩu cũ không chính xác");
+            throw new IllegalArgumentException("Mật khẩu cũ không chính xác");
         }
 
         if (request.getNewPassword() == null || request.getNewPassword().trim().length() < 6) {

@@ -31,3 +31,12 @@ test('stale or inaccurate fixes cannot trigger geofence', () => {
   assert.equal(updateGeofence({}, pois, fix(0, 100), 100000).entered, null);
   assert.equal(updateGeofence({}, pois, fix(0, 5, 1000), 100000).entered, null);
 });
+
+test('rejects negative accuracy and preserves cooldown starting at timestamp zero', () => {
+  assert.equal(updateGeofence({}, pois, fix(0, -1, 0), 0).entered, null);
+  let result = updateGeofence({}, [pois[1]], fix(0, 5, 0), 0);
+  assert.equal(result.entered.id, 2);
+  result = updateGeofence(result.state, [pois[1]], fix(0.001, 5, 1000), 1000);
+  result = updateGeofence(result.state, [pois[1]], fix(0, 5, 2000), 2000);
+  assert.equal(result.entered, null);
+});

@@ -49,10 +49,7 @@ public class AuthController {
         if (request == null) {
             return "unknown";
         }
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
+        // Chỉ tin địa chỉ kết nối; proxy phải giới hạn truy cập và tự xử lý rate limit theo IP gốc.
         return request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
     }
 }

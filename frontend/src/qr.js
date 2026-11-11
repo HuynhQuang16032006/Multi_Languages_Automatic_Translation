@@ -10,3 +10,8 @@ export function parseQr(input, origin) {
   } catch { return null; }
   return null;
 }
+
+export function cameraSession() {
+  let generation = 0;
+  return { start: () => ++generation, stop: () => { generation++; }, current: id => id === generation };
+}

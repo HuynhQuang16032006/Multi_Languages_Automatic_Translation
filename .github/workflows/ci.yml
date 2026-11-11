@@ -18,7 +18,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: audiotour_db
         ports:
-          - 3306:3306
+          - 33316:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
@@ -52,7 +52,7 @@ jobs:
       env:
         MYSQL_PWD: root
       run: |
-        mysql -h 127.0.0.1 -u root <<'SQL'
+        mysql -h 127.0.0.1 -P 33316 -u root <<'SQL'
         CREATE DATABASE audiotour_test;
         CREATE DATABASE audiotour_prod_profile_test;
         CREATE USER 'audiotour_test'@'%' IDENTIFIED BY 'ci-test-only-password';

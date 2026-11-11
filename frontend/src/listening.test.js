@@ -51,3 +51,18 @@ test('a short seek does not count as listening time', () => {
   session.start(); session.tick(1); session.seek(2); session.tick(3); session.end();
   assert.deepEqual(calls.at(-1), ['LEAVE', 2]);
 });
+
+test('native seeks in either direction do not count as listening', () => {
+  const calls = [];
+  const session = createListeningSession((action, seconds) => calls.push([action, seconds]));
+  session.start(); session.tick(1); session.seek(2); session.tick(2, true);
+  session.seek(0); session.tick(0, true); session.tick(1); session.end();
+  assert.deepEqual(calls.at(-1), ['LEAVE', 2]);
+});
+
+test('ending on error or page hide sends only one leave', () => {
+  const calls = [];
+  const session = createListeningSession((action, seconds) => calls.push([action, seconds]));
+  session.start(); session.tick(1); session.end(); session.end(); session.ping();
+  assert.deepEqual(calls, [['JOIN', 0], ['LEAVE', 1]]);
+});

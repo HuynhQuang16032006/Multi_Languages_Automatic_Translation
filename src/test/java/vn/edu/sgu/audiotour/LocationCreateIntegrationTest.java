@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.edu.sgu.audiotour.entity.Location;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
 import vn.edu.sgu.audiotour.security.JwtService;
+import vn.edu.sgu.audiotour.repository.AdminAuthRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -20,9 +21,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class LocationCreateIntegrationTest {
     @Autowired private MockMvc mvc;
     @Autowired private JwtService jwt;
+    @Autowired private AdminAuthRepository admins;
     @Autowired private LocationRepository locations;
 
-    private String token() { return "Bearer " + jwt.generateToken("admin"); }
+    private String token() { return "Bearer " + jwt.generateToken("admin", admins.findById(1).orElseThrow().getPasswordHash()); }
 
     @Test
     void createsLocationAndRejectsDuplicateQr() throws Exception {

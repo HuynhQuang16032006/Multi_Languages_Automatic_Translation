@@ -13,3 +13,15 @@ test('rejects foreign and malformed links instead of navigating to them', () => 
     assert.equal(parseQr(value, 'https://tour.example'), null);
   }
 });
+
+test('invalidates pending camera operations when stopped or restarted', async () => {
+  const { cameraSession } = await import('./qr.js');
+  const session = cameraSession();
+  const first = session.start();
+  assert.equal(session.current(first), true);
+  session.stop();
+  assert.equal(session.current(first), false);
+  const second = session.start();
+  assert.equal(session.current(first), false);
+  assert.equal(session.current(second), true);
+});

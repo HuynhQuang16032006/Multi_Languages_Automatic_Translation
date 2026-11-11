@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vn.edu.sgu.audiotour.service.LocationService;
 import vn.edu.sgu.audiotour.service.NarrationService;
 
 @RestController
@@ -21,6 +22,7 @@ import vn.edu.sgu.audiotour.service.NarrationService;
 public class AudioPackageController {
 
     private final NarrationService narrationService;
+    private final LocationService locationService;
 
     @GetMapping(value = "/stream", produces = "audio/mpeg")
     @Operation(
@@ -31,6 +33,7 @@ public class AudioPackageController {
             @Parameter(description = "ID của địa điểm (POI)", example = "4") @RequestParam Long locationId,
             @Parameter(description = "Mã ngôn ngữ (ví dụ: 'vi', 'en')", example = "vi") @RequestParam String languageCode) {
 
+        locationService.getLocationById(locationId);
         Resource audioResource = narrationService.getAudioResource(locationId, languageCode);
 
         return ResponseEntity.ok()
@@ -49,6 +52,7 @@ public class AudioPackageController {
             @Parameter(description = "Mã ngôn ngữ (ví dụ: 'vi', 'en')", example = "vi") @RequestParam String languageCode,
             @RequestParam(required = false) String deviceId) {
 
+        locationService.getLocationById(locationId);
         byte[] zipData = narrationService.createOfflinePackage(locationId, languageCode, deviceId);
 
         return ResponseEntity.ok()

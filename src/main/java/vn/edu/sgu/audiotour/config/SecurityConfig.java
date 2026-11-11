@@ -15,6 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import vn.edu.sgu.audiotour.security.JwtAuthenticationFilter;
 import vn.edu.sgu.audiotour.security.JwtService;
+import vn.edu.sgu.audiotour.repository.AdminAuthRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -22,6 +23,7 @@ import vn.edu.sgu.audiotour.security.JwtService;
 public class SecurityConfig {
 
     private final JwtService jwtService;
+    private final AdminAuthRepository adminAuthRepository;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -58,7 +60,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, ex) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
                 // Tạo filter tại đây (không để @Component) để tránh Boot đăng ký thêm lần nữa và chạy 2 lần/request
-                .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtService, adminAuthRepository), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

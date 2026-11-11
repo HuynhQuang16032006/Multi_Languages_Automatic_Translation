@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import vn.edu.sgu.audiotour.controller.AudioPackageController;
+import vn.edu.sgu.audiotour.service.LocationService;
 import vn.edu.sgu.audiotour.service.NarrationService;
 
 import static org.mockito.Mockito.when;
@@ -23,6 +24,9 @@ class AudioPackageControllerTest {
 
     @Mock
     private NarrationService narrationService;
+
+    @Mock
+    private LocationService locationService;
 
     @InjectMocks
     private AudioPackageController audioPackageController;

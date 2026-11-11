@@ -13,6 +13,7 @@ import vn.edu.sgu.audiotour.repository.LanguageRepository;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
 import vn.edu.sgu.audiotour.repository.NarrationRepository;
 import vn.edu.sgu.audiotour.security.JwtService;
+import vn.edu.sgu.audiotour.repository.AdminAuthRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminNarrationListIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JwtService jwt;
+    @Autowired AdminAuthRepository admins;
     @Autowired LocationRepository locations;
     @Autowired LanguageRepository languages;
     @Autowired NarrationRepository narrations;
@@ -41,7 +43,7 @@ class AdminNarrationListIntegrationTest {
         String url = "/api/admin/locations/" + location.getId() + "/narrations";
         mvc.perform(get(url)).andExpect(status().isUnauthorized());
         mvc.perform(get(url).header("Authorization", "Bearer invalid")).andExpect(status().isUnauthorized());
-        mvc.perform(get(url).header("Authorization", "Bearer " + jwt.generateToken("admin")))
+        mvc.perform(get(url).header("Authorization", "Bearer " + jwt.generateToken("admin", admins.findById(1).orElseThrow().getPasswordHash())))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].textContent").value("Test content"));
     }
 }

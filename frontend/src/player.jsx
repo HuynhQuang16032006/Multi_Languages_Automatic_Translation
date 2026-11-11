@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { getLanguages } from './detail.js';
+import { getLanguages, preferredLanguage, savePreferredLanguage } from './detail.js';
 import { createListeningSession, sendListeningHeartbeat } from './listening.js';
 
 const clock = seconds => Number.isFinite(seconds) ? `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}` : '--:--';
@@ -10,7 +10,8 @@ export function AudioPlayer({ places, active, id }) {
   const [selectedId, setSelectedId] = useState(null);
   useEffect(() => { if (active) setSelectedId(id); }, [active, id]);
   const place = places.find(item => String(item.id) === (active ? id : selectedId));
-  const [language, setLanguage] = useState('vi');
+  const [language, updateLanguage] = useState('vi');
+  const setLanguage = code => { updateLanguage(code); savePreferredLanguage(code); };
   const [languages, setLanguages] = useState([]);
   const [narration, setNarration] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +24,13 @@ export function AudioPlayer({ places, active, id }) {
   const device = useRef(null);
   const session = useRef(null);
   const current = useRef(null);
-  useEffect(() => { if (active && params.get('lang') && languages.some(item => item.code === params.get('lang'))) setLanguage(params.get('lang')); }, [active, id, languages]);
+  const urlLanguage = params.get('lang');
+  useEffect(() => {
+    if (!active || !languages.length) return;
+    const code = preferredLanguage(languages, urlLanguage);
+    updateLanguage(code);
+    if (code === urlLanguage) savePreferredLanguage(code);
+  }, [active, id, languages, urlLanguage]);
 
   if (!device.current) {
     try {
@@ -47,7 +54,7 @@ export function AudioPlayer({ places, active, id }) {
         if (response.status === 404) return null;
         if (!response.ok) throw new Error(`Không tải được thuyết minh (HTTP ${response.status}).`);
         return response.json();
-      }).then(data => { if (!controller.signal.aborted) setNarration(data); })
+      }).then(data => { if (!controller.signal.aborted) setNarration(data ? { ...data, locationId: place.id, languageCode: language } : null); })
       .catch(error => { if (!controller.signal.aborted) setMessage(error.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -76,17 +83,21 @@ export function AudioPlayer({ places, active, id }) {
   useEffect(() => {
     const timer = setInterval(() => session.current?.ping(), 3000);
     const leave = () => session.current?.end();
+    const restore = event => { if (event.persisted && audio.current && !audio.current.paused) session.current?.start(audio.current.currentTime); };
     window.addEventListener('pagehide', leave);
-    return () => { clearInterval(timer); window.removeEventListener('pagehide', leave); };
+    window.addEventListener('pageshow', restore);
+    return () => { clearInterval(timer); window.removeEventListener('pagehide', leave); window.removeEventListener('pageshow', restore); };
   }, []);
 
   async function play() {
-    if (!audio.current || !place || !narration?.audioUrl) return;
+    if (!audio.current || !place || !availableNarration?.audioUrl) return;
     try { await audio.current.play(); setMessage(''); }
-    catch { setMessage('Không phát được audio. Kiểm tra kết nối hoặc chọn ngôn ngữ khác rồi thử lại.'); }
+    catch { session.current?.end(); setPlaying(false); setMessage('Không phát được audio. Kiểm tra kết nối hoặc chọn ngôn ngữ khác rồi thử lại.'); }
   }
+
+  const availableNarration = narration?.locationId === place?.id && narration?.languageCode === language ? narration : null;
 
   if (!place && !active) return null;
   if (!place) return <section className="notice" role="alert"><h1>Không tìm thấy địa điểm.</h1><Link to="/explore">Về khám phá</Link></section>;
-  return <><section className="tour-player" hidden={!active}><Link to={`/places/${place.id}`}>← Chi tiết địa điểm</Link><p className="eyebrow">FIELD NOTES / ĐANG LẮNG NGHE</p><h1>{place.name}</h1><label className="detail-language">Ngôn ngữ thuyết minh<select value={language} onChange={event => setLanguage(event.target.value)}>{!languages.some(item => item.code === language) && <option value={language}>{language}</option>}{languages.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label><audio ref={audio} preload="metadata" src={narration?.audioUrl ? `/api/packages/stream?locationId=${place.id}&languageCode=${encodeURIComponent(language)}` : undefined} onPlay={() => { setPlaying(true); session.current?.start(audio.current?.currentTime || 0); }} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); session.current?.end(); }} onTimeUpdate={event => { const seconds = event.currentTarget.currentTime; setTime(seconds); session.current?.tick(seconds, event.currentTarget.seeking); }} onLoadedMetadata={event => setDuration(event.currentTarget.duration)} onError={() => { if (narration?.audioUrl) setMessage('Không tải được âm thanh cho ngôn ngữ này.'); }} /><div className="player-controls"><button className="primary" disabled={!narration?.audioUrl} onClick={() => playing ? audio.current.pause() : play()}>{playing ? 'Tạm dừng' : 'Phát audio'}</button><label>Tua audio <input aria-label="Vị trí phát audio" type="range" min="0" max={Number.isFinite(duration) && duration > 0 ? duration : 0} value={time} onChange={event => { audio.current.currentTime = Number(event.target.value); session.current?.seek(audio.current.currentTime); setTime(audio.current.currentTime); }} disabled={!Number.isFinite(duration) || duration <= 0} /></label><span>{clock(time)} / {clock(duration)}</span></div>{message && <p role="alert" className="notice">{message} <button onClick={() => setAttempt(value => value + 1)}>Thử lại</button></p>}{loading ? <p role="status">Đang tải thuyết minh…</p> : !narration ? <p>Chưa có bản thuyết minh cho ngôn ngữ này. Hãy chọn ngôn ngữ khác.</p> : <><p>{!narration.audioUrl && 'Chưa có file audio cho ngôn ngữ này; bạn vẫn có thể đọc nội dung.'}</p><a className="detail-map-link" href={`/api/packages/offline?locationId=${place.id}&languageCode=${encodeURIComponent(language)}`} download>Tải gói ZIP nội dung và audio ↧</a><div className="player-transcript"><h2>Văn bản thuyết minh</h2><p>{narration.textContent || 'Chưa có văn bản thuyết minh.'}</p></div></>}</section>{!active && <aside className="mini-player" aria-label="Trình phát thu gọn"><span>{place.name} · {clock(time)}</span><button onClick={() => playing ? audio.current?.pause() : play()}>{playing ? 'Tạm dừng' : 'Tiếp tục'}</button><Link to={`/player/${place.id}?lang=${encodeURIComponent(language)}`}>Mở trình phát</Link></aside>}</>;
+  return <><section className="tour-player" hidden={!active}><Link to={`/places/${place.id}`}>← Chi tiết địa điểm</Link><p className="eyebrow">FIELD NOTES / ĐANG LẮNG NGHE</p><h1>{place.name}</h1><label className="detail-language">Ngôn ngữ thuyết minh<select value={language} onChange={event => setLanguage(event.target.value)}>{!languages.some(item => item.code === language) && <option value={language}>{language}</option>}{languages.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label><audio ref={audio} preload="metadata" src={availableNarration?.audioUrl ? `/api/packages/stream?locationId=${place.id}&languageCode=${encodeURIComponent(language)}` : undefined} onPlay={() => { setPlaying(true); session.current?.start(audio.current?.currentTime || 0); }} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); session.current?.end(); }} onSeeking={event => session.current?.seek(event.currentTarget.currentTime)} onSeeked={event => session.current?.seek(event.currentTarget.currentTime)} onTimeUpdate={event => { const seconds = event.currentTarget.currentTime; setTime(seconds); session.current?.tick(seconds, event.currentTarget.seeking); }} onLoadedMetadata={event => setDuration(event.currentTarget.duration)} onError={() => { if (availableNarration?.audioUrl) { session.current?.end(); setPlaying(false); setMessage('Không tải được âm thanh cho ngôn ngữ này.'); } }} /><div className="player-controls"><button className="primary" disabled={!availableNarration?.audioUrl} onClick={() => playing ? audio.current.pause() : play()}>{playing ? 'Tạm dừng' : 'Phát audio'}</button><label>Tua audio <input aria-label="Vị trí phát audio" type="range" min="0" max={Number.isFinite(duration) && duration > 0 ? duration : 0} value={time} onChange={event => { audio.current.currentTime = Number(event.target.value); session.current?.seek(audio.current.currentTime); setTime(audio.current.currentTime); }} disabled={!Number.isFinite(duration) || duration <= 0} /></label><span>{clock(time)} / {clock(duration)}</span></div>{message && <p role="alert" className="notice">{message} <button onClick={() => setAttempt(value => value + 1)}>Thử lại</button></p>}{loading ? <p role="status">Đang tải thuyết minh…</p> : !availableNarration ? <p>Chưa có bản thuyết minh cho ngôn ngữ này. Hãy chọn ngôn ngữ khác.</p> : <><p>{!availableNarration.audioUrl && 'Chưa có file audio cho ngôn ngữ này; bạn vẫn có thể đọc nội dung.'}</p><a className="detail-map-link" href={`/api/packages/offline?locationId=${place.id}&languageCode=${encodeURIComponent(language)}&deviceId=${encodeURIComponent(device.current)}`} download>Tải gói ZIP nội dung và audio ↧</a><div className="player-transcript"><h2>Văn bản thuyết minh</h2><p>{availableNarration.textContent || 'Chưa có văn bản thuyết minh.'}</p></div></>}</section>{!active && <aside className="mini-player" aria-label="Trình phát thu gọn"><span>{place.name} · {clock(time)}</span><button onClick={() => playing ? audio.current?.pause() : play()}>{playing ? 'Tạm dừng' : 'Tiếp tục'}</button><Link to={`/player/${place.id}?lang=${encodeURIComponent(language)}`}>Mở trình phát</Link></aside>}</>;
 }

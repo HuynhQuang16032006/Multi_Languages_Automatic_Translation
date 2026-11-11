@@ -16,8 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * DB được cách ly bởi TestDatabaseIsolation.
  */
 @SpringBootTest(properties = {
-        "DB_USERNAME=root",
-        "DB_PASSWORD=123456",
         "jwt.secret=prod-profile-test-secret-0123456789abcdef",
         "app.admin.username=prodadmin",
         "app.admin.password=prodpass"

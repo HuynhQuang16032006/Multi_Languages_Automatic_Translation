@@ -56,6 +56,9 @@ public class Location {
     @Schema(description = "Đường dẫn ảnh đại diện", example = "https://example.com/images/dinh-doc-lap.jpg")
     private String imageUrl;
 
+    @Column(nullable = false)
+    private boolean visible = true;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     @JsonIgnore

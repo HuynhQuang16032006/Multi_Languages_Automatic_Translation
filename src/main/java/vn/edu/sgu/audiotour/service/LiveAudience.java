@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.edu.sgu.audiotour.dto.DeviceHeartbeatRequest;
 import vn.edu.sgu.audiotour.dto.HeartbeatResponse;
-import vn.edu.sgu.audiotour.entity.Location;
 import vn.edu.sgu.audiotour.entity.TriggerType;
-import vn.edu.sgu.audiotour.exception.NotFoundException;
-import vn.edu.sgu.audiotour.repository.LocationRepository;
 
 import java.time.Clock;
 import java.util.List;
@@ -29,7 +26,7 @@ public class LiveAudience {
     private static final long HEARTBEAT_TIMEOUT_MILLIS = 8_000;
 
     private final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
-    private final LocationRepository locationRepository;
+    private final LocationService locationService;
     private final PlaybackLogRecorder playbackLogRecorder;
     private final Clock clock;
 
@@ -37,7 +34,7 @@ public class LiveAudience {
      * Ghi nhận một heartbeat. Ném IllegalArgumentException (400) khi request thiếu
      * locationId/languageCode hoặc action lạ, NotFoundException (404) khi POI không tồn tại.
      */
-    public HeartbeatResult record(DeviceHeartbeatRequest request) {
+    public synchronized HeartbeatResult record(DeviceHeartbeatRequest request) {
         long now = clock.millis();
         String action = action(request.getAction());
         String deviceId = deviceId(request.getDeviceId());
@@ -52,7 +49,7 @@ public class LiveAudience {
     }
 
     /** Ảnh chụp các phiên đang online; tự dọn phiên hết hạn trước khi trả. */
-    public List<LiveSession> snapshot() {
+    public synchronized List<LiveSession> snapshot() {
         long now = clock.millis();
         reapExpired(now);
         return sessions.values().stream()
@@ -141,9 +138,7 @@ public class LiveAudience {
     }
 
     private String lookupLocationName(Long locationId) {
-        return locationRepository.findById(locationId)
-                .map(Location::getName)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy địa điểm với ID: " + locationId));
+        return locationService.getLocationById(locationId).getName();
     }
 
     private static String deviceId(String requested) {
