@@ -25,6 +25,7 @@ class TestDatabaseIsolationTest {
                 .withProperty("spring.flyway.url", "jdbc:mysql://localhost:33316/audiotour_db")
                 .withProperty("spring.flyway.user", "root")
                 .withProperty("spring.flyway.password", "application-password")
+                .withProperty("AUDIOTOUR_TEST_DB_PORT", "33316")
                 .withProperty("AUDIOTOUR_TEST_DB_PASSWORD", "test-password");
         context.setEnvironment(environment);
 
@@ -51,6 +52,19 @@ class TestDatabaseIsolationTest {
         new TestDatabaseIsolation().initialize(context);
 
         assertTrue(environment.getProperty("spring.datasource.url").contains("/audiotour_prod_profile_test?"));
+    }
+
+    @Test
+    void customPortCanBeConfigured() {
+        var context = new GenericApplicationContext();
+        var environment = new MockEnvironment()
+                .withProperty("AUDIOTOUR_TEST_DB_PASSWORD", "test-password")
+                .withProperty("AUDIOTOUR_TEST_DB_PORT", "3306");
+        context.setEnvironment(environment);
+
+        new TestDatabaseIsolation().initialize(context);
+
+        assertTrue(environment.getProperty("spring.datasource.url").contains(":3306/"));
     }
 
     @Test

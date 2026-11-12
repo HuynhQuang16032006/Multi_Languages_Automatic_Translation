@@ -20,7 +20,11 @@ public class TestDatabaseIsolation implements ApplicationContextInitializer<Conf
         }
         var database = List.of(environment.getActiveProfiles()).contains("prod")
                 ? "audiotour_prod_profile_test" : "audiotour_test";
-        var url = "jdbc:mysql://127.0.0.1:33316/" + database
+        var port = environment.getProperty("AUDIOTOUR_TEST_DB_PORT");
+        if (port == null || port.isBlank()) {
+            port = isPortOpen(33316) ? "33316" : "3306";
+        }
+        var url = "jdbc:mysql://127.0.0.1:" + port + "/" + database
                 + "?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC";
         environment.getPropertySources().addFirst(new MapPropertySource("isolatedTestDatabase", Map.of(
                 "spring.datasource.url", url,
@@ -37,5 +41,14 @@ public class TestDatabaseIsolation implements ApplicationContextInitializer<Conf
     @Override
     public ContextCustomizer createContextCustomizer(Class<?> testClass, List<ContextConfigurationAttributes> configAttributes) {
         return (context, mergedConfig) -> initialize(context);
+    }
+
+    private static boolean isPortOpen(int port) {
+        try (var socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("127.0.0.1", port), 200);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
