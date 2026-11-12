@@ -30,7 +30,7 @@ class TestDatabaseIsolationTest {
 
         new TestDatabaseIsolation().initialize(context);
 
-        assertEquals("jdbc:mysql://127.0.0.1:33316/audiotour_test?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC", environment.getProperty("spring.datasource.url"));
+        assertEquals("jdbc:mysql://127.0.0.1:3306/audiotour_test?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC", environment.getProperty("spring.datasource.url"));
         assertEquals(environment.getProperty("spring.datasource.url"), environment.getProperty("spring.datasource.hikari.jdbc-url"));
         assertEquals("audiotour_test", environment.getProperty("spring.datasource.username"));
         assertEquals("test-password", environment.getProperty("spring.datasource.password"));

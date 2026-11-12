@@ -20,7 +20,7 @@ public class TestDatabaseIsolation implements ApplicationContextInitializer<Conf
         }
         var database = List.of(environment.getActiveProfiles()).contains("prod")
                 ? "audiotour_prod_profile_test" : "audiotour_test";
-        var url = "jdbc:mysql://127.0.0.1:33316/" + database
+        var url = "jdbc:mysql://127.0.0.1:3306/" + database
                 + "?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC";
         environment.getPropertySources().addFirst(new MapPropertySource("isolatedTestDatabase", Map.of(
                 "spring.datasource.url", url,
