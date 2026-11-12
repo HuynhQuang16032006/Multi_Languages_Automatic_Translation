@@ -17,12 +17,12 @@ class TestDatabaseIsolationTest {
     void overridesApplicationDatasourceBeforeContextStarts() {
         var context = new GenericApplicationContext();
         var environment = new MockEnvironment()
-                .withProperty("spring.datasource.url", "jdbc:mysql://localhost:3306/audiotour_db")
-                .withProperty("spring.datasource.hikari.jdbc-url", "jdbc:mysql://localhost:3306/audiotour_db")
+                .withProperty("spring.datasource.url", "jdbc:mysql://localhost:33316/audiotour_db")
+                .withProperty("spring.datasource.hikari.jdbc-url", "jdbc:mysql://localhost:33316/audiotour_db")
                 .withProperty("spring.datasource.hikari.username", "root")
                 .withProperty("spring.datasource.hikari.password", "application-password")
                 .withProperty("spring.datasource.username", "root")
-                .withProperty("spring.flyway.url", "jdbc:mysql://localhost:3306/audiotour_db")
+                .withProperty("spring.flyway.url", "jdbc:mysql://localhost:33316/audiotour_db")
                 .withProperty("spring.flyway.user", "root")
                 .withProperty("spring.flyway.password", "application-password")
                 .withProperty("AUDIOTOUR_TEST_DB_PASSWORD", "test-password");
@@ -30,7 +30,7 @@ class TestDatabaseIsolationTest {
 
         new TestDatabaseIsolation().initialize(context);
 
-        assertEquals("jdbc:mysql://127.0.0.1:3306/audiotour_test?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC", environment.getProperty("spring.datasource.url"));
+        assertEquals("jdbc:mysql://127.0.0.1:33316/audiotour_test?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=UTC", environment.getProperty("spring.datasource.url"));
         assertEquals(environment.getProperty("spring.datasource.url"), environment.getProperty("spring.datasource.hikari.jdbc-url"));
         assertEquals("audiotour_test", environment.getProperty("spring.datasource.username"));
         assertEquals("test-password", environment.getProperty("spring.datasource.password"));

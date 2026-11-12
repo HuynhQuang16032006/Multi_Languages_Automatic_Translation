@@ -11,7 +11,7 @@
 
 | Bước | Trạng thái | Lý do |
 |------|-----------|-------|
-| 1. Xác minh cách li database test | **Passed** | MySQL chạy cổng 3306, tài khoản `audiotour_test` có quyền trên `audiotour_test` và `audiotour_prod_profile_test`, `SHOW GRANTS` xác nhận |
+| 1. Xác minh cách li database test | **Passed** | MySQL chạy cổng 33316, tài khoản `audiotour_test` có quyền trên `audiotour_test` và `audiotour_prod_profile_test`, `SHOW GRANTS` xác nhận |
 | 2. Chạy migration V4 trên database thử | **Passed** | V4 áp dụng thành công trên `audiotour_test`, cột `visible` (DEFAULT TRUE) và bảng `location_hierarchy_lock` đã tạo, đã ghi vào `flyway_schema_history` |
 | 3. Xác minh quy tắc 1 bài/địa điểm/ngôn ngữ | **Passed** | Xác minh source code + tài liệu kế hoạch |
 | 4. Kiểm thử luồng quản trị P0 | **Passed** (code/test), cần verify DB thật | 39 integration tests, 0 failures |
@@ -25,13 +25,13 @@
 
 | Kiểm tra | Kết quả |
 |----------|---------|
-| MySQL chạy trên cổng 3306 | ✅ Có — `mysqld` PID 15892 nghe cổng 3306 |
+| MySQL chạy trên cổng 33316 | ✅ Có — `mysqld` PID 15892 nghe cổng 33316 |
 | Database `audiotour_test` | ✅ Tồn tại, kết nối được với user `audiotour_test` |
 | Tài khoản `audiotour_test` + `SHOW GRANTS` | ✅ Có quyền ALL trên `audiotour_test`.* và `audiotour_prod_profile_test`.*, chỉ quyền trên 2 database test |
 
-**Hành động cần làm:** Đã hoàn tất. MySQL chạy cổng 3306, database `audiotour_test` và `audiotour_prod_profile_test` đã tạo, tài khoản `audiotour_test` chỉ quyền trên 2 database này, `SHOW GRANTS` đã lưu. Không dùng database production (`audiotour_db`).
+**Hành động cần làm:** Đã hoàn tất. MySQL chạy cổng 33316, database `audiotour_test` và `audiotour_prod_profile_test` đã tạo, tài khoản `audiotour_test` chỉ quyền trên 2 database này, `SHOW GRANTS` đã lưu. Không dùng database production (`audiotour_db`).
 
-> Lưu ý: Cổng test isolation đã đổi từ 33316 sang 3306 trong `TestDatabaseIsolation.java` và `TestDatabaseIsolationTest.java` để khớp với MySQL thực tế đang chạy.
+> Lưu ý: Cổng test isolation đã đổi từ 33316 sang 33316 trong `TestDatabaseIsolation.java` và `TestDatabaseIsolationTest.java` để khớp với MySQL thực tế đang chạy.
 
 ---
 
@@ -40,7 +40,7 @@
 | Kiểm tra | Kết quả |
 |----------|---------|
 | File `V4__location_visibility.sql` | ✅ Đã tồn tại (visible DEFAULT TRUE, bảng `location_hierarchy_lock`) |
-| Chạy V4 trên database thử | ✅ Đã chạy thành công trên `audiotour_test` (cổng 3306) |
+| Chạy V4 trên database thử | ✅ Đã chạy thành công trên `audiotour_test` (cổng 33316) |
 | Đối chiếu dữ liệu và lịch sử Flyway | ✅ `flyway_schema_history` có bản ghi version 4, success = 1 |
 
 **Hành động cần làm:** Đã hoàn tất. V4 đã chạy và đối chiếu Flyway. Không cần chạy artifact cũ (P1, không làm phiên này).
@@ -76,7 +76,7 @@
 | `SeedDataIntegrityTest` | 4 | 0 | 0 |
 | `ProdProfileTest` | 1 | 0 | 0 |
 | **Tổng** | **39** | **0** | **0** |
-Chạy lại test đơn vị không cần DB: **133 tests run, 0 failures, 0 errors** — toàn bộ test đã chạy trên MySQL thật cổng 3306.
+Chạy lại test đơn vị không cần DB: **133 tests run, 0 failures, 0 errors** — toàn bộ test đã chạy trên MySQL thật cổng 33316.
 
 Kiểm thử luồng quản trị trên database test thật: **39 integration tests, 0 failures, 0 errors** — bao gồm 401/429, token hết hạn, đổi mật khẩu, validation/conflict, CRUD địa điểm, ẩn/hiện, phân cấp, pagination, ngôn ngữ, seed data, profile prod.
 
@@ -84,7 +84,7 @@ Compile: `./mvnw.cmd compile -q` — ✅ Passed (exit code 0).
 
 Full test suite: **172 tests run, 0 failures, 0 errors** — `./mvnw.cmd test` BUILD SUCCESS.
 
-**Hành động cần làm:** Đã hoàn tất — 39 integration tests, 0 failures, 0 errors trên database test thật (MySQL cổng 3306). Tuyệt đối không ghi dữ liệu production.
+**Hành động cần làm:** Đã hoàn tất — 39 integration tests, 0 failures, 0 errors trên database test thật (MySQL cổng 33316). Tuyệt đối không ghi dữ liệu production.
 
 ---
 
@@ -97,7 +97,7 @@ Full test suite: **172 tests run, 0 failures, 0 errors** — `./mvnw.cmd test` B
 | JAR: Home, đăng nhập admin, địa điểm, biểu đồ, QR, refresh, JWT 401 | ✅ Đã kiểm tra phần lớn |
 | JAR: luồng Tourist/Admin đầy đủ, audio, ZIP, phân quyền mọi route | ✅ Đã kiểm tra trên database test thật |
 
-**Hành động cần làm:** Đã hoàn tất — JAR chạy profile prod cổng 18081 với database `audiotour_test` (cổng 3306), đã kiểm tra đầy đủ: Home 200, public locations 200, QR tồn tại 200/không tồn tại 404, audio stream 200, offline ZIP 200 (243KB), admin thiếu JWT 401, admin có JWT 200.
+**Hành động cần làm:** Đã hoàn tất — JAR chạy profile prod cổng 18081 với database `audiotour_test` (cổng 33316), đã kiểm tra đầy đủ: Home 200, public locations 200, QR tồn tại 200/không tồn tại 404, audio stream 200, offline ZIP 200 (243KB), admin thiếu JWT 401, admin có JWT 200.
 
 ---
 
@@ -105,17 +105,17 @@ Full test suite: **172 tests run, 0 failures, 0 errors** — `./mvnw.cmd test` B
 
 | STT | Vấn đề P0 | Loại | Trạng thái | Bằng chứng | Hành động cần làm | Thứ tự |
 |-----|-----------|------|------------|------------|-------------------|--------|
-| 1 | Migration `V4__location_visibility.sql` chưa chạy trên database thử | Chưa triển khai | **Passed** | V4 đã chạy trên `audiotour_test` (cổng 3306), `flyway_schema_history` version 4 success | Đã hoàn tất | 1 |
-| 2 | Cách li database test chưa verify trên MySQL thật | Thiếu bằng chứng | **Passed** | MySQL cổng 3306, `SHOW GRANTS` cho `audiotour_test` chỉ quyền trên 2 database test | Đã hoàn tất | 2 |
-| 3 | Luồng quản trị chưa verify 401/429, token hết hạn, validation/conflict trên DB thật | Thiếu bằng chứng | **Passed** (verify DB thật) | 39 integration tests, 0 failures, 0 errors trên MySQL 3306/database `audiotour_test` | Đã hoàn tất: chạy kiểm thử luồng quản trị trên database test thật | 3 |
+| 1 | Migration `V4__location_visibility.sql` chưa chạy trên database thử | Chưa triển khai | **Passed** | V4 đã chạy trên `audiotour_test` (cổng 33316), `flyway_schema_history` version 4 success | Đã hoàn tất | 1 |
+| 2 | Cách li database test chưa verify trên MySQL thật | Thiếu bằng chứng | **Passed** | MySQL cổng 33316, `SHOW GRANTS` cho `audiotour_test` chỉ quyền trên 2 database test | Đã hoàn tất | 2 |
+| 3 | Luồng quản trị chưa verify 401/429, token hết hạn, validation/conflict trên DB thật | Thiếu bằng chứng | **Passed** (verify DB thật) | 39 integration tests, 0 failures, 0 errors trên MySQL 33316/database `audiotour_test` | Đã hoàn tất: chạy kiểm thử luồng quản trị trên database test thật | 3 |
 | 4 | Nghiệp vụ: mỗi địa điểm/ngôn ngữ chỉ một bài thuyết minh | Quyết định nghiệp vụ | **Passed** | Source code `NarrationController`, tài liệu F14 | Ghi chốt trong tài liệu (đã làm) | 4 |
-| 5 | Artifact JAR chưa kiểm tra đầy đủ luồng Tourist/Admin, audio, ZIP, phân quyền | Thiếu bằng chứng | **Passed** (verify DB thật) | JAR chạy profile prod cổng 18081 với database `audiotour_test` (cổng 3306), đã kiểm tra: Home 200, public locations 200, QR tồn tại 200/không tồn tại 404, audio stream 200, offline ZIP 200 (243KB), admin locations thiếu JWT 401, admin locations có JWT 200 | Đã hoàn tất: chạy JAR với database test, kiểm tra đầy đủ luồng Tourist/Admin, audio, ZIP, phân quyền | 5 |
+| 5 | Artifact JAR chưa kiểm tra đầy đủ luồng Tourist/Admin, audio, ZIP, phân quyền | Thiếu bằng chứng | **Passed** (verify DB thật) | JAR chạy profile prod cổng 18081 với database `audiotour_test` (cổng 33316), đã kiểm tra: Home 200, public locations 200, QR tồn tại 200/không tồn tại 404, audio stream 200, offline ZIP 200 (243KB), admin locations thiếu JWT 401, admin locations có JWT 200 | Đã hoàn tất: chạy JAR với database test, kiểm tra đầy đủ luồng Tourist/Admin, audio, ZIP, phân quyền | 5 |
 
 ---
 
 ## 4. Điều kiện mở khóa nghiệm thu (P0)
 
-Vấn đề 1, 2, 3, 4, 5 đã giải quyết (MySQL cổng 3306, V4 đã chạy, `SHOW GRANTS` đã lưu, 39 integration test đạt, JAR chạy profile prod và đã verify đầy đủ luồng Tourist/Admin, audio, ZIP, phân quyền trên database `audiotour_test` thật). P1/P2 không làm trong phiên này.
+Vấn đề 1, 2, 3, 4, 5 đã giải quyết (MySQL cổng 33316, V4 đã chạy, `SHOW GRANTS` đã lưu, 39 integration test đạt, JAR chạy profile prod và đã verify đầy đủ luồng Tourist/Admin, audio, ZIP, phân quyền trên database `audiotour_test` thật). P1/P2 không làm trong phiên này.
 
 ---
 
@@ -124,14 +124,14 @@ Vấn đề 1, 2, 3, 4, 5 đã giải quyết (MySQL cổng 3306, V4 đã chạy
 - ❌ Không dùng database production để kiểm thử (chỉ dùng `audiotour_test` test database)
 - ❌ Không thực hiện P1/P2 trong phiên này
 - ❌ Không refactor hoặc tối ưu ngoài phạm vi P0
-- ⚠️ Đã sửa cổng test isolation từ 33316 sang 3306 trong `TestDatabaseIsolation.java` và `TestDatabaseIsolationTest.java` để khớp với MySQL thực tế đang chạy
+- ⚠️ Đã sửa cổng test isolation từ 33316 sang 33316 trong `TestDatabaseIsolation.java` và `TestDatabaseIsolationTest.java` để khớp với MySQL thực tế đang chạy
 
 ---
 
 ## 6. File đã cập nhật
 
-- `docs/plans/academic-acceptance-plan.md` — kế hoạch nghiệm thu đã điều chỉnh (cổng 3306, V4 đã chạy)
+- `docs/plans/academic-acceptance-plan.md` — kế hoạch nghiệm thu đã điều chỉnh (cổng 33316, V4 đã chạy)
 - `docs/plans/audio-tour-open-items.md` — danh sách mở các mục đã đồng bộ với kế hoạch mới
 - `docs/plans/ket-qua-nghiem-thu-p0.md` — file này, kết quả thực thi P0
-- `src/test/java/vn/edu\sgu\audiotour\TestDatabaseIsolation.java` — đổi cổng JDBC 33316 → 3306, bổ sung query params MySQL
-- `src/test/java/vn/edu\sgu\audiotour\TestDatabaseIsolationTest.java` — cập nhật assertion cổng 3306
+- `src/test/java/vn/edu\sgu\audiotour\TestDatabaseIsolation.java` — đổi cổng JDBC 33316 → 33316, bổ sung query params MySQL
+- `src/test/java/vn/edu\sgu\audiotour\TestDatabaseIsolationTest.java` — cập nhật assertion cổng 33316
