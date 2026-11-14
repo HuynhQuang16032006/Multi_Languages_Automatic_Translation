@@ -3,6 +3,7 @@ package vn.edu.sgu.audiotour;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,7 +22,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -43,16 +43,16 @@ class NarrationServiceTest {
     @InjectMocks
     private NarrationService narrationService;
 
-    private static final String TEST_AUDIO_FILENAME = "test-sample.mp3";
-    private static final Path AUDIO_DIR = Paths.get("uploads", "audio");
-    private static final Path AUDIO_FILE = AUDIO_DIR.resolve(TEST_AUDIO_FILENAME);
+    @TempDir
+    Path tempDir;
+
+    private Path audioFile;
+    private String audioFilename;
 
     @BeforeEach
     void setUp() throws IOException {
-        Files.createDirectories(AUDIO_DIR);
-        if (!Files.exists(AUDIO_FILE)) {
-            Files.writeString(AUDIO_FILE, "TEST_AUDIO_DATA_FOR_UNIT_TEST");
-        }
+        audioFile = Files.writeString(tempDir.resolve("test-sample.mp3"), "TEST_AUDIO_DATA_FOR_UNIT_TEST");
+        audioFilename = audioFile.toAbsolutePath().toString();
     }
 
     @Test
@@ -104,7 +104,7 @@ class NarrationServiceTest {
     @Test
     void testGetAudioResource_Success() {
         Narration narration = new Narration();
-        narration.setAudioUrl(TEST_AUDIO_FILENAME);
+        narration.setAudioUrl(audioFilename);
 
         when(narrationRepository.findByLocationIdAndLanguageCode(1L, "vi"))
                 .thenReturn(Optional.of(narration));
@@ -113,7 +113,7 @@ class NarrationServiceTest {
 
         assertNotNull(resource);
         assertTrue(resource.exists());
-        assertEquals(TEST_AUDIO_FILENAME, resource.getFilename());
+        assertEquals("test-sample.mp3", resource.getFilename());
     }
 
     @Test
@@ -137,7 +137,7 @@ class NarrationServiceTest {
         Narration narration = new Narration();
         narration.setId(10L);
         narration.setTextContent(sampleText);
-        narration.setAudioUrl(TEST_AUDIO_FILENAME);
+        narration.setAudioUrl(audioFilename);
         narration.setDurationInSeconds(60);
 
         when(narrationRepository.findByLocationIdAndLanguageCode(locationId, langCode))
@@ -160,8 +160,8 @@ class NarrationServiceTest {
         assertTrue(unzippedEntries.containsKey("content.txt"));
         assertEquals(sampleText, new String(unzippedEntries.get("content.txt"), StandardCharsets.UTF_8));
 
-        assertTrue(unzippedEntries.containsKey(TEST_AUDIO_FILENAME));
-        assertEquals("TEST_AUDIO_DATA_FOR_UNIT_TEST", new String(unzippedEntries.get(TEST_AUDIO_FILENAME), StandardCharsets.UTF_8));
+        assertTrue(unzippedEntries.containsKey("test-sample.mp3"));
+        assertEquals("TEST_AUDIO_DATA_FOR_UNIT_TEST", new String(unzippedEntries.get("test-sample.mp3"), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -180,7 +180,7 @@ class NarrationServiceTest {
     void testCreateOfflinePackage_AudioFileNotFound() {
         Narration narration = new Narration();
         narration.setTextContent("Text");
-        narration.setAudioUrl("non-existent-audio.mp3");
+        narration.setAudioUrl(tempDir.resolve("missing.mp3").toAbsolutePath().toString());
 
         when(narrationRepository.findByLocationIdAndLanguageCode(1L, "vi"))
                 .thenReturn(Optional.of(narration));
@@ -189,6 +189,31 @@ class NarrationServiceTest {
                 narrationService.createOfflinePackage(1L, "vi")
         );
 
-        assertTrue(exception.getMessage().contains("File âm thanh không tồn tại"));
+        assertEquals("File âm thanh không tồn tại", exception.getMessage());
+        assertFalse(exception.getMessage().contains(tempDir.toString()));
+    }
+
+    @Test
+    void testGetAudioResource_MissingFileDoesNotExposePath() {
+        Narration narration = new Narration();
+        narration.setAudioUrl(tempDir.resolve("missing.mp3").toAbsolutePath().toString());
+        when(narrationRepository.findByLocationIdAndLanguageCode(1L, "vi"))
+                .thenReturn(Optional.of(narration));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> narrationService.getAudioResource(1L, "vi"));
+
+        assertEquals("File âm thanh không tồn tại", exception.getMessage());
+        assertFalse(exception.getMessage().contains(tempDir.toString()));
+    }
+
+    @Test
+    void testGetAudioResource_EmptyAudioUrl() {
+        Narration narration = new Narration();
+        narration.setAudioUrl(" ");
+        when(narrationRepository.findByLocationIdAndLanguageCode(1L, "vi"))
+                .thenReturn(Optional.of(narration));
+
+        assertThrows(RuntimeException.class, () -> narrationService.getAudioResource(1L, "vi"));
     }
 }

@@ -106,7 +106,7 @@ public class NarrationService {
 
         Path audioPath = AUDIO_DIR.resolve(audioUrl);
         if (!Files.exists(audioPath) || !Files.isRegularFile(audioPath)) {
-            throw new RuntimeException("File âm thanh không tồn tại tại: " + audioPath.toAbsolutePath());
+            throw new RuntimeException("File âm thanh không tồn tại");
         }
         return audioPath;
     }

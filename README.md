@@ -89,8 +89,8 @@ graph TD
 
 5. **Chạy bằng Docker Compose (app + MySQL):**
    ```bash
-   cp .env.example .env      # tuỳ chỉnh mật khẩu / secret nếu cần
-   docker compose up --build
+   cp .env.example .env      # bắt buộc điền mật khẩu DB, JWT secret và tài khoản admin
+   docker compose up --build -d
    ```
    App chạy tại `http://localhost:8080`, Swagger UI tại `http://localhost:8080/swagger-ui.html`, trang chủ du khách tại `http://localhost:8080/`.
 
@@ -190,10 +190,35 @@ docker run -p 8080:8080 \
 
 ### Docker Compose (app + MySQL)
 ```bash
-cp .env.example .env   # điền DB_ROOT_PASSWORD, DB_PASSWORD, JWT_SECRET, APP_ADMIN_* (xem comment trong file)
-docker compose up --build
+cp .env.example .env   # chỉ chạy khi chưa có .env; điền DB_ROOT_PASSWORD, DB_PASSWORD, JWT_SECRET, APP_ADMIN_*
+docker compose up --build -d
 ```
 `docker-compose.yml` đã set `SPRING_PROFILES_ACTIVE=prod`, nên compose **từ chối khởi động** nếu thiếu secret/tài khoản.
+
+Yêu cầu Docker Desktop đang chạy với Linux containers (Windows: bật WSL 2, khởi động lại nếu trình cài đặt yêu cầu). Không commit `.env` và không ghi đè file này khi đã có dữ liệu DB.
+
+Volume MySQL local hiện dùng tên riêng `audiotour-mysql-local-v5`, gắn vào `/var/lib/mysql`. Volume cũ `multi_languages_automatic_translation_audiotour-db-data` được giữ nguyên, không tự di chuyển dữ liệu. Healthcheck DB chạy `SELECT 1` có xác thực; `mysqladmin ping` không đủ vì vẫn có thể thành công khi đăng nhập bị từ chối.
+
+Compose chỉ mở backend tại `127.0.0.1:8080`; MySQL chỉ truy cập trong mạng Compose, không chiếm cổng `3306` của MySQL trên máy. Dữ liệu DB lưu trong named volume; không chạy `docker compose down -v` nếu cần giữ dữ liệu.
+
+Audio seed và audio TTS dùng chung `uploads/audio` trên host, bind mount đọc/ghi vào `/app/uploads/audio` trong service app. Thư mục phải có sẵn khi clone repo; Compose không tự tạo thư mục rỗng nếu thiếu. Không cần copy audio vào image và không liên quan volume MySQL. File TTS mới được giữ qua restart/recreate app; sao lưu thư mục này cùng database để giữ ánh xạ `narrations.audio_url`. Không ghi đè file có sẵn; TTS tạo tên file mới theo ADR 0004.
+
+Lệnh `docker run` riêng ở trên không tự có kho audio: thêm `--mount type=bind,source="$(pwd)/uploads/audio",target=/app/uploads/audio` (Bash), hoặc dùng Compose để có mount tương đối nhất quán. Bind mount cho phép container ghi vào kho host; chỉ chạy image tin cậy và không dùng chung thư mục với dữ liệu nhạy cảm.
+
+Kiểm tra trên Windows PowerShell:
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd compile
+docker compose ps
+curl.exe --fail --show-error --write-out "\nHTTP %{http_code}\n" http://localhost:8080/actuator/health
+```
+Chờ app khởi động xong: health phải trả HTTP 200 và `status: UP`. Nếu chưa đạt, xem `docker compose logs app db`. Dừng bằng `docker compose down` để giữ volume.
+
+Nếu Maven dừng ở `npm ci` với `EPERM` trong cache npm của tài khoản Windows, đặt cache riêng cho phiên PowerShell rồi chạy lại:
+```powershell
+$env:npm_config_cache = Join-Path $PWD 'target/npm-cache'
+```
+Không cần khóa ElevenLabs/DeepL để app khởi động; chưa cấu hình thì các chức năng sinh audio/dịch máy trả 503 như mô tả bên dưới.
 
 ### Chạy production (bắt buộc)
 Profile `prod` (`src/main/resources/application-prod.yml`) **không có giá trị mặc định** cho DB/JWT/admin. Vì vậy:

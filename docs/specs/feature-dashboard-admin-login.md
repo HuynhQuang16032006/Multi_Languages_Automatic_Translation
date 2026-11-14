@@ -2,7 +2,7 @@
 
 | Trường | Nội dung |
 | --- | --- |
-| Trạng thái | Chưa triển khai |
+| Trạng thái | Đã triển khai; đăng nhập API và dashboard được kiểm chứng local, xem `docs/reports/local-integration-acceptance.md` |
 | Ngày | 2026-11-07 |
 | Liên quan | SecurityConfig, AuthController, dashboard.html |
 

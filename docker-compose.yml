@@ -6,12 +6,10 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD phải được đặt (xem .env.example)}
       MYSQL_DATABASE: ${DB_NAME:-audiotour_db}
-    ports:
-      - "3306:3306"
     volumes:
       - audiotour-db-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysql --protocol=TCP -h 127.0.0.1 -uroot --execute='SELECT 1' --silent"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -24,7 +22,13 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - type: bind
+        source: ./uploads/audio
+        target: /app/uploads/audio
+        bind:
+          create_host_path: false
     environment:
       # Bắt buộc: nếu không bật profile prod thì app chạy bằng secret dev trong application.yml
       SPRING_PROFILES_ACTIVE: prod
@@ -41,3 +45,4 @@ services:
 
 volumes:
   audiotour-db-data:
+    name: audiotour-mysql-local-v5
