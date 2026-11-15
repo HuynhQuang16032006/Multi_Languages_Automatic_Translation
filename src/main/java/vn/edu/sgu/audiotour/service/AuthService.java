@@ -54,26 +54,15 @@ public class AuthService {
 
     @PostConstruct
     public void initAdmin() {
-        adminAuthRepository.findById(1).ifPresentOrElse(
-                existing -> {
-                    // Nếu đổi biến môi trường username (ví dụ chuyển profile sang prodadmin), đồng bộ lại theo config
-                    if (!existing.getUsername().equals(adminUsername)) {
-                        existing.setUsername(adminUsername);
-                        existing.setPasswordHash(passwordEncoder.encode(adminPassword));
-                        existing.setUpdatedAt(LocalDateTime.now());
-                        adminAuthRepository.save(existing);
-                    }
-                },
-                () -> {
-                    AdminAuth admin = new AdminAuth(
-                            1,
-                            adminUsername,
-                            passwordEncoder.encode(adminPassword),
-                            LocalDateTime.now()
-                    );
-                    adminAuthRepository.save(admin);
-                }
-        );
+        if (adminAuthRepository.findById(1).isEmpty()) {
+            AdminAuth admin = new AdminAuth(
+                    1,
+                    adminUsername,
+                    passwordEncoder.encode(adminPassword),
+                    LocalDateTime.now()
+            );
+            adminAuthRepository.save(admin);
+        }
     }
 
     public LoginResponse login(String username, String password) {

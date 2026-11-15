@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { cameraSession, parseQr } from './qr.js';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { cameraSession, lookupQr, parseQr } from './qr.js';
 
 export function Scanner() {
   const [input, setInput] = useState('');
@@ -12,22 +12,32 @@ export function Scanner() {
   const frame = useRef(null);
   const alive = useRef(true);
   const session = useRef(cameraSession());
+  const lookup = useRef(0);
+  const { search } = useLocation();
   const navigate = useNavigate();
   const stop = () => { session.current.stop(); if (frame.current) cancelAnimationFrame(frame.current); stream.current?.getTracks().forEach(track => track.stop()); stream.current = null; setScanning(false); };
   useEffect(() => { alive.current = true; return () => { alive.current = false; session.current.stop(); if (frame.current) cancelAnimationFrame(frame.current); stream.current?.getTracks().forEach(track => track.stop()); stream.current = null; }; }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.has('code')) resolve(`${window.location.origin}/next/qr?${params}`);
+    else { setBusy(false); setMessage(''); }
+    return () => { lookup.current++; };
+  }, [search]);
 
   async function resolve(value) {
+    const attempt = ++lookup.current;
     const parsed = parseQr(value, window.location.origin);
-    if (!parsed) { setMessage('Mã hoặc liên kết không hợp lệ. Hãy nhập mã địa điểm hoặc liên kết Audio Tour cùng trang.'); return false; }
+    if (!parsed) { setBusy(false); setMessage('Mã hoặc liên kết không hợp lệ. Hãy nhập mã địa điểm hoặc liên kết Audio Tour cùng trang.'); return false; }
     setBusy(true); setMessage('');
     try {
-      const response = await fetch(parsed.code ? `/api/locations/by-qr/${encodeURIComponent(parsed.code)}` : `/api/locations/${parsed.venue}`);
+      const response = await lookupQr(parsed);
+      if (lookup.current !== attempt) return false;
       if (!response.ok) { setMessage(response.status === 404 || response.status === 400 ? 'Không tìm thấy địa điểm cho mã này.' : 'Không tra được mã. Hãy thử lại.'); return false; }
-      const place = await response.json();
+      const place = response.place;
       if (!Number.isSafeInteger(place?.id) || place.id <= 0) throw new Error('invalid');
-      stop(); navigate(`/places/${place.id}`); return true;
-    } catch { setMessage('Không tra được mã. Kiểm tra kết nối và thử lại.'); return false; }
-    finally { setBusy(false); }
+      stop(); navigate(`/places/${place.id}`, { state: { triggerType: 'QR_CODE' } }); return true;
+    } catch { if (lookup.current === attempt) setMessage('Không tra được mã. Kiểm tra kết nối và thử lại.'); return false; }
+    finally { if (lookup.current === attempt) setBusy(false); }
   }
 
   async function startCamera() {

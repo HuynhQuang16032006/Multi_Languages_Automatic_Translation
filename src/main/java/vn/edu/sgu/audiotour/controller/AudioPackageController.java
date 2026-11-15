@@ -52,6 +52,10 @@ public class AudioPackageController {
             @Parameter(description = "Mã ngôn ngữ (ví dụ: 'vi', 'en')", example = "vi") @RequestParam String languageCode,
             @RequestParam(required = false) String deviceId) {
 
+        if (deviceId != null && deviceId.length() > 64) {
+            throw new IllegalArgumentException("deviceId must not exceed 64 characters");
+        }
+
         locationService.getLocationById(locationId);
         byte[] zipData = narrationService.createOfflinePackage(locationId, languageCode, deviceId);
 

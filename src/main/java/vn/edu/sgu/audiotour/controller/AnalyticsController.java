@@ -31,7 +31,7 @@ public class AnalyticsController {
 
     @PostMapping("/heartbeat")
     @Operation(summary = "Gửi nhịp tim (Heartbeat) giám sát thiết bị truy cập thời gian thực", description = "Mobile App gửi định kỳ mỗi 3s (action=JOIN/PING/LEAVE). Khi thiết bị out hoặc ngắt kết nối quá 8s, số lượng online tự động giảm và lưu lịch sử")
-    public ResponseEntity<HeartbeatResponse> recordHeartbeat(@RequestBody DeviceHeartbeatRequest request) {
+    public ResponseEntity<HeartbeatResponse> recordHeartbeat(@Valid @RequestBody DeviceHeartbeatRequest request) {
         LiveAudience.HeartbeatResult result = liveAudience.record(request);
         return ResponseEntity.ok(new HeartbeatResponse(result.status(), result.deviceId(), result.activeUsers()));
     }

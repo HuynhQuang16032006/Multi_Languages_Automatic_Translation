@@ -44,8 +44,8 @@ graph TD
 - **Migration:** Flyway (`ddl-auto: validate`)
 - **Tiện ích:** Project Lombok (Constructor Injection với `@RequiredArgsConstructor`)
 - **Tài liệu API:** Springdoc OpenAPI 3 / Swagger UI
-- **Kiểm thử tự động:** JUnit 5, Mockito (106 test tự động)
-- **Giao diện du khách:** HTML tĩnh + vanilla JavaScript + Leaflet 1.9.4 (không bundler, không bước build)
+- **Kiểm thử tự động:** JUnit 5, Mockito
+- **Giao diện:** React + React Router + Vite trong `frontend/`, build cùng Maven; `/` chuyển tới React `/next/explore`. HTML tĩnh + vanilla JavaScript + Leaflet được giữ tại các URL cũ.
 - **CI/CD:** GitHub Actions tự động kiểm thử và đóng gói khi có Commit/PR
 
 ---
@@ -103,7 +103,7 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 
 ### Danh sách API chính bàn giao cho Team Mobile:
 
-> 🔓 **Xác thực:** du khách dùng hệ thống **ẩn danh**, không cần đăng nhập. Các API **đọc** (`GET` trên `/api/locations/**`, `/api/tours/**`, `/api/languages/**`, `/api/narrations/**` và bản phân trang `/api/v1/...` tương ứng) cùng `/api/packages/*` và `/api/analytics/**` mở **public** cho mọi người. Các API **ghi** (`POST`, `PUT`, `DELETE`) vẫn yêu cầu header `Authorization: Bearer <token>` do admin đăng nhập ở `POST /api/auth/login`. Thiếu token hoặc token sai trả về **401**. Cột "Xác thực" trong bảng dưới ghi rõ từng endpoint (theo `SecurityConfig`).
+> 🔓 **Xác thực:** du khách dùng hệ thống **ẩn danh**, không cần đăng nhập. Các API **đọc** (`GET` trên `/api/locations/**`, `/api/languages/**`, `/api/narrations/**` và các đường dẫn `/api/v1/...` tương ứng), `/api/packages/stream`, `/api/packages/offline`, `/api/analytics/heartbeat` và `/api/analytics/logs` mở **public**. Các API tour, dashboard analytics và API ghi quản trị, bao gồm dịch ngôn ngữ, yêu cầu header `Authorization: Bearer <token>` do admin đăng nhập ở `POST /api/auth/login`. Thiếu token hoặc token sai trả về **401**. Cột "Xác thực" trong bảng dưới ghi rõ từng endpoint (theo `SecurityConfig`).
 
 | Nhóm | Method | Đường dẫn API | Mô tả chức năng | Xác thực |
 | :--- | :---: | :--- | :--- | :---: |
@@ -120,15 +120,15 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 | | `GET` | `/api/packages/offline?locationId={id}&languageCode={code}` | Tải file ZIP `tour-offline.zip` gồm `content.txt` và file MP3 thật | Public |
 | **Phân tích** | `POST` | `/api/analytics/heartbeat` | Nhịp tim ẩn danh mỗi 3s khi du khách đang nghe (`deviceId` tự sinh ở client) | Public |
 | | `POST` | `/api/analytics/logs` | Mobile App gửi log sau khi phát xong audio (tránh lặp & lưu vết) | Public |
-| | `GET` | `/api/analytics/dashboard` | Cung cấp dữ liệu thống kê tổng quan (Top POI, Heatmap, tỷ lệ QR vs GPS) | Public |
-| **Tuyến Tour** | `GET` | `/api/tours` | Lấy danh sách các tuyến tour tham quan | Public |
-| | `GET` | `/api/v1/tours` | Bản phân trang của `/api/tours` (`page`, `size`, `sort`) | Public |
-| | `GET` | `/api/tours/{id}` | Lấy chi tiết lộ trình 1 tour | Public |
+| | `GET` | `/api/analytics/dashboard` | Cung cấp dữ liệu thống kê tổng quan (Top POI, Heatmap, tỷ lệ QR vs GPS) | Token admin |
+| **Tuyến Tour** | `GET` | `/api/tours` | Lấy danh sách các tuyến tour tham quan | Token admin |
+| | `GET` | `/api/v1/tours` | Bản phân trang của `/api/tours` (`page`, `size`, `sort`) | Token admin |
+| | `GET` | `/api/tours/{id}` | Lấy chi tiết lộ trình 1 tour | Token admin |
 | **Ngôn ngữ** | `GET` | `/api/languages`, `/api/v1/languages` | Danh sách ngôn ngữ (`/api/v1` có phân trang) | Public |
 | | `GET` | `/api/languages/supported` | Danh sách ngôn ngữ admin được phép thêm (giao của TTS và DeepL, đọc từ `app.languages.supported`) | Public |
 | | `GET` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Lấy chi tiết 1 ngôn ngữ | Public |
 | | `POST` | `/api/languages`, `/api/v1/languages` | Thêm ngôn ngữ mới (201 Created; 409 Conflict nếu trùng `code`) | Token admin |
-| | `POST` | `/api/languages/{code}/translate` | Dịch toàn bộ thuyết minh `vi` sang `code` bằng DeepL, lưu narration mới rồi sinh audio (201 kèm `translations`, `audioGenerated`) | Public |
+| | `POST` | `/api/languages/{code}/translate` | Dịch toàn bộ thuyết minh `vi` sang `code` bằng DeepL, lưu narration mới rồi sinh audio (201 kèm `translations`, `audioGenerated`) | Token admin |
 | | `PUT` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Cập nhật ngôn ngữ theo ID | Token admin |
 | | `DELETE` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Xoá ngôn ngữ (204 No Content) | Token admin |
 
@@ -140,22 +140,16 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 
 ## 🗺️ 6. Trang chủ du khách (Giao diện Web)
 
-Sau khi chạy app, mở trình duyệt tại **[http://localhost:8080/](http://localhost:8080/)** (hoặc `/index.html`). Trang là **HTML tĩnh + vanilla JavaScript** đặt trong `src/main/resources/static/`, không cần bước build và **không cần đăng nhập** — du khách dùng hệ thống ẩn danh (quyết định P5-1 trong `TASK_CHECKLIST.md`).
+Sau khi chạy app, mở **[http://localhost:8080/](http://localhost:8080/)**: máy chủ chuyển tới `/next/explore`, giao diện React chính thức. Quản trị tại `/next/admin`. Các trang HTML cũ trong `src/main/resources/static/` được giữ để tương thích, không phải giao diện chính.
 
-**Tính năng:**
-- **Bản đồ Leaflet** với marker từng POI, tile nền **OpenStreetMap** — **không cần API key**, miễn phí. Nút đổi lớp ở góc trên phải chuyển giữa lớp **đường phố** và lớp **tối** (lớp tối dùng chung tile OSM + CSS filter nên không cần key của nhà cung cấp khác).
-- **Danh sách POI** dưới bản đồ (ảnh, tên, địa chỉ).
-- **Bottom sheet chi tiết**: bấm marker hoặc POI để mở, chọn ngôn ngữ **VI / EN** rồi bấm **"Nghe thuyết minh"** — trang chuyển sang `player.html` để phát MP3 qua máy chủ và hiện kịch bản thuyết minh (ghi nhận lượt nghe ẩn danh qua `POST /api/analytics/heartbeat`).
-- **Nút "Gần tôi"**: lấy vị trí qua `navigator.geolocation`, tính khoảng cách Haversine và sắp xếp POI theo khoảng cách (có nút quay lại sắp xếp A-Z).
-- **Danh sách tuyến tham quan**: bấm một tuyến để lọc POI theo lộ trình của tuyến đó.
-- **Cache offline**: danh sách POI được lưu trong `localStorage`, mất mạng vẫn xem được (kèm cảnh báo đang dùng dữ liệu lưu cục bộ).
+React cung cấp khám phá, tìm kiếm, bản đồ, chi tiết và lựa chọn ngôn ngữ, trình phát audio, tải ZIP, quét/nhập QR và các trang quản trị. Maven build Vite và đóng gói frontend vào JAR.
 
 **Giới hạn:**
 - Tile bản đồ tải từ Internet → mất mạng thì bản đồ không có nền (danh sách POI vẫn hiện nhờ cache).
 - Nút "Gần tôi" chỉ chạy khi trang được mở bằng **HTTPS hoặc `http://localhost`**, vì trình duyệt chỉ cấp API định vị trong *secure context* (mở bằng IP mạng LAN thì nút này bị ẩn).
 - Âm thanh phát qua máy chủ nên **cần mạng**. Muốn nghe offline thì tải gói ZIP tại `GET /api/packages/offline?locationId={id}&languageCode={vi}` (hoặc `{en}`).
 
-> 📌 **Quyết định kiến trúc:** giao diện du khách dùng HTML tĩnh + Leaflet thay vì framework SPA (không thêm toolchain, không thêm bước build) — chi tiết tại [`docs/adr/0001-guest-ui-static-html-leaflet.md`](docs/adr/0001-guest-ui-static-html-leaflet.md).
+> 📌 Quyết định vòng 3: React là frontend chính thức; ADR 0007 mô tả giai đoạn chạy song song trước đây. Đường dẫn HTML cũ vẫn được giữ cho liên kết đã phát hành.
 
 ---
 
@@ -164,7 +158,7 @@ Sau khi chạy app, mở trình duyệt tại **[http://localhost:8080/](http://
 Dự án tích hợp sẵn file cấu hình CI/CD tại `.github/workflows/ci.yml`. Mỗi khi thành viên tạo Commit hoặc Pull Request:
 1. Tự động kích hoạt máy chủ ảo Ubuntu Runner và dịch vụ MySQL Container.
 2. Thiết lập môi trường Java 21.
-3. Thực thi tự động 94 test (Unit test, Controller test & Integration test với MySQL container).
+3. Thực thi test tự động (Unit test, Controller test & Integration test với MySQL container).
 4. Đóng gói sản phẩm thành file thực thi `.jar` và lưu vào GitHub Artifacts.
 
 ---

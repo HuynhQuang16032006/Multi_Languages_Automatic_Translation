@@ -23,7 +23,7 @@ export function Qr({ request }) {
   const [imageError, setImageError] = useState(false);
   const place = places.find(item => String(item.id) === selected);
   const origin = publicOrigin(host);
-  const link = origin && place?.qrCode && codePattern.test(place.qrCode) ? `${origin}/player.html?qr=${encodeURIComponent(place.qrCode)}` : '';
+  const link = origin && place?.qrCode && codePattern.test(place.qrCode) ? `${origin}/next/qr?code=${encodeURIComponent(place.qrCode)}` : '';
   const image = generated?.link === link ? generated.url : '';
 
   useEffect(() => {

@@ -60,6 +60,31 @@ class AuthServiceTest {
     }
 
     @Test
+    void testInitAdminPreservesExistingAccountWhenProfileChanges() {
+        String hash = passwordEncoder.encode("changed-password");
+        AdminAuth admin = new AdminAuth(1, "existing-admin", hash, LocalDateTime.now());
+        when(adminAuthRepository.findById(1)).thenReturn(Optional.of(admin));
+        AuthService authService = new AuthService(jwtService, adminAuthRepository, passwordEncoder, loginRateLimiter, "other-admin", "configured-password");
+
+        authService.initAdmin();
+
+        assertEquals("existing-admin", admin.getUsername());
+        assertEquals(hash, admin.getPasswordHash());
+        verify(adminAuthRepository, never()).save(any());
+    }
+
+    @Test
+    void testInitAdminCreatesMissingAccount() {
+        when(adminAuthRepository.findById(1)).thenReturn(Optional.empty());
+        AuthService authService = new AuthService(jwtService, adminAuthRepository, passwordEncoder, loginRateLimiter, "admin", "configured-password");
+
+        authService.initAdmin();
+
+        verify(adminAuthRepository).save(argThat(admin -> admin.getUsername().equals("admin")
+                && passwordEncoder.matches("configured-password", admin.getPasswordHash())));
+    }
+
+    @Test
     void testLoginWithConfiguredCredentialsReturnsBearerToken() {
         AdminAuth admin = new AdminAuth(1, "admin", passwordEncoder.encode("admin123"), LocalDateTime.now());
         when(adminAuthRepository.findById(1)).thenReturn(Optional.of(admin));

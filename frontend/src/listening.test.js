@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createListeningSession, sendListeningHeartbeat } from './listening.js';
+import { createListeningSession, listeningTrigger, sendListeningHeartbeat } from './listening.js';
+
+test('QR route state retains its source while ordinary navigation stays manual', () => {
+  const scannerState = { triggerType: 'QR_CODE' };
+  const detailState = { triggerType: listeningTrigger(scannerState) };
+  assert.equal(listeningTrigger(detailState), 'QR_CODE');
+  assert.equal(listeningTrigger(undefined), 'MANUAL');
+  assert.equal(listeningTrigger({ triggerType: 'GEOFENCE' }), 'MANUAL');
+});
 
 test('records one session only after playback starts; navigation and GPS do not start another', () => {
   const calls = [];
@@ -25,6 +33,20 @@ test('sends same heartbeat contract without geographic coordinates', async () =>
   });
   assert.deepEqual(payload, { deviceId: 'device', locationId: 7, languageCode: 'en', action: 'PING', listenDurationSeconds: 12, triggerType: 'MANUAL' });
 });
+test('QR playback sends QR_CODE in JOIN, PING and LEAVE payloads', async () => {
+  const payloads = [];
+  const requests = [];
+  const request = async (_url, options) => { payloads.push(JSON.parse(options.body)); return new Response('{}'); };
+  const session = createListeningSession((action, duration) => requests.push(
+    sendListeningHeartbeat('device', { id: 7 }, 'vi', action, duration, request, 'QR_CODE')
+  ));
+  session.start(); session.tick(1); session.tick(2); session.tick(3); session.end();
+  await Promise.all(requests);
+  assert.deepEqual(payloads.map(({ action, triggerType }) => [action, triggerType]), [
+    ['JOIN', 'QR_CODE'], ['PING', 'QR_CODE'], ['LEAVE', 'QR_CODE'],
+  ]);
+});
+
 
 test('reports unsuccessful heartbeat responses', async () => {
   await assert.rejects(sendListeningHeartbeat('device', { id: 7 }, 'vi', 'JOIN', 0,

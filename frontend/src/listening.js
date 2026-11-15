@@ -1,3 +1,7 @@
+export function listeningTrigger(state) {
+  return state?.triggerType === 'QR_CODE' ? 'QR_CODE' : 'MANUAL';
+}
+
 export function createListeningSession(send) {
   let active = false;
   let duration = 0;
