@@ -11,12 +11,11 @@ import vn.edu.sgu.audiotour.dto.HeartbeatResponse;
 import vn.edu.sgu.audiotour.entity.Location;
 import vn.edu.sgu.audiotour.entity.TriggerType;
 import vn.edu.sgu.audiotour.exception.NotFoundException;
-import vn.edu.sgu.audiotour.repository.LocationRepository;
+import vn.edu.sgu.audiotour.service.LocationService;
 import vn.edu.sgu.audiotour.service.LiveAudience;
 import vn.edu.sgu.audiotour.service.PlaybackLogRecorder;
 
 import java.time.Instant;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,7 +25,7 @@ import static org.mockito.Mockito.*;
 class LiveAudienceTest {
 
     @Mock
-    private LocationRepository locationRepository;
+    private LocationService locationService;
 
     @Mock
     private PlaybackLogRecorder playbackLogRecorder;
@@ -37,15 +36,14 @@ class LiveAudienceTest {
     @BeforeEach
     void setUp() {
         clock = new MutableClock(Instant.parse("2026-10-23T00:00:00Z"));
-        liveAudience = new LiveAudience(locationRepository, playbackLogRecorder, clock);
+        liveAudience = new LiveAudience(locationService, playbackLogRecorder, clock);
 
         Location poi = new Location();
         poi.setId(7L);
         poi.setName("Dinh Độc Lập");
         poi.setLatitude(10.7770);
         poi.setLongitude(106.6953);
-        // Dùng ở cả lúc join (lấy tên POI) và lúc ghi log (lấy tọa độ)
-        lenient().when(locationRepository.findById(7L)).thenReturn(Optional.of(poi));
+        lenient().when(locationService.getLocationById(7L)).thenReturn(poi);
     }
 
     @Test
@@ -86,8 +84,13 @@ class LiveAudienceTest {
     void heartbeatForUnknownPoiIsRejected() {
         DeviceHeartbeatRequest request = heartbeat("device-a", "JOIN");
         request.setLocationId(999L);
+        when(locationService.getLocationById(999L)).thenThrow(new NotFoundException("not found"));
 
         assertThrows(NotFoundException.class, () -> liveAudience.record(request));
+        assertThrows(NotFoundException.class, () -> {
+            request.setAction("PING");
+            liveAudience.record(request);
+        });
         assertTrue(liveAudience.snapshot().isEmpty());
     }
 
@@ -159,6 +162,20 @@ class LiveAudienceTest {
 
         assertTrue(liveAudience.snapshot().isEmpty());
         assertEquals(1, liveAudience.record(heartbeat("device-b", "JOIN")).activeUsers());
+    }
+
+    @Test
+    void hiddenLocationPreservesExistingSessionButRejectsNewSession() {
+        DeviceHeartbeatRequest request = heartbeat("device-a", "JOIN");
+        liveAudience.record(request);
+        when(locationService.getLocationById(7L)).thenThrow(new NotFoundException("hidden"));
+        request.setAction("PING");
+        assertEquals(HeartbeatResponse.Status.ACTIVE, liveAudience.record(request).status());
+        assertThrows(NotFoundException.class, () -> liveAudience.record(heartbeat("device-b", "PING")));
+        assertThrows(NotFoundException.class, () -> liveAudience.record(heartbeat("device-c", "JOIN")));
+        request.setAction("LEAVE");
+        assertEquals(HeartbeatResponse.Status.LEFT, liveAudience.record(request).status());
+        verify(playbackLogRecorder).record(any());
     }
 
     private DeviceHeartbeatRequest heartbeat(String deviceId, String action) {

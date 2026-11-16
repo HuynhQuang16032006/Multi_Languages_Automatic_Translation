@@ -39,12 +39,12 @@
 
 | Mã Kho | Tên Kho Dữ Liệu | Ánh Xạ Vật Lý (Database / Storage) | Nội Dung Lưu Trữ Chính |
 | :---: | :--- | :--- | :--- |
-| **D1** | **Kho Ngôn ngữ** | Bảng MySQL `languages` | Danh mục mã ngôn ngữ chuẩn ISO (`id`, `code`, `name`: `vi`, `en`, `zh`, `ja`,...). |
-| **D2** | **Kho Địa điểm POI** | Bảng MySQL `locations` | Thông tin địa danh, tọa độ GPS (`latitude`, `longitude`), bán kính `radius_in_meters`, `priority`, `qr_code`, `parent_id`. |
+| **D1** | **Kho Ngôn ngữ** | Bảng MySQL `languages` | Danh mục mã ngôn ngữ chuẩn ISO (`id`, `code`, `name`: `vi`, `en`, `zh`, `ja`, `ko`, `ru`, `fr`, `it`, `de`,...). |
+| **D2** | **Kho Địa điểm POI** | Bảng MySQL `locations` | Thông tin địa danh, tọa độ GPS (`latitude`, `longitude`), bán kính `radius_in_meters`, `priority`, `qr_code`, `parent_id`, `visible`. |
 | **D3** | **Kho Kịch bản Thuyết minh** | Bảng MySQL `narrations` | Nội dung văn bản thuyết minh (`text_content`), tên tệp âm thanh (`audio_url`), thời lượng (`duration_in_seconds`) theo từng cặp `(location_id, language_id)`. |
-| **D4** | **Kho Nhật ký Nghe** | Bảng MySQL `playback_logs` | Lịch sử các lượt phát âm thanh (`location_id`, `language_code`, `listen_duration_seconds`, `trigger_type`, `latitude`, `longitude`, `device_id`, `created_at`). |
+| **D4** | **Kho Nhật ký Nghe & Tải Offline** | Bảng MySQL `playback_logs` & `package_downloads` | Lịch sử các lượt phát âm thanh (`location_id`, `language_code`, `listen_duration_seconds`, `trigger_type`, `device_id`) và lượt tải gói ZIP ngoại tuyến. |
 | **D5** | **Kho Tệp Âm thanh MP3** | Hệ thống tệp `uploads/audio/` | Kho lưu trữ vật lý các tệp âm thanh `.mp3` phục vụ phát trực tuyến (Streaming) và nén gói ngoại tuyến (ZIP). |
-| **D6** | **Kho Phiên Trực tuyến** | Bộ nhớ RAM `LiveAudience` (ConcurrentHashMap) | Trạng thái nhịp tim (Heartbeat `JOIN`/`PING`/`LEAVE`) của các thiết bị đang hoạt động trong cửa sổ thời gian thực. |
+| **D6** | **Kho Phiên Trực tuyến & Xác thực Admin** | Bộ nhớ RAM `LiveAudience` & Bảng MySQL `admin_auth` | Trạng thái nhịp tim (Heartbeat `JOIN`/`PING`/`LEAVE`) của các thiết bị đang hoạt động và thông tin tài khoản/mật khẩu băm của Admin. |
 
 ---
 
@@ -399,3 +399,4 @@ Sơ đồ DFD của đồ án đảm bảo tuân thủ nghiêm ngặt các nguy�
 2. **Không có hố đen dữ liệu (No Black Holes):** Mọi tiến trình (`1.0` đến `6.0`) đều có cả luồng dữ liệu đầu vào (Input) và luồng dữ liệu đầu ra (Output) rõ ràng.
 3. **Không có luồng dữ liệu tự phát (No Miracles):** Mọi đầu ra của tiến trình đều được tổng hợp hoặc biến đổi từ dữ liệu đầu vào của tác nhân hoặc truy xuất từ kho dữ liệu (`D1` – `D6`).
 4. **Đúng quy tắc kết nối kho dữ liệu:** Không có kho dữ liệu nào tự truyền dữ liệu trực tiếp cho kho dữ liệu khác hoặc truyền trực tiếp cho tác nhân ngoài mà không thông qua tiến trình xử lý (`Process`).
+

@@ -24,7 +24,7 @@ Phạm vi đã chốt với chủ đồ án: làm TTS trước, dịch máy (MT)
 2. **Kích hoạt bằng `POST /api/narrations/{id}/audio`** (cần token admin theo rule non-GET `/api/**` sẵn có). Không tự sinh lúc khởi động, không fallback ngầm trong lúc stream: sinh audio là hành động tốn tiền, phải do người vận hành gọi.
 3. **File đã có là cache.** Gọi lại mặc định trả về file cũ, không gọi API, không tốn credit. `force=true` mới sinh lại.
 4. **Ghi file tạm rồi move**, chỉ cập nhật DB sau khi file tồn tại — không bao giờ để lại MP3 dở dang cho endpoint stream/ZIP đọc.
-5. **Giữ tên file cũ nếu `audioUrl` đã có**; nếu rỗng thì `<locationId>-<lang>.mp3`. Lấy `getFileName()` để chặn đường dẫn kiểu `../..`.
+5. **Sinh file tên mới khi tạo lại**, giữ file cũ và chỉ cập nhật `audioUrl` sau khi ghi thành công. Sửa văn bản không thay hoặc xóa audio hiện có; xóa bài cũng không xóa file. File cũ có thể tích lũy và cần quy trình quản lý riêng.
 6. **`durationInSeconds` ước lượng bằng `textContent.length() / 15`** thay vì thêm thư viện đọc metadata MP3.
 7. **ElevenLabs + `eleven_flash_v2_5`**, **một voice ID dùng chung cho mọi ngôn ngữ** (voice ElevenLabs không gắn ngôn ngữ; đổi giọng chỉ cần sửa `app.tts.voice-id`). Free tier 10.000 ký tự/tháng, có tiếng Việt, xác thực chỉ bằng một API key.
 8. **Không thêm dependency Maven**: dùng `RestClient` của Spring, key đọc từ env, thiếu key thì app vẫn boot và endpoint trả 503.

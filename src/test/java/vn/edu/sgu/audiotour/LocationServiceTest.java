@@ -62,7 +62,9 @@ class LocationServiceTest {
 
     @Test
     void testGetSubLocations_Success() {
-        when(locationRepository.existsById(1L)).thenReturn(true);
+        Location parent = new Location();
+        parent.setId(1L);
+        when(locationRepository.findById(1L)).thenReturn(Optional.of(parent));
 
         Location sub = new Location();
         sub.setId(2L);
@@ -78,7 +80,7 @@ class LocationServiceTest {
 
     @Test
     void testGetSubLocations_ParentNotFound() {
-        when(locationRepository.existsById(999L)).thenReturn(false);
+        when(locationRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> locationService.getSubLocations(999L));
     }

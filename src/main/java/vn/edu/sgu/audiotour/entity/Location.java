@@ -56,6 +56,9 @@ public class Location {
     @Schema(description = "Đường dẫn ảnh đại diện", example = "https://example.com/images/dinh-doc-lap.jpg")
     private String imageUrl;
 
+    @Column(nullable = false)
+    private boolean visible = true;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     @JsonIgnore
@@ -72,7 +75,7 @@ public class Location {
         return parentLocation != null ? parentLocation.getId() : null;
     }
 
-    @OneToMany(mappedBy = "parentLocation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "parentLocation", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.DETACH}, fetch = FetchType.LAZY)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties({"parentLocation", "subLocations"})

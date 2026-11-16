@@ -14,6 +14,10 @@ import java.util.Optional;
 @Repository
 public interface LocationRepository extends JpaRepository<Location, Long> {
 
+    boolean existsByParentLocationId(Long parentId);
+
+    boolean existsByParentLocationIdAndVisibleTrue(Long parentId);
+
     // Lấy danh sách các địa điểm gốc (không có địa điểm cha)
     @EntityGraph(attributePaths = {"subLocations"})
     List<Location> findByParentLocationIsNull();
@@ -35,8 +39,8 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
 
     // Lấy địa điểm có phân trang kèm khu vực con.
     // shortcut: fetch join + phân trang nên Hibernate phân trang trong bộ nhớ và tải hết dữ liệu (HHH90003004); nâng cấp bằng cách phân trang theo id rồi fetch theo id.
-    @Query(value = "select distinct l from Location l",
-            countQuery = "select count(l) from Location l")
+    @Query(value = "select distinct l from Location l where l.visible = true",
+            countQuery = "select count(l) from Location l where l.visible = true")
     @EntityGraph(attributePaths = {"subLocations"})
     Page<Location> findAllPaged(Pageable pageable);
 

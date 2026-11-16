@@ -1,19 +1,34 @@
 package vn.edu.sgu.audiotour.service;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import vn.edu.sgu.audiotour.dto.ChangePasswordRequest;
 import vn.edu.sgu.audiotour.dto.LoginResponse;
+import vn.edu.sgu.audiotour.entity.AdminAuth;
 import vn.edu.sgu.audiotour.exception.UnauthorizedException;
+import vn.edu.sgu.audiotour.repository.AdminAuthRepository;
 import vn.edu.sgu.audiotour.security.JwtService;
+import vn.edu.sgu.audiotour.security.LoginRateLimiter;
+
+import java.time.LocalDateTime;
 
 @Service
 public class AuthService {
 
     private final JwtService jwtService;
+    private final AdminAuthRepository adminAuthRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final LoginRateLimiter loginRateLimiter;
     private final String adminUsername;
     private final String adminPassword;
 
     public AuthService(JwtService jwtService,
+                       AdminAuthRepository adminAuthRepository,
+                       PasswordEncoder passwordEncoder,
+                       LoginRateLimiter loginRateLimiter,
                        @Value("${app.admin.username}") String adminUsername,
                        @Value("${app.admin.password}") String adminPassword) {
         // Fail-fast lúc khởi động: tài khoản không mật khẩu là lỗ hổng cấu hình
@@ -30,15 +45,73 @@ public class AuthService {
                     "Thiếu biến môi trường APP_ADMIN_PASSWORD: app.admin.password không được để trống");
         }
         this.jwtService = jwtService;
+        this.adminAuthRepository = adminAuthRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.loginRateLimiter = loginRateLimiter;
         this.adminUsername = adminUsername;
         this.adminPassword = adminPassword;
     }
 
-    // Kiểm tra tài khoản admin (lấy từ config) rồi cấp JWT token
+    @PostConstruct
+    public void initAdmin() {
+        if (adminAuthRepository.findById(1).isEmpty()) {
+            AdminAuth admin = new AdminAuth(
+                    1,
+                    adminUsername,
+                    passwordEncoder.encode(adminPassword),
+                    LocalDateTime.now()
+            );
+            adminAuthRepository.save(admin);
+        }
+    }
+
     public LoginResponse login(String username, String password) {
-        if (!adminUsername.equals(username) || !adminPassword.equals(password)) {
+        return login(username, password, "local");
+    }
+
+    // Kiểm tra tài khoản admin (DB + BCrypt) kèm rate-limit chống brute-force rồi cấp JWT token
+    public LoginResponse login(String username, String password, String clientIp) {
+        loginRateLimiter.checkLimit(clientIp);
+
+        AdminAuth admin = adminAuthRepository.findById(1)
+                .orElseGet(() -> {
+                    AdminAuth fallback = new AdminAuth(
+                            1,
+                            adminUsername,
+                            passwordEncoder.encode(adminPassword),
+                            LocalDateTime.now()
+                    );
+                    return adminAuthRepository.save(fallback);
+                });
+
+        if (!admin.getUsername().equals(username) || !passwordEncoder.matches(password, admin.getPasswordHash())) {
+            loginRateLimiter.recordFailure(clientIp);
             throw new UnauthorizedException("Sai tên đăng nhập hoặc mật khẩu");
         }
-        return new LoginResponse(jwtService.generateToken(username), "Bearer");
+
+        loginRateLimiter.recordSuccess(clientIp);
+        return new LoginResponse(jwtService.generateToken(username, admin.getPasswordHash()), "Bearer");
+    }
+
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        AdminAuth admin = adminAuthRepository.findById(1)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản admin"));
+
+        if (!admin.getUsername().equals(username)) {
+            throw new UnauthorizedException("Tài khoản không hợp lệ");
+        }
+
+        if (!passwordEncoder.matches(request.getOldPassword(), admin.getPasswordHash())) {
+            throw new IllegalArgumentException("Mật khẩu cũ không chính xác");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().trim().length() < 6) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có tối thiểu 6 ký tự");
+        }
+
+        admin.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        admin.setUpdatedAt(LocalDateTime.now());
+        adminAuthRepository.save(admin);
     }
 }

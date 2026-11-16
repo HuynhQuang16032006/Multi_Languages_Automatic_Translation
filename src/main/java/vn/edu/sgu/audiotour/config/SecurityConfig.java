@@ -9,10 +9,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import vn.edu.sgu.audiotour.security.JwtAuthenticationFilter;
 import vn.edu.sgu.audiotour.security.JwtService;
+import vn.edu.sgu.audiotour.repository.AdminAuthRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -20,6 +23,12 @@ import vn.edu.sgu.audiotour.security.JwtService;
 public class SecurityConfig {
 
     private final JwtService jwtService;
+    private final AdminAuthRepository adminAuthRepository;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -30,12 +39,14 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/next", "/next/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/v1/auth/login").permitAll()
                         // Dashboard tự gọi thêm ngôn ngữ không cần đăng nhập (trang chỉ admin dùng).
                         // Ngôn ngữ chỉ thêm được 1 lần nên thiệt hại tối đa = số ngôn ngữ trong whitelist.
-                        .requestMatchers(HttpMethod.POST, "/api/languages/*/translate").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/languages/*/translate").authenticated()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/packages/stream", "/api/packages/offline", "/api/locations/by-qr/**", "/api/analytics/**", "/demo.html", "/index.html", "/dashboard.html", "/player.html", "/favicon.ico").permitAll()
+                        .requestMatchers("/api/packages/stream", "/api/packages/offline", "/api/locations/by-qr/**", "/api/analytics/heartbeat", "/api/analytics/logs", "/demo.html", "/index.html", "/player.html", "/dashboard.html", "/favicon.ico").permitAll()
+                        .requestMatchers("/api/analytics/dashboard").authenticated()
                         // Trang chủ du khách: "/" serve welcome page (index.html)
                         .requestMatchers("/").permitAll()
                         // Chỉ health là public; metrics/info và các actuator khác phải có token
@@ -49,7 +60,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, ex) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
                 // Tạo filter tại đây (không để @Component) để tránh Boot đăng ký thêm lần nữa và chạy 2 lần/request
-                .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtService, adminAuthRepository), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

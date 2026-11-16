@@ -50,32 +50,15 @@ mysqldump -u root -p --single-transaction --routines --triggers \
 ```
 
 ### Phục hồi
-```bash
-# 1. Dừng app để không có ghi mới
-docker compose stop app
 
-# 2. Phục hồi dữ liệu
-mysql -u root -p audiotour_db < backup_audiotour_20260101_120000.sql
+1. Dừng ứng dụng và mọi tiến trình ghi. Xác định thời điểm backup và các giao dịch phát sinh sau đó: phục hồi backup có thể làm mất các giao dịch này; cần kế hoạch bảo toàn hoặc khôi phục riêng trước khi tiếp tục.
+2. Phục hồi backup vào một database **trống, cách ly**, không ghi đè database đang chạy. Đối chiếu schema, dữ liệu, ràng buộc và `flyway_schema_history` với backup.
+3. Trên bản sao đã phục hồi, thử artifact cũ tương thích với schema và lịch sử migration trong backup. Không khởi động artifact mới trước khi kiểm tra: Flyway có thể chạy lại migration.
+4. Chỉ chuyển ứng dụng sang bản phục hồi sau khi xác minh và được người có trách nhiệm phê duyệt. Giữ nguyên database cũ để điều tra và đối chiếu.
 
-# 3. Khởi động lại app
-docker compose start app
-```
+Không xóa hoặc chỉnh thủ công dòng `flyway_schema_history` để giả lập rollback: thao tác đó không đảo schema hay dữ liệu. Nếu lịch sử và schema không khớp, dừng triển khai và xác định cách phục hồi phù hợp trên bản sao trước.
 
-### Sửa lịch sử Flyway (`flyway_schema_history`)
-Sau khi restore, bảng `flyway_schema_history` **có thể lệch** với file migration trong code (ví dụ DB đã có version 2 nhưng file V2 sai và đã bị sửa).
-
-- Nếu migration lỗi (failed) và cần chạy lại:
-  ```sql
-  DELETE FROM flyway_schema_history WHERE success = 0;
-  ```
-- Nếu muốn để DB coi như đã ở version mong muốn mà không chạy lại migration:
-  ```sql
-  DELETE FROM flyway_schema_history WHERE version = '2';
-  ```
-  sau đó deploy lại để Flyway chạy V2 đã sửa.
-- Chỉ sửa tay bảng này khi đã hiểu rõ trạng thái DB. Nên backup lại lần nữa trước khi sửa.
-
-Kiểm tra trạng thái:
+Kiểm tra lịch sử trên bản sao:
 ```sql
 SELECT installed_rank, version, description, success, installed_on
 FROM flyway_schema_history ORDER BY installed_rank;
@@ -85,5 +68,5 @@ FROM flyway_schema_history ORDER BY installed_rank;
 - [ ] Backup `audiotour_db` trước khi deploy.
 - [ ] Deploy bản mới, chạy smoke test: `/actuator/health`, `/api/auth/login`, `GET /api/v1/locations` kèm Bearer token.
 - [ ] Nếu lỗi: rollback image tag cũ trước (nhanh nhất).
-- [ ] Nếu migration sai: restore backup rồi xử lý `flyway_schema_history`.
+- [ ] Nếu migration sai: phục hồi vào database trống cách ly, kiểm tra dữ liệu và lịch sử, thử artifact cũ tương thích trước khi chuyển đổi.
 - [ ] Ghi lại nguyên nhân và thời điểm rollback.

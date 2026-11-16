@@ -14,17 +14,11 @@ import java.net.http.HttpResponse;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Trang chủ du khách phải mở được không cần token.
- *
- * GET "/" kiểm tra qua HTTP thật: MockMvc không forward tiếp, nên nó chỉ thấy
- * "Forwarded URL = index.html" chứ không thấy Content-Type của trang.
- */
+/** Trang chủ React và trang HTML cũ phải mở được không cần token. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 class GuestHomePageTest {
@@ -36,15 +30,17 @@ class GuestHomePageTest {
     private int port;
 
     @Test
-    void testRootPathServesHomePage() throws Exception {
+    void testRootPathRedirectsToReact() throws Exception {
         HttpResponse<String> response = HttpClient.newHttpClient().send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/")).build(),
                 HttpResponse.BodyHandlers.ofString());
 
-        assertEquals(200, response.statusCode());
-        assertTrue(response.headers().firstValue("content-type").orElse("").contains("text/html"),
-                "GET / phải trả Content-Type text/html, thực tế: " + response.headers().firstValue("content-type"));
-        assertTrue(response.body().contains("poiList"), "GET / phải trả về trang chủ du khách");
+        assertEquals(302, response.statusCode());
+        URI location = URI.create(response.headers().firstValue("location").orElseThrow());
+        assertEquals("http", location.getScheme());
+        assertEquals("localhost", location.getHost());
+        assertEquals(port, location.getPort());
+        assertEquals("/next/explore", location.getPath());
     }
 
     @Test

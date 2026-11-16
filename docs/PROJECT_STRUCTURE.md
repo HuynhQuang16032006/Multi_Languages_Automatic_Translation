@@ -1,4 +1,4 @@
-﻿# Cấu trúc dự án
+# Cấu trúc dự án
 
 Ảnh chụp cây thư mục để đối chiếu kiến trúc 3 lớp.
 Sinh bằng PowerShell, quét toàn bộ repo. Đã loại: `.git/`, `target/`, `.idea/`.
@@ -72,9 +72,9 @@ src/
                                 TourRepository.java  [    602 B]   21 dòng
                             service/
                                 AnalyticsService.java  [   5891 B]  115 dòng
-                                AudioPackageService.java  [   3377 B]   77 dòng
                                 LiveAudience.java  [   9254 B]  214 dòng
                                 LocationService.java  [   1916 B]   47 dòng
+                                NarrationService.java  [   3500 B]   105 dòng
                                 ServerAddress.java  [   1548 B]   43 dòng
                                 TourService.java  [    758 B]   26 dòng
         resources/
@@ -89,7 +89,6 @@ src/
                             AnalyticsControllerValidationTest.java  [   4349 B]  103 dòng
                             AnalyticsServiceTest.java  [   3949 B]  100 dòng
                             AudioPackageControllerTest.java  [   1887 B]   49 dòng
-                            AudioPackageServiceTest.java  [   4338 B]   118 dòng
                             AudiotourApplicationTests.java  [    228 B]   13 dòng
                             LiveAudienceTest.java  [   6379 B]  191 dòng
                             LocationControllerTest.java  [   2881 B]   82 dòng

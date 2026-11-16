@@ -8,7 +8,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 import vn.edu.sgu.audiotour.dto.DashboardResponse;
 import vn.edu.sgu.audiotour.entity.TriggerType;
+import vn.edu.sgu.audiotour.entity.PlaybackLog;
+import vn.edu.sgu.audiotour.entity.Location;
 import vn.edu.sgu.audiotour.repository.PlaybackLogRepository;
+import vn.edu.sgu.audiotour.repository.PackageDownloadRepository;
 import vn.edu.sgu.audiotour.service.AnalyticsService;
 import vn.edu.sgu.audiotour.service.LiveAudience;
 import vn.edu.sgu.audiotour.service.ServerAddress;
@@ -32,36 +35,63 @@ class AnalyticsServiceTest {
     @Mock
     private ServerAddress serverAddress;
 
+    @Mock
+    private PackageDownloadRepository packageDownloadRepository;
+
     @InjectMocks
     private AnalyticsService analyticsService;
 
     @Test
     void testGetDashboardData() {
-        when(playbackLogRepository.count()).thenReturn(100L);
-        when(playbackLogRepository.getAverageListenDuration()).thenReturn(75.5);
+        Location location = new Location();
+        location.setId(1L);
+        location.setName("Dinh Độc Lập");
+        List<PlaybackLog> logs = new ArrayList<>();
+        for (int i = 0; i < 60; i++) logs.add(log(location, TriggerType.QR_CODE, 75));
+        for (int i = 0; i < 40; i++) logs.add(log(location, TriggerType.GEOFENCE, 76));
+        when(playbackLogRepository.findForDashboard(null, null, null)).thenReturn(logs);
 
-        List<Object[]> triggerResults = new ArrayList<>();
-        triggerResults.add(new Object[]{TriggerType.QR_CODE, 60L});
-        triggerResults.add(new Object[]{TriggerType.GEOFENCE, 40L});
-        when(playbackLogRepository.countListensByTriggerType()).thenReturn(triggerResults);
-
-        List<Object[]> topRows = new ArrayList<>();
-        topRows.add(new Object[]{1L, "Dinh Độc Lập", 50L});
-        when(playbackLogRepository.getTopListenedLocations(any(Pageable.class))).thenReturn(topRows);
-
-        List<Object[]> heatmapRows = new ArrayList<>();
-        heatmapRows.add(new Object[]{10.7770, 106.6953, 50L});
-        when(playbackLogRepository.getHeatmapPoints()).thenReturn(heatmapRows);
         when(liveAudience.snapshot()).thenReturn(List.of());
+        when(packageDownloadRepository.count()).thenReturn(0L);
 
         DashboardResponse response = analyticsService.getDashboardData();
 
         assertNotNull(response);
         assertEquals(100L, response.getTotalListens());
-        assertEquals(75.5, response.getAverageListenDurationSeconds());
+        assertEquals(75.4, response.getAverageListenDurationSeconds());
         assertEquals(60L, response.getListensByTriggerType().get("QR_CODE"));
         assertEquals(1, response.getTopLocations().size());
         assertEquals("Dinh Độc Lập", response.getTopLocations().get(0).getLocationName());
         assertEquals(1, response.getHeatmapPoints().size());
+    }
+
+    @Test
+    void dashboardGroupsLanguagesAndCountsOnlyListeningSessions() {
+        Location location = new Location();
+        location.setId(1L);
+        PlaybackLog vietnamese = log(location, TriggerType.QR_CODE, 10);
+        PlaybackLog english = log(location, TriggerType.QR_CODE, 10);
+        english.setLanguageCode("en");
+        when(playbackLogRepository.findForDashboard(null, null, null)).thenReturn(List.of(vietnamese, english));
+        when(liveAudience.snapshot()).thenReturn(List.of(
+                new LiveAudience.LiveSession("listener", 1L, "Place", "vi", 10, 5),
+                new LiveAudience.LiveSession("browser", null, "Map", "vi", 10, 0)));
+        DashboardResponse result = analyticsService.getDashboardData();
+        assertEquals(1L, result.getListensByLanguage().get("vi"));
+        assertEquals(1L, result.getListensByLanguage().get("en"));
+        assertEquals(1, result.getListeningUsers());
+        assertEquals(2, result.getActiveUsers());
+    }
+
+    private PlaybackLog log(Location location, TriggerType trigger, int duration) {
+        PlaybackLog log = new PlaybackLog();
+        log.setLocation(location);
+        log.setTriggerType(trigger);
+        log.setLanguageCode("vi");
+        log.setListenDurationSeconds(duration);
+        log.setDeviceId("device-" + duration + trigger);
+        log.setLatitude(10.7770);
+        log.setLongitude(106.6953);
+        return log;
     }
 }

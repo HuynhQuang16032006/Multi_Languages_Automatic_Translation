@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Sinh file MP3 cho một bài thuyết minh bằng ElevenLabs TTS, ghi vào uploads/audio
@@ -51,14 +52,13 @@ public class TtsService {
         Narration narration = narrationRepository.findById(narrationId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bài thuyết minh id " + narrationId));
 
-        String fileName = resolveFileName(narration);
-        Path target = audioDir.resolve(fileName);
+        String existingFileName = narration.getAudioUrl();
+        Path existing = existingFileName == null || existingFileName.isBlank() ? null
+                : audioDir.resolve(Paths.get(existingFileName).getFileName());
 
         // Có file rồi thì coi là cache: không gọi API, không tốn credit
-        if (!force && Files.isRegularFile(target)) {
-            narration.setAudioUrl(fileName);
-            narrationRepository.save(narration);
-            return toResponse(narration, fileName);
+        if (!force && existing != null && Files.isRegularFile(existing)) {
+            return toResponse(narration, existingFileName);
         }
 
         if (properties.apiKey() == null || properties.apiKey().isBlank()) {
@@ -79,6 +79,8 @@ public class TtsService {
         }
 
         byte[] mp3 = synthesize(text, voiceId);
+        String fileName = "narration-" + narrationId + "-" + UUID.randomUUID() + ".mp3";
+        Path target = audioDir.resolve(fileName);
         writeAtomically(target, mp3);
 
         narration.setAudioUrl(fileName);
@@ -115,28 +117,29 @@ public class TtsService {
 
     // Ghi ra file tạm rồi move: không bao giờ để lại file MP3 dở dang cho endpoint stream/ZIP đọc
     private void writeAtomically(Path target, byte[] bytes) {
+        Path tmp = null;
         try {
             Files.createDirectories(audioDir);
-            Path tmp = Files.createTempFile(audioDir, "tts-", ".part");
+            tmp = Files.createTempFile(audioDir, "tts-", ".part");
             Files.write(tmp, bytes);
             try {
-                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE);
             } catch (AtomicMoveNotSupportedException e) {
-                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(tmp, target);
             }
         } catch (IOException e) {
             throw new ServiceUnavailableException("Không ghi được file âm thanh " + target + ": " + e.getMessage());
+        } finally {
+            if (tmp != null) {
+                try {
+                    Files.deleteIfExists(tmp);
+                } catch (IOException e) {
+                    log.warn("Không xóa được file TTS tạm {}", tmp, e);
+                }
+            }
         }
     }
 
-    // Giữ nguyên tên file cũ nếu đã có; lấy getFileName() để chặn đường dẫn kiểu ../..
-    private String resolveFileName(Narration narration) {
-        String audioUrl = narration.getAudioUrl();
-        if (audioUrl != null && !audioUrl.isBlank()) {
-            return Paths.get(audioUrl).getFileName().toString();
-        }
-        return narration.getLocation().getId() + "-" + narration.getLanguage().getCode() + ".mp3";
-    }
 
     private NarrationResponse toResponse(Narration narration, String fileName) {
         return NarrationResponse.builder()

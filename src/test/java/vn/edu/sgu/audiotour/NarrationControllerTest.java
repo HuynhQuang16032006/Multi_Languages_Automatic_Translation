@@ -12,6 +12,7 @@ import vn.edu.sgu.audiotour.controller.NarrationController;
 import vn.edu.sgu.audiotour.dto.NarrationResponse;
 import vn.edu.sgu.audiotour.exception.GlobalExceptionHandler;
 import vn.edu.sgu.audiotour.exception.NotFoundException;
+import vn.edu.sgu.audiotour.service.LocationService;
 import vn.edu.sgu.audiotour.service.NarrationService;
 
 import static org.mockito.Mockito.when;
@@ -26,6 +27,9 @@ class NarrationControllerTest {
 
     @Mock
     private NarrationService narrationService;
+
+    @Mock
+    private LocationService locationService;
 
     @InjectMocks
     private NarrationController narrationController;

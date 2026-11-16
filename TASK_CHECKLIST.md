@@ -176,7 +176,7 @@ Yêu cầu mới (10/2026): cần màn hình dashboard cho người dùng/quản
 - [ ] Mở rộng API dashboard: thêm bộ lọc `from`/`to`/`languageCode`, chuẩn hóa tham số và trả thêm nhóm theo ngôn ngữ.
 - [ ] Bổ sung số liệu theo thời gian (timeseries theo ngày/tuần) để vẽ biểu đồ xu hướng.
 - [ ] Bổ sung số liệu người dùng: số thiết bị duy nhất (`deviceId`), tỷ lệ offline vs online, số lượt tải gói offline.
-- [ ] Ghi log lượt tải offline: `AudioPackageService.createOfflinePackage()` hiện không ghi log — thêm bảng/bước ghi nhận (bảng mới `package_downloads` qua migration `V2__...`, hoặc dùng chung `playback_logs` với `trigger_type` mới).
+- [ ] Ghi log lượt tải offline: `NarrationService.createOfflinePackage()` hiện không ghi log — thêm bảng/bước ghi nhận (bảng mới `package_downloads` qua migration `V2__...`, hoặc dùng chung `playback_logs` với `trigger_type` mới).
 - [ ] Chuẩn hóa tọa độ heatmap: query hiện `GROUP BY latitude, longitude` theo đúng giá trị thô → cần làm tròn (ví dụ 4–5 chữ số thập phân) để heatmap không vỡ thành hàng nghìn điểm rời rạc.
 - [ ] Phân quyền: endpoint dashboard chỉ cho admin (token từ `APP_ADMIN_*`); không có role `USER` vì P5-1 đã chốt không dùng tài khoản người dùng.
 - [ ] Widget tối thiểu cho màn hình dashboard: tổng lượt nghe, thời gian nghe trung bình, tỷ lệ QR vs GPS vs MANUAL, Top 5 POI (biểu đồ cột), heatmap trên bản đồ (Leaflet), biểu đồ xu hướng theo thời gian, lọc theo ngôn ngữ và khoảng thời gian.

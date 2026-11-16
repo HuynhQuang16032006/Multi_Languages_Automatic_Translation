@@ -29,7 +29,7 @@ graph TD
 ```
 
 - **Tầng 1 - Controller (Presentation Tier):** `LocationController`, `NarrationController`, `AudioPackageController`, `AnalyticsController`, `TourController`, `LanguageController`, `AuthController`.
-- **Tầng 2 - Service (Business Logic Tier):** `LocationService`, `NarrationService`, `AudioPackageService`, `AnalyticsService`, `TourService`, `LanguageService`, `AuthService`, cùng `LiveAudience` (giữ các phiên đang nghe) và `ServerAddress` (dò IP LAN cho mã QR).
+- **Tầng 2 - Service (Business Logic Tier):** `LocationService`, `NarrationService` (thuyết minh, phát audio trực tiếp & ZIP offline), `AnalyticsService`, `TourService`, `LanguageService`, `AuthService`, cùng `LiveAudience` (giữ các phiên đang nghe) và `ServerAddress` (dò IP LAN cho mã QR).
 - **Tầng 3 - Repository & Data (Data Access Tier):** `LocationRepository`, `LanguageRepository`, `NarrationRepository`, `PlaybackLogRepository`, `TourRepository`.
 
 ---
@@ -44,8 +44,8 @@ graph TD
 - **Migration:** Flyway (`ddl-auto: validate`)
 - **Tiện ích:** Project Lombok (Constructor Injection với `@RequiredArgsConstructor`)
 - **Tài liệu API:** Springdoc OpenAPI 3 / Swagger UI
-- **Kiểm thử tự động:** JUnit 5, Mockito (106 test tự động)
-- **Giao diện du khách:** HTML tĩnh + vanilla JavaScript + Leaflet 1.9.4 (không bundler, không bước build)
+- **Kiểm thử tự động:** JUnit 5, Mockito
+- **Giao diện:** React + React Router + Vite trong `frontend/`, build cùng Maven; `/` chuyển tới React `/next/explore`. HTML tĩnh + vanilla JavaScript + Leaflet được giữ tại các URL cũ.
 - **CI/CD:** GitHub Actions tự động kiểm thử và đóng gói khi có Commit/PR
 
 ---
@@ -89,8 +89,8 @@ graph TD
 
 5. **Chạy bằng Docker Compose (app + MySQL):**
    ```bash
-   cp .env.example .env      # tuỳ chỉnh mật khẩu / secret nếu cần
-   docker compose up --build
+   cp .env.example .env      # bắt buộc điền mật khẩu DB, JWT secret và tài khoản admin
+   docker compose up --build -d
    ```
    App chạy tại `http://localhost:8080`, Swagger UI tại `http://localhost:8080/swagger-ui.html`, trang chủ du khách tại `http://localhost:8080/`.
 
@@ -103,7 +103,7 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 
 ### Danh sách API chính bàn giao cho Team Mobile:
 
-> 🔓 **Xác thực:** du khách dùng hệ thống **ẩn danh**, không cần đăng nhập. Các API **đọc** (`GET` trên `/api/locations/**`, `/api/tours/**`, `/api/languages/**`, `/api/narrations/**` và bản phân trang `/api/v1/...` tương ứng) cùng `/api/packages/*` và `/api/analytics/**` mở **public** cho mọi người. Các API **ghi** (`POST`, `PUT`, `DELETE`) vẫn yêu cầu header `Authorization: Bearer <token>` do admin đăng nhập ở `POST /api/auth/login`. Thiếu token hoặc token sai trả về **401**. Cột "Xác thực" trong bảng dưới ghi rõ từng endpoint (theo `SecurityConfig`).
+> 🔓 **Xác thực:** du khách dùng hệ thống **ẩn danh**, không cần đăng nhập. Các API **đọc** (`GET` trên `/api/locations/**`, `/api/languages/**`, `/api/narrations/**` và các đường dẫn `/api/v1/...` tương ứng), `/api/packages/stream`, `/api/packages/offline`, `/api/analytics/heartbeat` và `/api/analytics/logs` mở **public**. Các API tour, dashboard analytics và API ghi quản trị, bao gồm dịch ngôn ngữ, yêu cầu header `Authorization: Bearer <token>` do admin đăng nhập ở `POST /api/auth/login`. Thiếu token hoặc token sai trả về **401**. Cột "Xác thực" trong bảng dưới ghi rõ từng endpoint (theo `SecurityConfig`).
 
 | Nhóm | Method | Đường dẫn API | Mô tả chức năng | Xác thực |
 | :--- | :---: | :--- | :--- | :---: |
@@ -120,15 +120,15 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 | | `GET` | `/api/packages/offline?locationId={id}&languageCode={code}` | Tải file ZIP `tour-offline.zip` gồm `content.txt` và file MP3 thật | Public |
 | **Phân tích** | `POST` | `/api/analytics/heartbeat` | Nhịp tim ẩn danh mỗi 3s khi du khách đang nghe (`deviceId` tự sinh ở client) | Public |
 | | `POST` | `/api/analytics/logs` | Mobile App gửi log sau khi phát xong audio (tránh lặp & lưu vết) | Public |
-| | `GET` | `/api/analytics/dashboard` | Cung cấp dữ liệu thống kê tổng quan (Top POI, Heatmap, tỷ lệ QR vs GPS) | Public |
-| **Tuyến Tour** | `GET` | `/api/tours` | Lấy danh sách các tuyến tour tham quan | Public |
-| | `GET` | `/api/v1/tours` | Bản phân trang của `/api/tours` (`page`, `size`, `sort`) | Public |
-| | `GET` | `/api/tours/{id}` | Lấy chi tiết lộ trình 1 tour | Public |
+| | `GET` | `/api/analytics/dashboard` | Cung cấp dữ liệu thống kê tổng quan (Top POI, Heatmap, tỷ lệ QR vs GPS) | Token admin |
+| **Tuyến Tour** | `GET` | `/api/tours` | Lấy danh sách các tuyến tour tham quan | Token admin |
+| | `GET` | `/api/v1/tours` | Bản phân trang của `/api/tours` (`page`, `size`, `sort`) | Token admin |
+| | `GET` | `/api/tours/{id}` | Lấy chi tiết lộ trình 1 tour | Token admin |
 | **Ngôn ngữ** | `GET` | `/api/languages`, `/api/v1/languages` | Danh sách ngôn ngữ (`/api/v1` có phân trang) | Public |
 | | `GET` | `/api/languages/supported` | Danh sách ngôn ngữ admin được phép thêm (giao của TTS và DeepL, đọc từ `app.languages.supported`) | Public |
 | | `GET` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Lấy chi tiết 1 ngôn ngữ | Public |
 | | `POST` | `/api/languages`, `/api/v1/languages` | Thêm ngôn ngữ mới (201 Created; 409 Conflict nếu trùng `code`) | Token admin |
-| | `POST` | `/api/languages/{code}/translate` | Dịch toàn bộ thuyết minh `vi` sang `code` bằng DeepL, lưu narration mới rồi sinh audio (201 kèm `translations`, `audioGenerated`) | Public |
+| | `POST` | `/api/languages/{code}/translate` | Dịch toàn bộ thuyết minh `vi` sang `code` bằng DeepL, lưu narration mới rồi sinh audio (201 kèm `translations`, `audioGenerated`) | Token admin |
 | | `PUT` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Cập nhật ngôn ngữ theo ID | Token admin |
 | | `DELETE` | `/api/languages/{id}`, `/api/v1/languages/{id}` | Xoá ngôn ngữ (204 No Content) | Token admin |
 
@@ -140,22 +140,16 @@ Sau khi server chạy, truy cập tài liệu tương tác Swagger UI tại:
 
 ## 🗺️ 6. Trang chủ du khách (Giao diện Web)
 
-Sau khi chạy app, mở trình duyệt tại **[http://localhost:8080/](http://localhost:8080/)** (hoặc `/index.html`). Trang là **HTML tĩnh + vanilla JavaScript** đặt trong `src/main/resources/static/`, không cần bước build và **không cần đăng nhập** — du khách dùng hệ thống ẩn danh (quyết định P5-1 trong `TASK_CHECKLIST.md`).
+Sau khi chạy app, mở **[http://localhost:8080/](http://localhost:8080/)**: máy chủ chuyển tới `/next/explore`, giao diện React chính thức. Quản trị tại `/next/admin`. Các trang HTML cũ trong `src/main/resources/static/` được giữ để tương thích, không phải giao diện chính.
 
-**Tính năng:**
-- **Bản đồ Leaflet** với marker từng POI, tile nền **OpenStreetMap** — **không cần API key**, miễn phí. Nút đổi lớp ở góc trên phải chuyển giữa lớp **đường phố** và lớp **tối** (lớp tối dùng chung tile OSM + CSS filter nên không cần key của nhà cung cấp khác).
-- **Danh sách POI** dưới bản đồ (ảnh, tên, địa chỉ).
-- **Bottom sheet chi tiết**: bấm marker hoặc POI để mở, chọn ngôn ngữ **VI / EN** rồi bấm **"Nghe thuyết minh"** — trang chuyển sang `player.html` để phát MP3 qua máy chủ và hiện kịch bản thuyết minh (ghi nhận lượt nghe ẩn danh qua `POST /api/analytics/heartbeat`).
-- **Nút "Gần tôi"**: lấy vị trí qua `navigator.geolocation`, tính khoảng cách Haversine và sắp xếp POI theo khoảng cách (có nút quay lại sắp xếp A-Z).
-- **Danh sách tuyến tham quan**: bấm một tuyến để lọc POI theo lộ trình của tuyến đó.
-- **Cache offline**: danh sách POI được lưu trong `localStorage`, mất mạng vẫn xem được (kèm cảnh báo đang dùng dữ liệu lưu cục bộ).
+React cung cấp khám phá, tìm kiếm, bản đồ, chi tiết và lựa chọn ngôn ngữ, trình phát audio, tải ZIP, quét/nhập QR và các trang quản trị. Maven build Vite và đóng gói frontend vào JAR.
 
 **Giới hạn:**
 - Tile bản đồ tải từ Internet → mất mạng thì bản đồ không có nền (danh sách POI vẫn hiện nhờ cache).
 - Nút "Gần tôi" chỉ chạy khi trang được mở bằng **HTTPS hoặc `http://localhost`**, vì trình duyệt chỉ cấp API định vị trong *secure context* (mở bằng IP mạng LAN thì nút này bị ẩn).
 - Âm thanh phát qua máy chủ nên **cần mạng**. Muốn nghe offline thì tải gói ZIP tại `GET /api/packages/offline?locationId={id}&languageCode={vi}` (hoặc `{en}`).
 
-> 📌 **Quyết định kiến trúc:** giao diện du khách dùng HTML tĩnh + Leaflet thay vì framework SPA (không thêm toolchain, không thêm bước build) — chi tiết tại [`docs/adr/0001-guest-ui-static-html-leaflet.md`](docs/adr/0001-guest-ui-static-html-leaflet.md).
+> 📌 Quyết định vòng 3: React là frontend chính thức; ADR 0007 mô tả giai đoạn chạy song song trước đây. Đường dẫn HTML cũ vẫn được giữ cho liên kết đã phát hành.
 
 ---
 
@@ -164,7 +158,7 @@ Sau khi chạy app, mở trình duyệt tại **[http://localhost:8080/](http://
 Dự án tích hợp sẵn file cấu hình CI/CD tại `.github/workflows/ci.yml`. Mỗi khi thành viên tạo Commit hoặc Pull Request:
 1. Tự động kích hoạt máy chủ ảo Ubuntu Runner và dịch vụ MySQL Container.
 2. Thiết lập môi trường Java 21.
-3. Thực thi tự động 94 test (Unit test, Controller test & Integration test với MySQL container).
+3. Thực thi test tự động (Unit test, Controller test & Integration test với MySQL container).
 4. Đóng gói sản phẩm thành file thực thi `.jar` và lưu vào GitHub Artifacts.
 
 ---
@@ -190,10 +184,35 @@ docker run -p 8080:8080 \
 
 ### Docker Compose (app + MySQL)
 ```bash
-cp .env.example .env   # điền DB_ROOT_PASSWORD, DB_PASSWORD, JWT_SECRET, APP_ADMIN_* (xem comment trong file)
-docker compose up --build
+cp .env.example .env   # chỉ chạy khi chưa có .env; điền DB_ROOT_PASSWORD, DB_PASSWORD, JWT_SECRET, APP_ADMIN_*
+docker compose up --build -d
 ```
 `docker-compose.yml` đã set `SPRING_PROFILES_ACTIVE=prod`, nên compose **từ chối khởi động** nếu thiếu secret/tài khoản.
+
+Yêu cầu Docker Desktop đang chạy với Linux containers (Windows: bật WSL 2, khởi động lại nếu trình cài đặt yêu cầu). Không commit `.env` và không ghi đè file này khi đã có dữ liệu DB.
+
+Volume MySQL local hiện dùng tên riêng `audiotour-mysql-local-v5`, gắn vào `/var/lib/mysql`. Volume cũ `multi_languages_automatic_translation_audiotour-db-data` được giữ nguyên, không tự di chuyển dữ liệu. Healthcheck DB chạy `SELECT 1` có xác thực; `mysqladmin ping` không đủ vì vẫn có thể thành công khi đăng nhập bị từ chối.
+
+Compose chỉ mở backend tại `127.0.0.1:8080`; MySQL chỉ truy cập trong mạng Compose, không chiếm cổng `3306` của MySQL trên máy. Dữ liệu DB lưu trong named volume; không chạy `docker compose down -v` nếu cần giữ dữ liệu.
+
+Audio seed và audio TTS dùng chung `uploads/audio` trên host, bind mount đọc/ghi vào `/app/uploads/audio` trong service app. Thư mục phải có sẵn khi clone repo; Compose không tự tạo thư mục rỗng nếu thiếu. Không cần copy audio vào image và không liên quan volume MySQL. File TTS mới được giữ qua restart/recreate app; sao lưu thư mục này cùng database để giữ ánh xạ `narrations.audio_url`. Không ghi đè file có sẵn; TTS tạo tên file mới theo ADR 0004.
+
+Lệnh `docker run` riêng ở trên không tự có kho audio: thêm `--mount type=bind,source="$(pwd)/uploads/audio",target=/app/uploads/audio` (Bash), hoặc dùng Compose để có mount tương đối nhất quán. Bind mount cho phép container ghi vào kho host; chỉ chạy image tin cậy và không dùng chung thư mục với dữ liệu nhạy cảm.
+
+Kiểm tra trên Windows PowerShell:
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd compile
+docker compose ps
+curl.exe --fail --show-error --write-out "\nHTTP %{http_code}\n" http://localhost:8080/actuator/health
+```
+Chờ app khởi động xong: health phải trả HTTP 200 và `status: UP`. Nếu chưa đạt, xem `docker compose logs app db`. Dừng bằng `docker compose down` để giữ volume.
+
+Nếu Maven dừng ở `npm ci` với `EPERM` trong cache npm của tài khoản Windows, đặt cache riêng cho phiên PowerShell rồi chạy lại:
+```powershell
+$env:npm_config_cache = Join-Path $PWD 'target/npm-cache'
+```
+Không cần khóa ElevenLabs/DeepL để app khởi động; chưa cấu hình thì các chức năng sinh audio/dịch máy trả 503 như mô tả bên dưới.
 
 ### Chạy production (bắt buộc)
 Profile `prod` (`src/main/resources/application-prod.yml`) **không có giá trị mặc định** cho DB/JWT/admin. Vì vậy:
@@ -207,6 +226,10 @@ java -jar target/audiotour-0.0.1-SNAPSHOT.jar
 ```
 
 > ⚠️ Chạy `java -jar` **không** có `SPRING_PROFILES_ACTIVE=prod` (hoặc không có các biến trên) chỉ là **local-dev boot**: app dùng secret dev và `admin123` trong `application.yml`. Không dùng cách này để deploy.
+
+Profile `prod` từ chối JWT secret, mật khẩu admin và mật khẩu DB mặc định của dev; phải dùng giá trị riêng, mạnh. Kiểm tra profile thực tế trước triển khai: cấu hình dev vẫn có credential công khai. Rate limit dùng địa chỉ kết nối, bỏ qua `X-Forwarded-For`; sau reverse proxy mọi client dùng chung hạn mức. Nếu cần hạn mức theo IP gốc, cấu hình rate limit tại proxy tin cậy và chặn truy cập trực tiếp backend. Bộ đếm trong bộ nhớ không được chia sẻ giữa các instance.
+
+JWT phát hành trước thay đổi này hết hiệu lực và cần đăng nhập lại. Sau mỗi lần đổi mật khẩu, mọi JWT cũ bị thu hồi; client đăng nhập lại bằng mật khẩu mới. Mỗi yêu cầu có JWT cần đọc tài khoản admin từ DB.
 
 ### Biến môi trường
 | Biến | Mặc định (dev) | Ghi chú |

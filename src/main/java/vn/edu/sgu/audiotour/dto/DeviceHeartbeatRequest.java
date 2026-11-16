@@ -1,6 +1,7 @@
 package vn.edu.sgu.audiotour.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,7 @@ import vn.edu.sgu.audiotour.entity.TriggerType;
 @Schema(description = "Request gửi nhịp tim (Heartbeat) giám sát người dùng đang truy cập theo thời gian thực")
 public class DeviceHeartbeatRequest {
 
+    @Size(max = 64)
     @Schema(description = "Mã định danh thiết bị duy nhất", example = "iPhone-14-Thầy")
     private String deviceId;
 

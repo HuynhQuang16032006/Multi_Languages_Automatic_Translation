@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import vn.edu.sgu.audiotour.entity.TriggerType;
 
@@ -34,6 +35,7 @@ public class PlaybackLogRequest {
     @Schema(description = "Tọa độ GPS Longitude của thiết bị lúc nghe", example = "106.6953")
     private Double longitude;
 
+    @Size(max = 64)
     @Schema(description = "Mã thiết bị ẩn danh (UUID tạo trên mobile app)", example = "anon-device-12345")
     private String deviceId;
 }
