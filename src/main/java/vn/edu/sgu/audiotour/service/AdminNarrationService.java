@@ -10,12 +10,22 @@ import vn.edu.sgu.audiotour.repository.LanguageRepository;
 import vn.edu.sgu.audiotour.repository.LocationRepository;
 import vn.edu.sgu.audiotour.repository.NarrationRepository;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AdminNarrationService {
     private final NarrationRepository narrations;
     private final LocationRepository locations;
     private final LanguageRepository languages;
+
+    @Transactional(readOnly = true)
+    public List<Narration> listByLocationId(Long locationId) {
+        if (!locations.existsById(locationId)) {
+            throw new NotFoundException("Không tìm thấy địa điểm với ID: " + locationId);
+        }
+        return narrations.findAllByLocationId(locationId);
+    }
 
     @Transactional
     public Narration create(Long locationId, String code, String text) {
