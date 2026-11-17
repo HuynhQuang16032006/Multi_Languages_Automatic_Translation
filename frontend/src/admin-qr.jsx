@@ -29,6 +29,14 @@ export function Qr({ request }) {
   useEffect(() => {
     let active = true;
     request('/api/admin/locations').then(items => { if (active) setPlaces(items); }).catch(error => { if (active) setMessage(error.message); });
+    if (['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(window.location.hostname.toLowerCase())) {
+      request('/api/analytics/dashboard').then(data => {
+        if (active && data?.serverIp) {
+          const port = window.location.port ? `:${window.location.port}` : ':8080';
+          setHost(`${window.location.protocol}//${data.serverIp}${port}`);
+        }
+      }).catch(() => {});
+    }
     return () => { active = false; };
   }, [request]);
 
