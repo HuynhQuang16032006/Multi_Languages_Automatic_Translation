@@ -38,6 +38,6 @@ public class ServerAddress {
         } catch (Exception e) {
             log.warn("Không dò được IP LAN của máy chủ: {}", e.getMessage());
         }
-        return "192.168.1.10";
+        return "172.20.10.8";
     }
 }
