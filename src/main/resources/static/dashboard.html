@@ -867,10 +867,20 @@ Minimum version required to store current data is: `+i+`.
             }
         }
         updateQrCode();
+        if (window.isSecureContext && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                fetch("/api/locations/host-gps?lat=" + encodeURIComponent(pos.coords.latitude) + "&lng=" + encodeURIComponent(pos.coords.longitude) + "&accuracy=" + encodeURIComponent(pos.coords.accuracy || 20)).catch(function () {});
+            }, function () {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+        }
 
         function onVenueChange() {
             venueId = document.getElementById("venueSelect").value;
             updateQrCode();
+        if (window.isSecureContext && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                fetch("/api/locations/host-gps?lat=" + encodeURIComponent(pos.coords.latitude) + "&lng=" + encodeURIComponent(pos.coords.longitude) + "&accuracy=" + encodeURIComponent(pos.coords.accuracy || 20)).catch(function () {});
+            }, function () {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+        }
         }
 
         async function loadVenues() {
@@ -887,6 +897,11 @@ Minimum version required to store current data is: `+i+`.
                 }
                 select.value = venueId;
                 updateQrCode();
+        if (window.isSecureContext && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                fetch("/api/locations/host-gps?lat=" + encodeURIComponent(pos.coords.latitude) + "&lng=" + encodeURIComponent(pos.coords.longitude) + "&accuracy=" + encodeURIComponent(pos.coords.accuracy || 20)).catch(function () {});
+            }, function () {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+        }
             } catch (error) {
                 console.warn("Không tải được danh sách toà, giữ toà mặc định:", error);
             }
@@ -924,6 +939,11 @@ Minimum version required to store current data is: `+i+`.
                     defaultLanIp = data.serverIp;
                     document.getElementById("serverIpInput").value = data.serverIp;
                     updateQrCode();
+        if (window.isSecureContext && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                fetch("/api/locations/host-gps?lat=" + encodeURIComponent(pos.coords.latitude) + "&lng=" + encodeURIComponent(pos.coords.longitude) + "&accuracy=" + encodeURIComponent(pos.coords.accuracy || 20)).catch(function () {});
+            }, function () {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+        }
                 }
 
                 // Cập nhật số lượng đang truy cập
@@ -1011,6 +1031,11 @@ Minimum version required to store current data is: `+i+`.
 
         // Kiểm tra đăng nhập khi mở trang
         updateQrCode();
+        if (window.isSecureContext && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                fetch("/api/locations/host-gps?lat=" + encodeURIComponent(pos.coords.latitude) + "&lng=" + encodeURIComponent(pos.coords.longitude) + "&accuracy=" + encodeURIComponent(pos.coords.accuracy || 20)).catch(function () {});
+            }, function () {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+        }
         checkAuth();
     </script>
 </body>

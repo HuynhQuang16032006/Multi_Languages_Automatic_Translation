@@ -2239,8 +2239,23 @@
             }
         };
 
-        // Lấy vị trí mạng dự phòng qua IP khi máy tính không có phần cứng GPS
+        // Lấy vị trí thực từ máy chủ/laptop cùng vị trí (hoặc dự phòng qua IP khi không có HTTPS trên di động)
         async function fetchIpLocation() {
+            try {
+                const hostRes = await fetch("/api/locations/host-gps", { signal: AbortSignal.timeout(2500) });
+                if (hostRes.ok) {
+                    const hostData = await hostRes.json();
+                    if (hostData && hostData.latitude && hostData.longitude) {
+                        return {
+                            lat: Number(hostData.latitude),
+                            lng: Number(hostData.longitude),
+                            accuracy: Number(hostData.accuracy) || 20,
+                            city: "GPS Thực tế",
+                            fromHostGps: true
+                        };
+                    }
+                }
+            } catch (e0) {}
             try {
                 const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(4000) });
                 if (!res.ok) throw new Error("HTTP " + res.status);
@@ -2279,24 +2294,33 @@
             dom.nearMeButton.textContent = busy ? "Đang lấy vị trí..." : "Gần tôi";
         }
 
-        function requestUserLocation() {
+        async function requestUserLocation() {
             if (state.geoPending) return;
-            if (window.isSecureContext !== true || !navigator.geolocation) {
-                dom.nearMeButton.hidden = true;
-                dom.geoSecureNote.hidden = false;
-                return;
-            }
 
             hideGeoNotice();
             setNearMeBusy(true);
 
             const onLocationFound = (lat, lng, accuracy, source) => {
                 setNearMeBusy(false);
+                if (window.isSecureContext && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+                    fetch(`/api/locations/host-gps?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&accuracy=${encodeURIComponent(accuracy || 20)}`).catch(() => {});
+                }
                 setUserPosition(lat, lng, accuracy, false, true);
                 applyDistanceSort();
                 updateVenueSuggestion();
                 showGeoNotice(`Đã xác định vị trí (${source}) · Độ chính xác ±${Math.round(accuracy)}m.`);
             };
+
+            if (window.isSecureContext !== true || !navigator.geolocation) {
+                const ipLoc = await fetchIpLocation();
+                if (ipLoc) {
+                    onLocationFound(ipLoc.lat, ipLoc.lng, ipLoc.accuracy || 25, ipLoc.fromHostGps ? "GPS Vệ tinh" : ("Định vị IP (" + ipLoc.city + ")"));
+                } else {
+                    setNearMeBusy(false);
+                    showGeoNotice("Không lấy được vị trí GPS. Hãy dùng nút '🎯 Test GPS' để chọn điểm thử nghiệm!");
+                }
+                return;
+            }
 
             // Thử high accuracy trước
             navigator.geolocation.getCurrentPosition(position => {
@@ -2310,7 +2334,7 @@
                     console.warn("Lỗi Low Accuracy Geolocation:", lowErr);
                     const ipLoc = await fetchIpLocation();
                     if (ipLoc) {
-                        onLocationFound(ipLoc.lat, ipLoc.lng, 500, "Định vị IP (" + ipLoc.city + ")");
+                        onLocationFound(ipLoc.lat, ipLoc.lng, ipLoc.accuracy || 500, ipLoc.fromHostGps ? "GPS Vệ tinh" : ("Định vị IP (" + ipLoc.city + ")"));
                     } else {
                         setNearMeBusy(false);
                         showGeoNotice(geoErrorMessage(lowErr));
@@ -2319,16 +2343,10 @@
             }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 });
         }
 
-        // Chỉ bật nút "Gần tôi" khi trang chạy trong secure context (HTTPS hoặc localhost)
+        // Bật nút "Gần tôi" cho cả localhost và thiết bị di động truy cập qua mạng nội bộ
         function initGeoSupport() {
-            const supported = window.isSecureContext === true &&
-                !!navigator.geolocation && typeof navigator.geolocation.getCurrentPosition === "function";
-            if (!supported) {
-                dom.nearMeButton.hidden = true;
-                dom.geoSecureNote.hidden = false;
-                return;
-            }
             dom.nearMeButton.hidden = false;
+            dom.geoSecureNote.hidden = true;
         }
 
         // ===== Tuyến tham quan & lọc POI theo tour (Task 7) =====
@@ -2680,6 +2698,9 @@
 
             const onGpsSuccess = (pos, source = "GPS Vệ tinh") => {
                 const { latitude, longitude, accuracy } = pos.coords;
+                if (window.isSecureContext && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+                    fetch(`/api/locations/host-gps?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}&accuracy=${encodeURIComponent(accuracy || 20)}`).catch(() => {});
+                }
                 // Di chuyển bản đồ và vẽ hình người tại vị trí thật
                 setUserPosition(latitude, longitude, accuracy, false, true);
 
@@ -2727,8 +2748,8 @@
                             const ipLoc = await fetchIpLocation();
                             if (ipLoc) {
                                 onGpsSuccess({
-                                    coords: { latitude: ipLoc.lat, longitude: ipLoc.lng, accuracy: 500 }
-                                }, "Định vị IP (" + ipLoc.city + ")");
+                                    coords: { latitude: ipLoc.lat, longitude: ipLoc.lng, accuracy: ipLoc.accuracy || 500 }
+                                }, ipLoc.fromHostGps ? "GPS Vệ tinh" : ("Định vị IP (" + ipLoc.city + ")"));
                             } else {
                                 showGeoNotice(geoErrorMessage(lowErr));
                                 showGpsToast(

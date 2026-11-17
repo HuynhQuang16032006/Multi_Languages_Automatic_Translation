@@ -26,6 +26,23 @@ import java.util.List;
 public class LocationController {
 
     private final LocationService locationService;
+    private static volatile java.util.Map<String, Object> hostGps = null;
+
+    @GetMapping("/locations/host-gps")
+    @Operation(summary = "Đồng bộ tọa độ GPS thực tế từ máy chủ/laptop sang điện thoại qua mạng nội bộ HTTP")
+    public ResponseEntity<java.util.Map<String, Object>> syncHostGps(
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng,
+            @RequestParam(required = false) Double accuracy) {
+        if (lat != null && lng != null) {
+            hostGps = java.util.Map.of(
+                    "latitude", lat,
+                    "longitude", lng,
+                    "accuracy", accuracy != null ? accuracy : 20.0
+            );
+        }
+        return ResponseEntity.ok(hostGps != null ? hostGps : java.util.Map.of());
+    }
 
     @PostMapping("/locations")
     @Operation(summary = "Tạo địa điểm")
