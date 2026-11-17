@@ -354,16 +354,95 @@
 
 <body>
 
+    <!-- Overlay Đăng nhập Admin -->
+    <div id="loginOverlay" style="position: fixed; inset: 0; background: rgba(6, 9, 19, 0.96); backdrop-filter: blur(20px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 36px; max-width: 420px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85);">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="width: 56px; height: 56px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 12px;">🛡️</div>
+                <h2 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 6px;">Đăng Nhập Quản Trị</h2>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Truy cập Dashboard giám sát Audio Tour</p>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 16px;">
+                <div id="loginError" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 10px 14px; border-radius: 10px; font-size: 0.85rem;"></div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;" for="loginUsername">Tên đăng nhập</label>
+                    <input id="loginUsername" type="text" required autocomplete="username" placeholder="admin"
+                        style="width: 100%; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;" for="loginPassword">Mật khẩu</label>
+                    <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="••••••••"
+                        style="width: 100%; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                </div>
+                <button id="loginSubmitBtn" type="submit"
+                    style="margin-top: 8px; background: linear-gradient(135deg, #38bdf8, #818cf8); border: none; color: #060913; font-weight: 800; padding: 12px; border-radius: 12px; font-size: 1rem; cursor: pointer;">
+                    Đăng Nhập
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Đổi Mật Khẩu Admin -->
+    <div id="changePasswordModal" style="display: none; position: fixed; inset: 0; background: rgba(6, 9, 19, 0.85); backdrop-filter: blur(12px); z-index: 9998; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 32px; max-width: 420px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 1.3rem; font-weight: 800; color: #fff;">Đổi Mật Khẩu Admin</h2>
+                <button onclick="closeChangePasswordModal()" type="button" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
+            </div>
+            <form id="changePasswordForm" onsubmit="handleChangePassword(event)" style="display: flex; flex-direction: column; gap: 14px;">
+                <div id="changePassMessage" style="display: none; padding: 10px 14px; border-radius: 10px; font-size: 0.85rem;"></div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;" for="oldPasswordInput">Mật khẩu hiện tại</label>
+                    <input id="oldPasswordInput" type="password" required autocomplete="current-password" placeholder="Mật khẩu cũ"
+                        style="width: 100%; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;" for="newPasswordInput">Mật khẩu mới (tối thiểu 6 ký tự)</label>
+                    <input id="newPasswordInput" type="password" required minlength="6" autocomplete="new-password" placeholder="Mật khẩu mới"
+                        style="width: 100%; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;" for="confirmPasswordInput">Xác nhận mật khẩu mới</label>
+                    <input id="confirmPasswordInput" type="password" required minlength="6" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới"
+                        style="width: 100%; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 0.95rem; outline: none;">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="button" onclick="closeChangePasswordModal()"
+                        style="flex: 1; background: rgba(148, 163, 184, 0.15); border: 1px solid var(--card-border); color: var(--text-muted); font-weight: 700; padding: 10px; border-radius: 10px; cursor: pointer;">
+                        Huỷ
+                    </button>
+                    <button id="changePassSubmitBtn" type="submit"
+                        style="flex: 1; background: #22c55e; border: none; color: #090d16; font-weight: 800; padding: 10px; border-radius: 10px; cursor: pointer;">
+                        Cập Nhật
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="header">
         <div class="header-title">
             <h1>Audio Tour Live Dashboard</h1>
             <p>Giám sát lưu lượng người dùng thời gian thực & Tự động ghi nhận lịch sử - Trường ĐH Sài Gòn (SGU)</p>
         </div>
-        <div class="live-tag">
-            <div class="pulse-dot"></div>
-            <span>LIVE SOCKET PING (1.5s)</span>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div class="live-tag">
+                <div class="pulse-dot"></div>
+                <span>LIVE SOCKET PING (1.5s)</span>
+            </div>
+            <button id="openChangePassBtn" onclick="openChangePasswordModal()"
+                style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: 700; padding: 7px 14px; border-radius: 999px; font-size: 0.85rem; cursor: pointer;">
+                🔑 Đổi mật khẩu
+            </button>
+            <button id="logoutBtn" onclick="logout()"
+                style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; font-weight: 700; padding: 7px 14px; border-radius: 999px; font-size: 0.85rem; cursor: pointer;">
+                🚪 Đăng xuất
+            </button>
         </div>
     </div>
+
+    <!-- Khung nội dung chính của Dashboard -->
+    <div id="dashboardContent" style="display: none;">
 
     <!-- Top Grid: Real-time Active Counter & Live QR Code -->
     <div class="top-grid">
@@ -437,6 +516,17 @@
         <div class="stat-card">
             <div class="title">Tỷ lệ QR Code vs Geofence</div>
             <div class="val" id="triggerRatio">-- / --</div>
+        </div>
+    </div>
+
+    <div class="tables-grid" style="margin-bottom: 20px;">
+        <div class="card">
+            <div class="table-header"><h2>Top địa điểm</h2><span style="font-size: 0.8rem; color: var(--text-muted);">Theo lượt nghe</span></div>
+            <div id="topLocationsChart" aria-live="polite"><div class="empty-row">Đang tải...</div></div>
+        </div>
+        <div class="card">
+            <div class="table-header"><h2>Phương thức kích hoạt</h2><span style="font-size: 0.8rem; color: var(--text-muted);">Tổng lượt nghe</span></div>
+            <div id="triggerChart" aria-live="polite"><div class="empty-row">Đang tải...</div></div>
         </div>
     </div>
 
@@ -515,9 +605,163 @@
             <span id="addLanguageMsg" style="font-size: 0.8rem; color: var(--text-muted);"></span>
         </div>
     </div>
+    </div> <!-- Đóng dashboardContent -->
 
     <script>
-        // --- Thêm ngôn ngữ mới: endpoint public, dashboard chỉ admin dùng nên không cần đăng nhập ---
+        // Quản lý xác thực JWT Admin trong sessionStorage
+        let pollTimer = null;
+
+        function getAuthToken() {
+            return sessionStorage.getItem("adminToken");
+        }
+
+        function checkAuth() {
+            const token = getAuthToken();
+            const overlay = document.getElementById("loginOverlay");
+            const content = document.getElementById("dashboardContent");
+            if (!token) {
+                overlay.style.display = "flex";
+                content.style.display = "none";
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+            } else {
+                overlay.style.display = "none";
+                content.style.display = "block";
+                if (!pollTimer) {
+                    fetchDashboard();
+                    pollTimer = setInterval(fetchDashboard, 1500);
+                    loadSupportedLanguages();
+                    loadVenues();
+                }
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById("loginUsername");
+            const passwordInput = document.getElementById("loginPassword");
+            const errorBox = document.getElementById("loginError");
+            const submitBtn = document.getElementById("loginSubmitBtn");
+
+            errorBox.style.display = "none";
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Đang kiểm tra...";
+
+            try {
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: usernameInput.value.trim(),
+                        password: passwordInput.value
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    errorBox.style.display = "block";
+                    errorBox.textContent = data.message || (res.status === 401 ? "Sai tên đăng nhập hoặc mật khẩu" : `Lỗi ${res.status}`);
+                    return;
+                }
+
+                sessionStorage.setItem("adminToken", data.token);
+                passwordInput.value = "";
+                checkAuth();
+            } catch (err) {
+                errorBox.style.display = "block";
+                errorBox.textContent = "Không thể kết nối đến máy chủ xác thực.";
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Đăng Nhập";
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem("adminToken");
+            checkAuth();
+        }
+
+        function openChangePasswordModal() {
+            const modal = document.getElementById("changePasswordModal");
+            const msg = document.getElementById("changePassMessage");
+            msg.style.display = "none";
+            document.getElementById("changePasswordForm").reset();
+            modal.style.display = "flex";
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById("changePasswordModal").style.display = "none";
+        }
+
+        async function handleChangePassword(e) {
+            e.preventDefault();
+            const oldPass = document.getElementById("oldPasswordInput").value;
+            const newPass = document.getElementById("newPasswordInput").value;
+            const confirmPass = document.getElementById("confirmPasswordInput").value;
+            const msg = document.getElementById("changePassMessage");
+            const btn = document.getElementById("changePassSubmitBtn");
+
+            msg.style.display = "none";
+
+            if (newPass !== confirmPass) {
+                msg.style.display = "block";
+                msg.style.background = "rgba(239, 68, 68, 0.15)";
+                msg.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+                msg.style.color = "#f87171";
+                msg.textContent = "Mật khẩu xác nhận không khớp.";
+                return;
+            }
+
+            const token = getAuthToken();
+            if (!token) {
+                logout();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Đang lưu...";
+
+            try {
+                const res = await fetch("/api/auth/change-password", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
+                });
+                const data = await res.json().catch(() => ({}));
+                msg.style.display = "block";
+                if (!res.ok) {
+                    msg.style.background = "rgba(239, 68, 68, 0.15)";
+                    msg.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+                    msg.style.color = "#f87171";
+                    msg.textContent = data.message || `Lỗi ${res.status}`;
+                    if (res.status === 401) {
+                        setTimeout(logout, 1500);
+                    }
+                    return;
+                }
+
+                msg.style.background = "rgba(16, 185, 129, 0.15)";
+                msg.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+                msg.style.color = "#34d399";
+                msg.textContent = "Đổi mật khẩu thành công!";
+                setTimeout(() => {
+                    closeChangePasswordModal();
+                }, 1200);
+            } catch (err) {
+                msg.style.display = "block";
+                msg.style.background = "rgba(239, 68, 68, 0.15)";
+                msg.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+                msg.style.color = "#f87171";
+                msg.textContent = "Không gọi được API đổi mật khẩu.";
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Cập Nhật";
+            }
+        }
 
         // Ngôn ngữ có thể thêm = whitelist của server trừ những ngôn ngữ đã có
         async function loadSupportedLanguages() {
@@ -550,13 +794,27 @@
             const message = document.getElementById("addLanguageMsg");
             if (!code) return;
 
+            const token = getAuthToken();
+            if (!token) {
+                logout();
+                return;
+            }
+
             button.disabled = true;
             message.textContent = "Đang dịch và sinh audio, có thể mất khoảng 30 giây...";
             try {
                 const res = await fetch(`/api/languages/${encodeURIComponent(code)}/translate`, {
-                    method: "POST"
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
                 });
                 const data = await res.json().catch(() => ({}));
+
+                if (res.status === 401) {
+                    logout();
+                    return;
+                }
 
                 if (!res.ok) {
                     message.textContent = data.message || `Lỗi ${res.status}`;
@@ -574,9 +832,6 @@
                 button.disabled = false;
             }
         }
-
-        // Nạp danh sách ngay khi mở trang
-        loadSupportedLanguages();
 
         // Xác định địa chỉ IP máy chủ để điện thoại quét (mặc định LAN IP 172.20.10.8)
         let defaultLanIp = "172.20.10.8";
@@ -597,7 +852,6 @@
             document.getElementById("qrLinkText").innerText = venueUrl;
             document.getElementById("qrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(venueUrl)}`;
         }
-        updateQrCode();
 
         function onVenueChange() {
             venueId = document.getElementById("venueSelect").value;
@@ -622,7 +876,6 @@
                 console.warn("Không tải được danh sách toà, giữ toà mặc định:", error);
             }
         }
-        loadVenues();
 
         // Hàm mở nhanh 4 tab giả lập nếu muốn test ngay trên máy
         function openSimulatedDevices(count) {
@@ -633,12 +886,26 @@
 
         // Tự động kéo dữ liệu Dashboard mỗi 1.5 giây
         async function fetchDashboard() {
+            const token = getAuthToken();
+            if (!token) return;
+
             try {
-                const res = await fetch("/api/analytics/dashboard");
+                const res = await fetch("/api/analytics/dashboard", {
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+                if (res.status === 401) {
+                    logout();
+                    const err = document.getElementById("loginError");
+                    err.style.display = "block";
+                    err.textContent = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+                    return;
+                }
                 if (!res.ok) return;
                 const data = await res.json();
 
-                if (data.serverIp && defaultLanIp !== data.serverIp && (document.getElementById("serverIpInput").value === '172.20.10.8' || document.getElementById("serverIpInput").value === 'localhost')) {
+                if (data.serverIp && defaultLanIp !== data.serverIp) {
                     defaultLanIp = data.serverIp;
                     document.getElementById("serverIpInput").value = data.serverIp;
                     updateQrCode();
@@ -659,7 +926,10 @@
                 document.getElementById("avgDuration").innerText = `${data.averageListenDurationSeconds || 0}s`;
                 const qrCount = data.listensByTriggerType?.QR_CODE || 0;
                 const geoCount = data.listensByTriggerType?.GEOFENCE || 0;
-                document.getElementById("triggerRatio").innerText = `${qrCount} QR / ${geoCount} GPS`;
+                 document.getElementById("triggerRatio").innerText = `${qrCount} QR / ${geoCount} GPS`;
+
+                renderBars("topLocationsChart", data.topLocations || [], "locationName", "listenCount", " lượt");
+                renderBars("triggerChart", Object.entries(data.listensByTriggerType || {}).map(([name, value]) => ({ name, value })), "name", "value", " lượt");
 
                 // Cập nhật bảng thiết bị ĐANG ONLINE
                 const activeTbody = document.getElementById("activeDevicesTable");
@@ -703,14 +973,30 @@
             }
         }
 
+        function renderBars(elementId, rows, labelKey, valueKey, suffix) {
+            const root = document.getElementById(elementId);
+            const max = Math.max(1, ...rows.map(row => Number(row[valueKey]) || 0));
+            root.innerHTML = rows.length ? rows.map(row => {
+                const value = Number(row[valueKey]) || 0;
+                return `<div style="margin: 12px 0">
+                    <div style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:.85rem;margin-bottom:5px">
+                        <span>${escapeHtml(String(row[labelKey]))}</span><strong>${value}${suffix}</strong>
+                    </div>
+                    <div style="height:9px;background:rgba(148,163,184,.16);border-radius:99px;overflow:hidden">
+                        <div style="height:100%;width:${Math.round(value / max * 100)}%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:99px"></div>
+                    </div>
+                </div>`;
+            }).join("") : `<div class="empty-row">Chưa có dữ liệu.</div>`;
+        }
+
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
-        // Bắt đầu vòng lặp cập nhật mỗi 1.5 giây
-        fetchDashboard();
-        setInterval(fetchDashboard, 1500);
+        // Kiểm tra đăng nhập khi mở trang
+        updateQrCode();
+        checkAuth();
     </script>
 </body>
 

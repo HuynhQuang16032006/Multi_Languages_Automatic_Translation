@@ -16,7 +16,10 @@ export function Qr({ request }) {
   const [places, setPlaces] = useState([]);
   const [selected, setSelected] = useState('');
   const [code, setCode] = useState('');
-  const [host, setHost] = useState(window.location.origin);
+  const defaultOrigin = ['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(window.location.hostname.toLowerCase())
+    ? `${window.location.protocol}//172.20.10.8:${window.location.port || '8080'}`
+    : window.location.origin;
+  const [host, setHost] = useState(defaultOrigin);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [generated, setGenerated] = useState(null);
@@ -28,7 +31,16 @@ export function Qr({ request }) {
 
   useEffect(() => {
     let active = true;
-    request('/api/admin/locations').then(items => { if (active) setPlaces(items); }).catch(error => { if (active) setMessage(error.message); });
+    request('/api/admin/locations').then(items => {
+      if (active && Array.isArray(items) && items.length > 0) {
+        setPlaces(items);
+        const def = items.find(i => i.id === 4 && i.qrCode) || items.find(i => i.qrCode) || items[0];
+        if (def) {
+          setSelected(String(def.id));
+          setCode(def.qrCode || '');
+        }
+      }
+    }).catch(error => { if (active) setMessage(error.message); });
     if (['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(window.location.hostname.toLowerCase())) {
       request('/api/analytics/dashboard').then(data => {
         if (active && data?.serverIp) {
