@@ -905,7 +905,7 @@
                 if (!res.ok) return;
                 const data = await res.json();
 
-                if (data.serverIp && defaultLanIp !== data.serverIp && (document.getElementById("serverIpInput").value === '192.168.1.10' || document.getElementById("serverIpInput").value === '172.20.10.8' || document.getElementById("serverIpInput").value === 'localhost')) {
+                if (data.serverIp && defaultLanIp !== data.serverIp) {
                     defaultLanIp = data.serverIp;
                     document.getElementById("serverIpInput").value = data.serverIp;
                     updateQrCode();
