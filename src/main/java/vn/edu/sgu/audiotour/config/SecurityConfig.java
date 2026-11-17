@@ -45,7 +45,7 @@ public class SecurityConfig {
                         // Ngôn ngữ chỉ thêm được 1 lần nên thiệt hại tối đa = số ngôn ngữ trong whitelist.
                         .requestMatchers(HttpMethod.POST, "/api/languages/*/translate").authenticated()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/packages/stream", "/api/packages/offline", "/api/locations/by-qr/**", "/api/analytics/heartbeat", "/api/analytics/logs", "/demo.html", "/index.html", "/player.html", "/dashboard.html", "/favicon.ico").permitAll()
+                        .requestMatchers("/api/packages/stream", "/api/packages/offline", "/api/locations/by-qr/**", "/api/analytics/heartbeat", "/api/analytics/logs", "/demo.html", "/index.html", "/player.html", "/dashboard.html", "/qrcode-local.js", "/favicon.ico").permitAll()
                         .requestMatchers("/api/analytics/dashboard").authenticated()
                         // Trang chủ du khách: "/" serve welcome page (index.html)
                         .requestMatchers("/").permitAll()
