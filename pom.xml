@@ -133,6 +133,10 @@
 				<configuration>
 					<workingDirectory>frontend</workingDirectory>
 					<installDirectory>target</installDirectory>
+					<!-- npm ci hay lỗi EPERM khi cache npm mặc định của user bị khóa (Windows): dùng cache trong target/ -->
+					<environmentVariables>
+						<npm_config_cache>${project.build.directory}/npm-cache</npm_config_cache>
+					</environmentVariables>
 				</configuration>
 				<executions>
 					<execution>

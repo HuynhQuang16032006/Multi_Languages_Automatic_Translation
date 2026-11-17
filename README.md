@@ -208,7 +208,7 @@ curl.exe --fail --show-error --write-out "\nHTTP %{http_code}\n" http://localhos
 ```
 Chờ app khởi động xong: health phải trả HTTP 200 và `status: UP`. Nếu chưa đạt, xem `docker compose logs app db`. Dừng bằng `docker compose down` để giữ volume.
 
-Nếu Maven dừng ở `npm ci` với `EPERM` trong cache npm của tài khoản Windows, đặt cache riêng cho phiên PowerShell rồi chạy lại:
+Maven chạy `npm ci` với cache riêng trong `target/npm-cache` (khai báo trong `pom.xml`), nên lỗi `EPERM` do cache npm mặc định của tài khoản Windows bị khóa không còn chặn build. Nếu vẫn gặp `EPERM`, xóa `target/npm-cache` rồi chạy lại; chạy `npm ci` thủ công thì đặt cache riêng cho phiên PowerShell:
 ```powershell
 $env:npm_config_cache = Join-Path $PWD 'target/npm-cache'
 ```
