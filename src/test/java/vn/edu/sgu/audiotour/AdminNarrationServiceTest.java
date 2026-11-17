@@ -49,7 +49,7 @@ class AdminNarrationServiceTest {
         Location loc = new Location();
         loc.setId(1L);
         Language lang = new Language(1L, "vi", "Tiếng Việt");
-        Narration n = new Narration(10L, "Nội dung thuyết minh", "1-vi.mp3", 45, loc, lang);
+        Narration n = new Narration(10L, loc, lang, "Nội dung thuyết minh", "1-vi.mp3", 45);
 
         when(locationRepository.existsById(1L)).thenReturn(true);
         when(narrationRepository.findAllByLocationId(1L)).thenReturn(List.of(n));
@@ -109,7 +109,7 @@ class AdminNarrationServiceTest {
         Location loc = new Location();
         loc.setId(4L);
         Language lang = new Language(1L, "vi", "Tiếng Việt");
-        Narration existing = new Narration(15L, "Văn bản cũ", "4-vi.mp3", 60, loc, lang);
+        Narration existing = new Narration(15L, loc, lang, "Văn bản cũ", "4-vi.mp3", 60);
 
         when(narrationRepository.findById(15L)).thenReturn(Optional.of(existing));
 
@@ -124,7 +124,7 @@ class AdminNarrationServiceTest {
         Location loc = new Location();
         loc.setId(4L);
         Language lang = new Language(1L, "vi", "Tiếng Việt");
-        Narration existing = new Narration(15L, "Văn bản", "4-vi.mp3", 60, loc, lang);
+        Narration existing = new Narration(15L, loc, lang, "Văn bản", "4-vi.mp3", 60);
 
         when(narrationRepository.findById(15L)).thenReturn(Optional.of(existing));
 
