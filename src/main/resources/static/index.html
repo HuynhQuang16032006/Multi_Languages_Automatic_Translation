@@ -1932,6 +1932,10 @@
                 });
                 marker.bindPopup(popupHtml(poi));
                 marker.on("click", () => {
+                    if (state.simGpsActive) {
+                        setUserPosition(position[0], position[1], 10, true, false);
+                        return;
+                    }
                     startAudio(poi, "MANUAL");
                     openPoiSheet(poi, marker.getElement());
                 });
@@ -1942,6 +1946,7 @@
                 const radius = Number(poi.radiusInMeters) || 30;
                 const geofenceCircle = L.circle(position, {
                     radius: radius,
+                    interactive: false,
                     color: isPlaying ? "#10b981" : "#38bdf8",
                     weight: isPlaying ? 2 : 1,
                     dashArray: "4, 4",
@@ -2496,28 +2501,108 @@
                 dom.playerDistanceBadge.hidden = true;
             }
 
-            // Tải audio stream
-            dom.mainAudio.src = `/api/packages/stream?locationId=${poi.id}&languageCode=${state.selectedLanguage}`;
-            dom.mainAudio.currentTime = 0;
-            dom.playerCurrentTime.textContent = "00:00";
-            dom.playerDuration.textContent = "00:00";
-            dom.playerSeek.value = 0;
-
-            dom.mainAudio.play().then(() => {
-                dom.playerPlayIcon.textContent = "⏸";
-            }).catch(e => {
-                console.warn("Autoplay cần tương tác:", e);
-                dom.playerPlayIcon.textContent = "▶";
-            });
-
-            // Tải kịch bản văn bản
-            loadNarrationScript(poi.id, state.selectedLanguage);
+            // Tải gói nén Offline ZIP (/api/packages/offline) về bộ nhớ RAM của thiết bị, giải nén content.txt + audio.mp3 rồi phát không giật lag
+            playFromOfflineZipPackage(poi, state.selectedLanguage || "vi", triggerType);
 
             // Cập nhật marker trên map (icon ghim đang phát sáng lên)
             renderMarkers(state.pois, state.activeTour ? state.tourPoiIds : null);
 
             // Gửi heartbeat ngay để Admin Dashboard cập nhật địa điểm đang nghe
             sendHeartbeat("PING");
+        }
+
+        async function extractZipBufferInBrowser(buf) {
+            const view = new DataView(buf);
+            const bytes = new Uint8Array(buf);
+            let eocd = -1;
+            for (let i = bytes.length - 22; i >= 0; i--) {
+                if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+            }
+            if (eocd < 0) throw new Error("Invalid ZIP");
+            const cdCount = view.getUint16(eocd + 10, true);
+            let cdPos = view.getUint32(eocd + 16, true);
+            let textContent = "";
+            let audioBlobUrl = null;
+
+            for (let i = 0; i < cdCount; i++) {
+                const method = view.getUint16(cdPos + 10, true);
+                const compSize = view.getUint32(cdPos + 20, true);
+                const nameLen = view.getUint16(cdPos + 28, true);
+                const extraLen = view.getUint16(cdPos + 30, true);
+                const commentLen = view.getUint16(cdPos + 32, true);
+                const lhoff = view.getUint32(cdPos + 42, true);
+                const name = new TextDecoder().decode(bytes.subarray(cdPos + 46, cdPos + 46 + nameLen));
+                const lhNameLen = view.getUint16(lhoff + 26, true);
+                const lhExtraLen = view.getUint16(lhoff + 28, true);
+                const dataStart = lhoff + 30 + lhNameLen + lhExtraLen;
+                const rawSlice = bytes.subarray(dataStart, dataStart + compSize);
+
+                let dataBytes;
+                if (method === 0) {
+                    dataBytes = rawSlice;
+                } else {
+                    const ds = new DecompressionStream("deflate-raw");
+                    const writer = ds.writable.getWriter();
+                    writer.write(rawSlice);
+                    writer.close();
+                    const ab = await new Response(ds.readable).arrayBuffer();
+                    dataBytes = new Uint8Array(ab);
+                }
+
+                if (name === "content.txt") {
+                    textContent = new TextDecoder("utf-8").decode(dataBytes);
+                } else if (name.toLowerCase().endsWith(".mp3")) {
+                    const blob = new Blob([dataBytes], { type: "audio/mpeg" });
+                    audioBlobUrl = URL.createObjectURL(blob);
+                }
+                cdPos += 46 + nameLen + extraLen + commentLen;
+            }
+            return { textContent, audioBlobUrl };
+        }
+
+        async function playFromOfflineZipPackage(poi, langCode, triggerType) {
+            if (!state.offlineZipCache) state.offlineZipCache = new Map();
+            const cacheKey = `${poi.id}:${langCode}`;
+            const langObj = (state.languages || []).find(l => l.code === langCode);
+            dom.drawerLangText.textContent = langObj ? langObj.name : langCode.toUpperCase();
+            dom.mainAudio.currentTime = 0;
+            dom.playerCurrentTime.textContent = "00:00";
+            dom.playerDuration.textContent = "00:00";
+            dom.playerSeek.value = 0;
+
+            try {
+                let pack = state.offlineZipCache.get(cacheKey);
+                if (!pack) {
+                    dom.drawerScriptText.textContent = "📦 Đang tải & giải nén gói Offline ZIP về thiết bị...";
+                    const res = await fetch(`/api/packages/offline?locationId=${poi.id}&languageCode=${encodeURIComponent(langCode)}&deviceId=${encodeURIComponent(deviceId)}`);
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    const buf = await res.arrayBuffer();
+                    pack = await extractZipBufferInBrowser(buf);
+                    if (!pack.audioBlobUrl) throw new Error("No MP3 in ZIP");
+                    state.offlineZipCache.set(cacheKey, pack);
+                }
+
+                dom.drawerScriptText.textContent = pack.textContent || "Đã nạp kịch bản từ gói Offline ZIP.";
+                dom.mainAudio.src = pack.audioBlobUrl;
+                dom.playerTriggerBadge.textContent = triggerType === "GEOFENCE"
+                    ? "📦 ZIP OFFLINE (GPS)"
+                    : "📦 ZIP OFFLINE (ĐÃ TẢI VỀ MÁY)";
+                dom.mainAudio.play().then(() => {
+                    dom.playerPlayIcon.textContent = "⏸";
+                }).catch(e => {
+                    console.warn("Autoplay cần tương tác:", e);
+                    dom.playerPlayIcon.textContent = "▶";
+                });
+            } catch (err) {
+                console.warn("Fallback sang stream trực tiếp:", err);
+                dom.mainAudio.src = `/api/packages/stream?locationId=${poi.id}&languageCode=${encodeURIComponent(langCode)}`;
+                dom.mainAudio.play().then(() => {
+                    dom.playerPlayIcon.textContent = "⏸";
+                }).catch(() => {
+                    dom.playerPlayIcon.textContent = "▶";
+                });
+                loadNarrationScript(poi.id, langCode);
+            }
         }
 
         function togglePlayPause() {
@@ -2553,13 +2638,7 @@
             state.listenSeconds = 0;
 
             dom.playerLangBadge.textContent = code.toUpperCase();
-            dom.mainAudio.src = `/api/packages/stream?locationId=${state.currentPlayingPoi.id}&languageCode=${code}`;
-            dom.mainAudio.currentTime = 0;
-            dom.mainAudio.play().then(() => {
-                dom.playerPlayIcon.textContent = "⏸";
-            }).catch(e => console.warn(e));
-
-            loadNarrationScript(state.currentPlayingPoi.id, code);
+            playFromOfflineZipPackage(state.currentPlayingPoi, code, state.currentTriggerType || "MANUAL");
             sendHeartbeat("PING");
         }
 
@@ -2600,6 +2679,7 @@
             if (!state.pois || !state.pois.length) return;
             let closestPoi = null;
             let minDistance = Infinity;
+            const matchedCandidates = [];
 
             for (const poi of state.pois) {
                 const pos = readCoordinates(poi);
@@ -2612,16 +2692,37 @@
 
                 const radius = Number(poi.radiusInMeters) || 30;
                 if (dist <= radius) {
-                    // Đang ở trong bán kính GPS!
-                    if (!state.currentPlayingPoi || String(state.currentPlayingPoi.id) !== String(poi.id)) {
-                        startAudio(poi, "GEOFENCE");
-                        showGpsToast(
-                            `⚡ Đã vào vùng GPS: ${poi.name}`,
-                            `Khoảng cách ${Math.round(dist)}m (bán kính ${radius}m). Đang tự động phát thuyết minh [${(state.selectedLanguage||"vi").toUpperCase()}].`
-                        );
-                    }
-                    return;
+                    matchedCandidates.push({ poi, dist, radius });
                 }
+            }
+
+            if (matchedCandidates.length > 0) {
+                // Ưu tiên: 1. Địa điểm con (có parentId) > Địa điểm cha
+                //          2. Bán kính nhỏ hơn (chi tiết hơn) hoặc Priority cao hơn
+                //          3. Khoảng cách tới tâm gần hơn
+                matchedCandidates.sort((a, b) => {
+                    const aIsChild = a.poi.parentId !== null && a.poi.parentId !== undefined ? 1 : 0;
+                    const bIsChild = b.poi.parentId !== null && b.poi.parentId !== undefined ? 1 : 0;
+                    if (aIsChild !== bIsChild) return bIsChild - aIsChild;
+
+                    if (a.radius !== b.radius) return a.radius - b.radius;
+
+                    const aPrio = Number(a.poi.priority) || 1;
+                    const bPrio = Number(b.poi.priority) || 1;
+                    if (aPrio !== bPrio) return bPrio - aPrio;
+
+                    return a.dist - b.dist;
+                });
+
+                const best = matchedCandidates[0];
+                if (!state.currentPlayingPoi || String(state.currentPlayingPoi.id) !== String(best.poi.id)) {
+                    startAudio(best.poi, "GEOFENCE");
+                    showGpsToast(
+                        `⚡ Đã vào vùng GPS: ${best.poi.name}`,
+                        `Khoảng cách ${Math.round(best.dist)}m (bán kính ${best.radius}m). Đang tự động phát thuyết minh [${(state.selectedLanguage||"vi").toUpperCase()}].`
+                    );
+                }
+                return;
             }
 
             if (closestPoi && state.simGpsActive) {

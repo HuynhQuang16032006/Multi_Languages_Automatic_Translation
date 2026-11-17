@@ -956,12 +956,29 @@ Minimum version required to store current data is: `+i+`.
                 }
                 document.getElementById("activeTableCount").innerText = activeCount;
 
+                // Phát hiện khi có thiết bị vừa tải thành công gói ZIP Offline về máy -> Hiện Popup trên Server Dashboard
+                if (window.__lastOfflineCount !== undefined && (data.offlineDownloads || 0) > window.__lastOfflineCount) {
+                    let pop = document.getElementById("zipDownloadPopup");
+                    if (!pop) {
+                        pop = document.createElement("div");
+                        pop.id = "zipDownloadPopup";
+                        pop.style.cssText = "position:fixed;top:24px;right:24px;z-index:99999;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:16px 22px;border-radius:14px;box-shadow:0 15px 35px rgba(0,0,0,0.6);font-weight:800;font-size:0.95rem;border:2px solid #a7f3d0;transition:opacity 0.3s;";
+                        document.body.appendChild(pop);
+                    }
+                    const latestDev = (data.activeSessions && data.activeSessions.length) ? data.activeSessions[0].deviceId : "Du khách";
+                    pop.innerHTML = `📦 Thông báo Server: Thiết bị <strong>${escapeHtml(latestDev)}</strong> vừa tải gói <strong>tour-offline.zip</strong> về máy để phát! (Tổng lượt tải: ${data.offlineDownloads})`;
+                    pop.style.display = "block";
+                    clearTimeout(window.__zipPopTimer);
+                    window.__zipPopTimer = setTimeout(() => { pop.style.display = "none"; }, 6000);
+                }
+                window.__lastOfflineCount = data.offlineDownloads || 0;
+
                 // Cập nhật thống kê phụ
                 document.getElementById("totalListens").innerText = data.totalListens || 0;
                 document.getElementById("avgDuration").innerText = `${data.averageListenDurationSeconds || 0}s`;
                 const qrCount = data.listensByTriggerType?.QR_CODE || 0;
                 const geoCount = data.listensByTriggerType?.GEOFENCE || 0;
-                 document.getElementById("triggerRatio").innerText = `${qrCount} QR / ${geoCount} GPS`;
+                document.getElementById("triggerRatio").innerText = `${qrCount} QR / ${geoCount} GPS (📦 ${data.offlineDownloads || 0} ZIP)`;
 
                 renderBars("topLocationsChart", data.topLocations || [], "locationName", "listenCount", " lượt");
                 renderBars("triggerChart", Object.entries(data.listensByTriggerType || {}).map(([name, value]) => ({ name, value })), "name", "value", " lượt");
